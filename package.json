@@ -15,6 +15,7 @@
     "firebase": "firebase",
     "deploy": "npm run build && firebase deploy"
   },
+  "homepage": ".",
   "browserslist": {
     "production": [
       ">0.2%",
