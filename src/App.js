@@ -13,6 +13,7 @@ import {
 import {
   IlanVerSayfasi,
   TekliflerSayfasi,
+  MesajlarSayfasi,
   IssizProfilSayfasi
 } from "./pages/issiz/IssizSayfalar";
 import BildirimAyarlariSayfasi from "./pages/kamyoncu/BildirimAyarlariSayfasi";
@@ -55,7 +56,7 @@ function MobilApp() {
   const issizSayfalar = {
     ilanver:   <IlanVerSayfasi />,
     teklifler: <TekliflerSayfasi />,
-    mesajlar:  <IssizMesajlarSayfasi />,
+    mesajlar:  <MesajlarSayfasi />,
     profil:    <IssizProfilSayfasi />,
   };
 
@@ -116,6 +117,7 @@ function ProfilIcContent({ defaultPath = "profil" }) {
             ? <BildirimAyarlariSayfasi />
             : <IssizProfilSayfasi />
         )}
+        {oturum.rol === "issiz" && <BottomNav aktif="profil" setAktif={() => {}} rol="issiz" />}
       </div>
       {oturum.rol === "kamyoncu" && <BottomNav aktif="profil" setAktif={() => {}} rol="kamyoncu" />}
     </div>
