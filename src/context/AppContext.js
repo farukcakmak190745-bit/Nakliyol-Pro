@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import { useMesaj } from "./MesajContext";
 
 let supabaseInitialized = false;
 const initSupabase = () => {
@@ -28,6 +29,8 @@ const DEMO_SEFERLER = [
 ];
 
 export const AppProvider = ({ children }) => {
+  const mesajContext = useMesaj();
+
   useEffect(() => {
     initSupabase();
   }, []);
