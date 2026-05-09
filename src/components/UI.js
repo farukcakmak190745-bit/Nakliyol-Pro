@@ -2,61 +2,71 @@ import { useApp } from "../context/AppContext";
 
 export const Header = ({ baslik, geri, sag }) => {
   const { oturum } = useApp();
-  return (
-    <div className="header">
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {geri && <button onClick={geri} style={{ color: "var(--text3)", fontSize: 20, lineHeight: 1 }}>‹</button>}
-        <div>
-          <div className="logo">NAKLI<span className="logo-accent">YOL</span></div>
-          {baslik && <div className="label" style={{ marginTop: 1 }}>{baslik}</div>}
+  try {
+    return (
+      <div className="header">
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {geri && <button onClick={geri} style={{ color: "var(--text3)", fontSize: 20, lineHeight: 1 }}>‹</button>}
+          <div>
+            <div className="logo">NAKLI<span className="logo-accent">YOL</span></div>
+            {baslik && <div className="label" style={{ marginTop: 1 }}>{baslik}</div>}
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {sag}
+          {oturum && (
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--bg3)", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
+              {oturum.rol === "kamyoncu" ? "🚛" : "🏢"}
+            </div>
+          )}
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        {sag}
-        {oturum && (
-          <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--bg3)", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
-            {oturum.rol === "kamyoncu" ? "🚛" : "🏢"}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
+  } catch (error) {
+    console.error('Header Component Error:', error);
+    return <div>Header Error: {error.message}</div>;
+  }
 };
 
 export const BottomNav = ({ aktif, setAktif, rol }) => {
-  const { teklifler = [] } = useApp();
-  const bekleyenSayisi = (teklifler || []).filter(t => t.durum === "bekliyor").length;
+  try {
+    const { teklifler = [] } = useApp();
+    const bekleyenSayisi = (teklifler || []).filter(t => t.durum === "bekliyor").length;
 
-  const kamyoncuMenu = [
-    { key: "ilanlar",  icon: "📢", label: "İlanlar" },
-    { key: "seferler", icon: "🗺️", label: "Seferlerim" },
-    { key: "mesajlar", icon: "💬", label: "Mesajlar" },
-    { key: "profil",   icon: "👤", label: "Profil" },
-  ];
-  const issizMenu = [
-    { key: "ilanver",   icon: "➕",  label: "İlan Ver" },
-    { key: "teklifler", icon: "📋",  label: "Teklifler", badge: bekleyenSayisi },
-    { key: "mesajlar",  icon: "💬",  label: "Mesajlar" },
-    { key: "profil",    icon: "👤",  label: "Profil" },
-  ];
-  const menu = rol === "kamyoncu" ? kamyoncuMenu : issizMenu;
+    const kamyoncuMenu = [
+      { key: "ilanlar",  icon: "📢", label: "İlanlar" },
+      { key: "seferler", icon: "🗺️", label: "Seferlerim" },
+      { key: "mesajlar", icon: "💬", label: "Mesajlar" },
+      { key: "profil",   icon: "👤", label: "Profil" },
+    ];
+    const issizMenu = [
+      { key: "ilanver",   icon: "➕",  label: "İlan Ver" },
+      { key: "teklifler", icon: "📋",  label: "Teklifler", badge: bekleyenSayisi },
+      { key: "mesajlar",  icon: "💬",  label: "Mesajlar" },
+      { key: "profil",    icon: "👤",  label: "Profil" },
+    ];
+    const menu = rol === "kamyoncu" ? kamyoncuMenu : issizMenu;
 
-  return (
-    <div className="bottom-nav">
-      {menu.map(m => (
-        <button
-          key={m.key}
-          className={`nav-btn ${aktif === m.key ? "active" : ""}`}
-          onClick={() => setAktif(m.key)}
-          style={{ position: "relative", cursor: "pointer", border: "none", outline: "none", background: "none", padding: 0 }}
-        >
-          <span className="nav-icon">{m.icon}</span>
-          <span className="nav-label">{m.label}</span>
-          {m.badge > 0 && <span className="badge-count">{m.badge}</span>}
-        </button>
-      ))}
-    </div>
-  );
+    return (
+      <div className="bottom-nav">
+        {menu.map(m => (
+          <button
+            key={m.key}
+            className={`nav-btn ${aktif === m.key ? "active" : ""}`}
+            onClick={() => setAktif(m.key)}
+            style={{ position: "relative", cursor: "pointer", border: "none", outline: "none", background: "none", padding: 0 }}
+          >
+            <span className="nav-icon">{m.icon}</span>
+            <span className="nav-label">{m.label}</span>
+            {m.badge > 0 && <span className="badge-count">{m.badge}</span>}
+          </button>
+        ))}
+      </div>
+    );
+  } catch (error) {
+    console.error('BottomNav Component Error:', error);
+    return <div>BottomNav Error: {error.message}</div>;
+  }
 };
 
 export const Sheet = ({ onClose, children }) => (
