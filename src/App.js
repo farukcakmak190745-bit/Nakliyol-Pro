@@ -125,19 +125,59 @@ function ProfilIcContent({ defaultPath = "profil" }) {
 }
 
 export default function App() {
-  return (
-    <ErrorBoundary>
-      <HashRouter>
-        <MesajProvider>
-          <AppProvider>
-            <Routes>
-              <Route path="/" element={<LoadingScreen />} />
-              <Route path="/app" element={<AppIcerigi />} />
-              <Route path="/profil/bildirim" element={<ProfilIcContent defaultPath="bildirim" />} />
-            </Routes>
-          </AppProvider>
-        </MesajProvider>
-      </HashRouter>
-    </ErrorBoundary>
-  );
+  try {
+    return (
+      <ErrorBoundary>
+        <HashRouter>
+          <MesajProvider>
+            <AppProvider>
+              <Routes>
+                <Route path="/" element={<LoadingScreen />} />
+                <Route path="/app" element={<AppIcerigi />} />
+                <Route path="/profil/bildirim" element={<ProfilIcContent defaultPath="bildirim" />} />
+              </Routes>
+            </AppProvider>
+          </MesajProvider>
+        </HashRouter>
+      </ErrorBoundary>
+    );
+  } catch (error) {
+    console.error('❌ App Component HATASI:', error);
+    return (
+      <div style={{
+        padding: 40,
+        textAlign: 'center',
+        fontFamily: 'Arial, sans-serif',
+        background: 'var(--bg1)',
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div>
+          <div style={{ fontSize: 48, marginBottom: 20 }}>🚨</div>
+          <div style={{ fontSize: 18, color: 'var(--text)', marginBottom: 10 }}>
+            Uygulamada hata oluştu
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--text3)', marginBottom: 20 }}>
+            Hata: {error.message}
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: '12px 24px',
+              background: 'var(--guldum-gradient)',
+              border: 'none',
+              borderRadius: '8px',
+              color: '#fff',
+              fontSize: 14,
+              cursor: 'pointer'
+            }}
+          >
+            Sayfayı Yenile
+          </button>
+        </div>
+      </div>
+    );
+  }
 }
