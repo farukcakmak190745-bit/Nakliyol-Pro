@@ -28,13 +28,20 @@ function MobilApp() {
   const { oturum, konusmalar } = useApp();
   const [sekme, setSekme] = useState("ilanlar");
   const [seciliKonusma, setSeciliKonusma] = useState(null);
+  const [yukleniyor, setYukleniyor] = useState(true);
 
   // Sekmeyi sadece ilk yüklemede ayarla
   useEffect(() => {
     setSekme(oturum?.rol === "kamyoncu" ? "ilanlar" : "ilanver");
+    setYukleniyor(false);
   }, [oturum?.rol]);
 
-  if (!oturum) return <div>Hata: oturum tanımsız</div>;
+  if (yukleniyor) return <div>Yükleniyor...</div>;
+
+  if (!oturum) {
+    console.error("❌ Oturum yok!");
+    return <div style={{ padding: 40, textAlign: 'center', color: 'red' }}>Oturum bilgisi yüklenemedi. Lütfen sayfayı yenileyin.</div>;
+  }
 
   if (seciliKonusma) {
     const konusma = konusmalar?.find(k => k.id === seciliKonusma);
@@ -86,7 +93,8 @@ function AppIcerigi() {
   const { oturum } = useApp();
 
   if (!oturum) {
-    return <GirisEkrani />;
+    console.error("❌ AppIcerigi - Oturum yok!");
+    return <div style={{ padding: 40, textAlign: 'center', color: 'red' }}>Oturum bilgisi yüklenemedi. Giriş yapılıyor...</div>;
   }
 
   if (oturum.rol === "admin") {
