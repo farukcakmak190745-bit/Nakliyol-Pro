@@ -26,6 +26,14 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
+      - name: Commit build artifacts
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add build/ -f
+          git commit -m "Build artifacts" || true
+          git push || true
+
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
         with:
