@@ -29,31 +29,21 @@ function MobilApp() {
   const [sekme, setSekme] = useState("ilanlar");
   const [seciliKonusma, setSeciliKonusma] = useState(null);
   const [yukleniyor, setYukleniyor] = useState(true);
-  const [currentHash, setCurrentHash] = useState(window.location.hash);
 
-  // Hash'i takip et
+  // Oturum yüklendiğinde yukleniyor false yap
   useEffect(() => {
-    function handleHashChange() {
-      const hash = window.location.hash.slice(1) || '/';
-      setCurrentHash(hash);
+    if (oturum) {
+      setYukleniyor(false);
+      setSekme(oturum?.rol === "kamyoncu" ? "ilanlar" : "ilanver");
     }
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  // Sekmeyi sadece ilk yüklemede ayarla
-  useEffect(() => {
-    setSekme(oturum?.rol === "kamyoncu" ? "ilanlar" : "ilanver");
-    setYukleniyor(false);
-  }, [oturum?.rol, currentHash]);
-
-  if (yukleniyor) return <div>Yükleniyor...</div>;
+  }, [oturum]);
 
   if (!oturum) {
     console.error("❌ Oturum yok!");
-    return <div style={{ padding: 40, textAlign: 'center', color: 'red' }}>Oturum bilgisi yüklenemedi. Lütfen sayfayı yenileyin.</div>;
+    return <LoadingScreen />;
   }
+
+  if (yukleniyor) return <LoadingScreen />;
 
   if (seciliKonusma) {
     const konusma = konusmalar?.find(k => k.id === seciliKonusma);
@@ -103,16 +93,6 @@ function MobilApp() {
 
 function AppIcerigi() {
   const { oturum } = useApp();
-  const [currentHash, setCurrentHash] = useState(window.location.hash.slice(1) || '/');
-
-  useEffect(() => {
-    function handleHashChange() {
-      setCurrentHash(window.location.hash.slice(1) || '/');
-    }
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
 
   if (!oturum) {
     console.error("❌ AppIcerigi - Oturum yok!");
