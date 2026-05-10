@@ -29,12 +29,24 @@ function MobilApp() {
   const [sekme, setSekme] = useState("ilanlar");
   const [seciliKonusma, setSeciliKonusma] = useState(null);
   const [yukleniyor, setYukleniyor] = useState(true);
+  const [currentHash, setCurrentHash] = useState(window.location.hash);
+
+  // Hash'i takip et
+  useEffect(() => {
+    function handleHashChange() {
+      const hash = window.location.hash.slice(1) || '/';
+      setCurrentHash(hash);
+    }
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Sekmeyi sadece ilk yüklemede ayarla
   useEffect(() => {
     setSekme(oturum?.rol === "kamyoncu" ? "ilanlar" : "ilanver");
     setYukleniyor(false);
-  }, [oturum?.rol]);
+  }, [oturum?.rol, currentHash]);
 
   if (yukleniyor) return <div>Yükleniyor...</div>;
 
@@ -91,6 +103,16 @@ function MobilApp() {
 
 function AppIcerigi() {
   const { oturum } = useApp();
+  const [currentHash, setCurrentHash] = useState(window.location.hash.slice(1) || '/');
+
+  useEffect(() => {
+    function handleHashChange() {
+      setCurrentHash(window.location.hash.slice(1) || '/');
+    }
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   if (!oturum) {
     console.error("❌ AppIcerigi - Oturum yok!");
@@ -136,17 +158,15 @@ export default function App() {
   try {
     return (
       <ErrorBoundary>
-        <HashRouter>
-          <MesajProvider>
-            <AppProvider>
-              <Routes>
-                <Route path="/" element={<LoadingScreen />} />
-                <Route path="/app" element={<AppIcerigi />} />
-                <Route path="/profil/bildirim" element={<ProfilIcContent defaultPath="bildirim" />} />
-              </Routes>
-            </AppProvider>
-          </MesajProvider>
-        </HashRouter>
+        <MesajProvider>
+          <AppProvider>
+            <Routes>
+              <Route path="/" element={<LoadingScreen />} />
+              <Route path="/app" element={<AppIcerigi />} />
+              <Route path="/profil/bildirim" element={<ProfilIcContent defaultPath="bildirim" />} />
+            </Routes>
+          </AppProvider>
+        </MesajProvider>
       </ErrorBoundary>
     );
   } catch (error) {
