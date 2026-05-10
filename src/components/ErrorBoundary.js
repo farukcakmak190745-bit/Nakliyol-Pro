@@ -36,11 +36,34 @@ class ErrorBoundary extends React.Component {
           minHeight: "100vh",
           background: "var(--bg)",
           padding: "20px",
-          textAlign: "center"
+          textAlign: "center",
+          maxWidth: "800px",
+          margin: "0 auto"
         }}>
           <div style={{ fontSize: "64px", marginBottom: "20px" }}>⚠️</div>
           <div style={{ fontSize: "24px", fontWeight: "600", color: "#f59e0b", marginBottom: "12px" }}>
             Bir Hata Oluştu
+          </div>
+          <div style={{
+            fontSize: "14px",
+            color: "var(--text2)",
+            maxWidth: "500px",
+            marginBottom: "16px",
+            textAlign: "left",
+            background: "#1a1a1a",
+            padding: "12px",
+            borderRadius: "8px",
+            fontFamily: "monospace",
+            maxHeight: "200px",
+            overflow: "auto"
+          }}>
+            <div style={{ color: "#ff6b6b", marginBottom: "8px" }}>
+              <strong>Error:</strong> {this.state.error?.toString()}
+            </div>
+            <div style={{ color: "#ffd93d" }}>
+              <strong>Stack:</strong>
+              <pre>{this.state.errorInfo?.componentStack}</pre>
+            </div>
           </div>
           <div style={{ fontSize: "14px", color: "var(--text2)", maxWidth: "400px", marginBottom: "24px" }}>
             Uygulamada bir sorun oluştu. Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin.
