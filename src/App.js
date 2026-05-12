@@ -24,7 +24,7 @@ import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingScreen from "./components/LoadingScreen";
 
-function MobilApp() {
+function MobilApp({ cikisYap }) {
   const { oturum, konusmalar } = useApp();
   const [sekme, setSekme] = useState("ilanlar");
   const [seciliKonusma, setSeciliKonusma] = useState(null);
@@ -99,8 +99,8 @@ function MobilApp() {
   );
 }
 
-function AppIceriki({ cikisYap }) {
-  const { oturum } = useApp();
+function AppIceriki() {
+  const { oturum, cikisYap } = useApp();
 
   if (!oturum) {
     console.error("❌ AppIceriki - Oturum yok!");
@@ -111,7 +111,7 @@ function AppIceriki({ cikisYap }) {
     return <AdminPanel />;
   }
 
-  return <MobilApp />;
+  return <MobilApp cikisYap={cikisYap} />;
 }
 
 function ProfilIcContent({ defaultPath = "profil" }) {
@@ -143,7 +143,6 @@ function ProfilIcContent({ defaultPath = "profil" }) {
 }
 
 export default function App() {
-  const { cikisYap } = useApp();
   try {
     console.log('🚀 Uygulama başlatılıyor...');
     console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? '✓ Var' : '❌ Yok');
@@ -154,7 +153,7 @@ export default function App() {
           <AppProvider>
             <Routes>
               <Route path="/" element={<GirisEkrani />} />
-              <Route path="/app" element={<AppIceriki cikisYap={cikisYap} />} />
+              <Route path="/app" element={<AppIceriki />} />
               <Route path="/profil/bildirim" element={<ProfilIcContent defaultPath="bildirim" />} />
             </Routes>
           </AppProvider>
