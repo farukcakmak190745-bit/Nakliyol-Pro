@@ -212,8 +212,19 @@ export const AppProvider = ({ children }) => {
     try {
       // Create email from phone for demo compatibility
       const email = bilgiler.email || `${bilgiler.telefon}@demo.com`;
+      const password = `${bilgiler.telefon}${bilgiler.ad || 'user'}`; // Simple password from phone + name
 
-      const { data, error } = await supabase.from('users').insert([{
+      // 1. First create user in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password
+      });
+
+      if (authError) throw authError;
+
+      // 2. Then insert user data to users table
+      const { data: userData, error: userError } = await supabase.from('users').insert([{
+        id: authData.user?.id || Date.now(),
         email: email,
         role: bilgiler.rol || "issiz",
         ad: bilgiler.ad,
@@ -221,14 +232,15 @@ export const AppProvider = ({ children }) => {
         telefon: bilgiler.telefon
       }]).select().single();
 
-      if (error) throw error;
+      if (userError) throw userError;
 
+      // 3. Create user role
       await supabase.from('user_roles').insert([{
-        user_id: data.id
+        user_id: userData.id
       }]);
 
-      setOturum(data);
-      return data;
+      setOturum(userData);
+      return userData;
     } catch (error) {
       console.error("Kayıt hatası:", error);
       throw error;
@@ -259,10 +271,25 @@ export const AppProvider = ({ children }) => {
         password
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Auth hatası:", error);
+        throw new Error("Şifre hatalı veya kullanıcı bulunamadı.");
+      }
 
-      setOturum(userData);
-      return userData;
+      // Güncel user verisini al (supabase'den gelen fresh data)
+      const { data: freshUserData, error: freshError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('telefon', telefon)
+        .single();
+
+      if (freshError) {
+        console.error("User data fetch hatası:", freshError);
+        throw freshError;
+      }
+
+      setOturum(freshUserData);
+      return freshUserData;
     } catch (error) {
       console.error("Giriş hatası:", error);
       throw error;
