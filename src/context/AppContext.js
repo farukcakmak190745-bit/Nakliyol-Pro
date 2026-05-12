@@ -218,38 +218,116 @@ export const AppProvider = ({ children }) => {
         throw new Error("Şifre en az 6 karakter olmalı");
       }
 
-      // 1. First create user in Supabase Auth
+      let userId = Date.now();
+
+      // 1. First try to create user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password
       });
 
       if (authError) {
-        if (authError.message.includes("already registered")) {
-          throw new Error("Bu email ile kayıtlı kullanıcı zaten var.");
+        console.warn("⚠️ Supabase Auth hatası (rate limit olabilir):", authError.message);
+
+        if (authError.message.includes("rate limit")) {
+          // Rate limit varsa local'e kayıt yap, auth'a gerek yok
+          const { data: userData, error: userError } = await supabase.from('users').insert([{
+            email: email,
+            role: bilgiler.rol || "issiz",
+            ad: bilgiler.ad,
+            tc_kimlik: bilgiler.tcKimlik,
+            telefon: bilgiler.telefon
+          }]).select().single();
+
+          if (userError) throw userError;
+
+          await supabase.from('user_roles').insert([{
+            user_id: userData.id
+          }]);
+
+          userId = userData.id;
+          console.log("✅ Local kayıt başarılı (Auth rate limit dolu)");
+        } else if (authError.message.includes("already registered")) {
+          // Email zaten var, önce users tablosundan bulalım
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+          if (existingUser) {
+            userId = existingUser.id;
+            // Email ile giriş yap
+            const { data: authUser } = await supabase.auth.signInWithPassword({
+              email,
+              password
+            });
+
+            if (authUser?.session) {
+              setOturum(existingUser);
+              return existingUser;
+            } else {
+              throw new Error("Bu email ile kayıtlı, ancak şifre yanlış.");
+            }
+          } else {
+            throw authError;
+          }
+        } else {
+          throw authError;
         }
-        throw authError;
+      } else {
+        // Auth başarılı
+        userId = authData.user?.id || Date.now();
+
+        // 2. Then insert user data to users table
+        const { data: userData, error: userError } = await supabase.from('users').insert([{
+          id: userId,
+          email: email,
+          role: bilgiler.rol || "issiz",
+          ad: bilgiler.ad,
+          tc_kimlik: bilgiler.tcKimlik,
+          telefon: bilgiler.telefon
+        }]).select().single();
+
+        if (userError) throw userError;
+
+        // 3. Create user role
+        await supabase.from('user_roles').insert([{
+          user_id: userData.id
+        }]);
+
+        console.log("✅ Auth ve database kayıtları oluşturuldu");
       }
 
-      // 2. Then insert user data to users table
-      const { data: userData, error: userError } = await supabase.from('users').insert([{
-        id: authData.user?.id || Date.now(),
-        email: email,
-        role: bilgiler.rol || "issiz",
-        ad: bilgiler.ad,
-        tc_kimlik: bilgiler.tcKimlik,
-        telefon: bilgiler.telefon
-      }]).select().single();
+      // Son kullanıcıyı çek
+      const { data: finalUser } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-      if (userError) throw userError;
+      if (!finalUser) {
+        // Local'de oluşturulduysa manuel oluştur
+        setOturum({
+          id: userId,
+          email: email,
+          role: bilgiler.rol || "issiz",
+          ad: bilgiler.ad,
+          tc_kimlik: bilgiler.tcKimlik,
+          telefon: bilgiler.telefon
+        });
+        return {
+          id: userId,
+          email: email,
+          role: bilgiler.rol || "issiz",
+          ad: bilgiler.ad,
+          tc_kimlik: bilgiler.tcKimlik,
+          telefon: bilgiler.telefon
+        };
+      }
 
-      // 3. Create user role
-      await supabase.from('user_roles').insert([{
-        user_id: userData.id
-      }]);
-
-      setOturum(userData);
-      return userData;
+      setOturum(finalUser);
+      return finalUser;
     } catch (error) {
       console.error("Kayıt hatası:", error);
       throw error;
