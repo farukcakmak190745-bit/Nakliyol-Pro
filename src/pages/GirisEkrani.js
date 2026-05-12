@@ -105,18 +105,13 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
             <Hata alan="ad" />
           </div>
           <div>
-            <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>SOYAD <span style={{ color: "#ea580c" }}>*</span></label>
-            <input className="input" placeholder="Yılmaz" value={form.soyad} onChange={e => set("soyad", e.target.value)} />
-            <Hata alan="soyad" />
+            <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>TELEFON <span style={{ color: "#ea580c" }}>*</span></label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ background: "var(--bg2)", border: "1px solid rgba(251,191,36,0.1)", borderRadius: "12px", padding: "12px 16px", fontSize: 14, display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>🇹🇷 +90</div>
+              <input className="input" placeholder="5xx xxx xx xx" maxLength={10} value={form.telefon} onChange={e => set("telefon", e.target.value.replace(/\D/g, ""))} />
+            </div>
+            <Hata alan="telefon" />
           </div>
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>TELEFON <span style={{ color: "#ea580c" }}>*</span></label>
-          <div style={{ display: "flex", gap: 8 }}>
-            <div style={{ background: "var(--bg2)", border: "1px solid rgba(251,191,36,0.1)", borderRadius: "12px", padding: "12px 16px", fontSize: 14, display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>🇹🇷 +90</div>
-            <input className="input" placeholder="5xx xxx xx xx" maxLength={10} value={form.telefon} onChange={e => set("telefon", e.target.value.replace(/\D/g, ""))} />
-          </div>
-          <Hata alan="telefon" />
         </div>
         <div style={{ marginTop: 12 }}>
           <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>TC KİMLİK NO <span style={{ color: "#ea580c" }}>*</span></label>
@@ -219,8 +214,8 @@ export default function GirisEkrani() {
   const handleGiris = async () => {
     if (girisForm.telefon && girisForm.sifre) {
       try {
-        // Supabase ile giriş yap
-        await kayitOl({ telefon: girisForm.telefon, sifre: girisForm.sifre });
+        // Supabase ile giriş yap - sadece telefon ve şifre
+        await girisYap(girisForm.telefon, girisForm.sifre);
         navigate("/app");
       } catch (error) {
         console.error("Giriş hatası:", error);
@@ -311,7 +306,7 @@ export default function GirisEkrani() {
               <button onClick={handleGiris} disabled={!girisForm.telefon || !girisForm.sifre} className="btn btn-primary btn-full" style={{ padding: "14px", letterSpacing: 2 }}>
                 GİRİŞ YAP
               </button>
-              <button onClick={() => window.location.href = 'https://wkxhgrqxknxchferqqha.supabase.co/auth/v1/issue?email=' + encodeURIComponent(girisForm.telefon + '@demo.com')} style={{ width: "100%", marginTop: 12, fontSize: 11, color: "var(--sari)", background: "none", border: "none", cursor: "pointer" }}>
+              <button onClick={() => alert("Şifremi unuttum butonu yakında eklenecek")} style={{ width: "100%", marginTop: 12, fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer" }}>
                 🔑 Şifremi Unuttum
               </button>
             </div>

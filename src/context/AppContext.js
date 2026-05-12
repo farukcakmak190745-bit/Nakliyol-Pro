@@ -210,15 +210,33 @@ export const AppProvider = ({ children }) => {
     }
 
     try {
-      // Email ve şifre form'dan geliyor
-      const email = bilgiler.email || `${bilgiler.telefon}@demo.com`;
+      // Sadece telefon ve şifre form'dan geliyor
+      const telefon = bilgiler.telefon;
       const password = bilgiler.sifre; // Kullanıcı formdan girdiği şifre
+
+      if (!telefon || telefon.length < 10) {
+        throw new Error("Geçerli telefon numarası girin");
+      }
 
       if (!password || password.length < 6) {
         throw new Error("Şifre en az 6 karakter olmalı");
       }
 
+      // Telefon numarasına göre önce user olup olmadığına bak
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('*')
+        .eq('telefon', telefon)
+        .single();
+
+      if (existingUser) {
+        throw new Error("Bu telefon numarası ile zaten kayıtlısınız.");
+      }
+
       let userId = Date.now();
+
+      // Email olarak telefon numarasını kullan
+      const email = `${telefon}@demo.com`;
 
       // 1. First try to create user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -236,7 +254,7 @@ export const AppProvider = ({ children }) => {
             role: bilgiler.rol || "issiz",
             ad: bilgiler.ad,
             tc_kimlik: bilgiler.tcKimlik,
-            telefon: bilgiler.telefon
+            telefon: telefon
           }]).select().single();
 
           if (userError) throw userError;
@@ -267,7 +285,7 @@ export const AppProvider = ({ children }) => {
               setOturum(existingUser);
               return existingUser;
             } else {
-              throw new Error("Bu email ile kayıtlı, ancak şifre yanlış.");
+              throw new Error("Şifre yanlış.");
             }
           } else {
             throw authError;
@@ -286,7 +304,7 @@ export const AppProvider = ({ children }) => {
           role: bilgiler.rol || "issiz",
           ad: bilgiler.ad,
           tc_kimlik: bilgiler.tcKimlik,
-          telefon: bilgiler.telefon
+          telefon: telefon
         }]).select().single();
 
         if (userError) throw userError;
@@ -314,7 +332,7 @@ export const AppProvider = ({ children }) => {
           role: bilgiler.rol || "issiz",
           ad: bilgiler.ad,
           tc_kimlik: bilgiler.tcKimlik,
-          telefon: bilgiler.telefon
+          telefon: telefon
         });
         return {
           id: userId,
@@ -322,7 +340,7 @@ export const AppProvider = ({ children }) => {
           role: bilgiler.rol || "issiz",
           ad: bilgiler.ad,
           tc_kimlik: bilgiler.tcKimlik,
-          telefon: bilgiler.telefon
+          telefon: telefon
         };
       }
 
