@@ -210,9 +210,13 @@ export const AppProvider = ({ children }) => {
     }
 
     try {
-      // Create email from phone for demo compatibility
+      // Email ve şifre form'dan geliyor
       const email = bilgiler.email || `${bilgiler.telefon}@demo.com`;
-      const password = `${bilgiler.telefon}${bilgiler.ad || 'user'}`; // Simple password from phone + name
+      const password = bilgiler.sifre; // Kullanıcı formdan girdiği şifre
+
+      if (!password || password.length < 6) {
+        throw new Error("Şifre en az 6 karakter olmalı");
+      }
 
       // 1. First create user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -220,7 +224,12 @@ export const AppProvider = ({ children }) => {
         password
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        if (authError.message.includes("already registered")) {
+          throw new Error("Bu email ile kayıtlı kullanıcı zaten var.");
+        }
+        throw authError;
+      }
 
       // 2. Then insert user data to users table
       const { data: userData, error: userError } = await supabase.from('users').insert([{
@@ -247,7 +256,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [supabase]);
 
-  const girisYap = useCallback(async (telefon, password) => {
+  const girisYap = useCallback(async (telefon, sifre) => {
     if (!supabase) {
       setOturum({ id: Date.now(), email: telefon + '@demo.com', ad: telefon.split('@')[0], role: 'issiz' });
       return;
@@ -261,19 +270,27 @@ export const AppProvider = ({ children }) => {
         .eq('telefon', telefon)
         .single();
 
-      if (userError) throw userError;
+      if (userError) {
+        if (userError.code === 'PGRST116') {
+          throw new Error("Telefon numarası kayıtlı değil. Önce kayıt olun.");
+        }
+        throw userError;
+      }
 
       const email = userData.email;
 
       // Supabase Auth ile giriş yap
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password: sifre
       });
 
       if (error) {
         console.error("Supabase Auth hatası:", error);
-        throw new Error("Şifre hatalı veya kullanıcı bulunamadı.");
+        if (error.message.includes("Invalid login credentials")) {
+          throw new Error("Şifre yanlış. Lütfen kontrol edin.");
+        }
+        throw new Error("Giriş başarısız: " + error.message);
       }
 
       // Güncel user verisini al (supabase'den gelen fresh data)
@@ -302,6 +319,18 @@ export const AppProvider = ({ children }) => {
     }
     setOturum(null);
     }, [supabase]);
+
+  const sifreSifirla = useCallback(async (email) => {
+    if (!supabase) {
+      throw new Error("Supabase kurulumu yapılmadı.");
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/sifre-sifirla`
+    });
+
+    if (error) throw error;
+  }, [supabase]);
 
   const girisYapDemo = useCallback((rol, ad) => {
     const rolLower = rol?.toLowerCase();

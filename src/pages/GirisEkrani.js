@@ -220,11 +220,11 @@ export default function GirisEkrani() {
     if (girisForm.telefon && girisForm.sifre) {
       try {
         // Supabase ile giriş yap
-        await kayitOl({ telefon: girisForm.telefon, rol: "issiz" });
+        await kayitOl({ telefon: girisForm.telefon, sifre: girisForm.sifre });
         navigate("/app");
       } catch (error) {
         console.error("Giriş hatası:", error);
-        alert("Giriş başarısız. Lütfen tekrar deneyin.");
+        alert("Giriş başarısız: " + error.message);
       }
     }
   };
@@ -310,6 +310,9 @@ export default function GirisEkrani() {
               <button style={{ fontSize: 11, color: "#fbbf24", marginBottom: 16, cursor: "pointer" }}>Şifremi unuttum</button>
               <button onClick={handleGiris} disabled={!girisForm.telefon || !girisForm.sifre} className="btn btn-primary btn-full" style={{ padding: "14px", letterSpacing: 2 }}>
                 GİRİŞ YAP
+              </button>
+              <button onClick={() => window.location.href = 'https://wkxhgrqxknxchferqqha.supabase.co/auth/v1/issue?email=' + encodeURIComponent(girisForm.telefon + '@demo.com')} style={{ width: "100%", marginTop: 12, fontSize: 11, color: "var(--sari)", background: "none", border: "none", cursor: "pointer" }}>
+                🔑 Şifremi Unuttum
               </button>
             </div>
           </div>
