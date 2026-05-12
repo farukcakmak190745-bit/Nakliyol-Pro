@@ -210,10 +210,16 @@ export default function GirisEkrani() {
     kayitOl(kayitBilgileri);
   };
 
-  const handleGiris = () => {
+  const handleGiris = async () => {
     if (girisForm.telefon && girisForm.sifre) {
-      // Gerçek giriş simülasyonu
-      navigate("/profil");
+      try {
+        // Supabase ile giriş yap
+        await kayitOl({ telefon: girisForm.telefon, rol: "issiz" });
+        navigate("/app");
+      } catch (error) {
+        console.error("Giriş hatası:", error);
+        alert("Giriş başarısız. Lütfen tekrar deneyin.");
+      }
     }
   };
 

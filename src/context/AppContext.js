@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
-import { supabase } from "../supabaseClient";
+import supabase from "../lib/supabase";
 import { useMesaj } from "./MesajContext";
 
 let supabaseInitialized = false;
@@ -10,45 +10,183 @@ const initSupabase = () => {
   }
 };
 
+// Check if Supabase client is initialized on app start
+initSupabase();
+
 const Ctx = createContext();
 
+// Demo verileri (fallback için)
 const DEMO_ILANLAR = [
-  { id: 1, yuk: "Kömür", nereden: "Antalya", nereye: "İzmir", ucret: 7083, sure: "~7 saat", tarih: "2026-05-06", aracTip: "TIR", aciklama: "Antalya Liman'dan İzmir OSB'ye kömür. Sabah 08:00 yükleme.", istekSayisi: 2, durum: "aktif", olusturan: "Mevlüt Taşımacılık A.Ş.", olusturanPuan: 4.8, belgeler: [], odemeTuru: "pesin", odemeGun: 0, kdvOrani: 0.20 },
-  { id: 2, yuk: "Çelik Boru", nereden: "Ankara", nereye: "Bursa", ucret: 5167, sure: "~5 saat", tarih: "2026-05-07", aracTip: "10 Teker Açık", aciklama: "Flatbed veya lowbed TIR gerekli. Vinçli yükleme yapılacak.", istekSayisi: 1, durum: "aktif", olusturan: "Kardeşler Çelik Ltd.", olusturanPuan: 4.6, belgeler: [], odemeTuru: "7-gun", odemeGun: 7, kdvOrani: 0.20 },
-  { id: 3, yuk: "Soğutmalı Gıda", nereden: "İstanbul", nereye: "Gaziantep", ucret: 9167, sure: "~12 saat", tarih: "2026-05-08", aracTip: "10 Teker Tenteli", aciklama: "+4°C soğutmalı araç zorunlu. ATP belgeli kamyon şart. Gece vardiyası.", istekSayisi: 3, durum: "aktif", olusturan: "Metro Gıda Lojistik", olusturanPuan: 4.9, belgeler: [], odemeTuru: "15-gun", odemeGun: 15, kdvOrani: 0.20 },
-  { id: 4, yuk: "Meyve (Portakal)", nereden: "Mersin", nereye: "Ankara", ucret: 6500, sure: "~6 saat", tarih: "2026-05-09", aracTip: "Kırkayak Açık", aciklama: "Portakal yükü. Havalandırmalı araç tercih edilir. Erken sabah yükleme.", istekSayisi: 0, durum: "aktif", olusturan: "Akdeniz Tarım A.Ş.", olusturanPuan: 4.7, belgeler: [], odemeTuru: "pesin", odemeGun: 0, kdvOrani: 0 },
-  { id: 5, yuk: "İnşaat Malzemesi", nereden: "Kocaeli", nereye: "Konya", ucret: 7667, sure: "~4 saat", tarih: "2026-05-10", aracTip: "10 Teker Tenteli", aciklama: "Çakıl ve kum karışık yük. Damperli araç şart. Hafta içi her gün.", istekSayisi: 1, durum: "aktif", olusturan: "Anadolu İnşaat", olusturanPuan: 4.5, belgeler: [], odemeTuru: "30-gun", odemeGun: 30, kdvOrani: 0.20 },
-  { id: 6, yuk: "Elektronik Eşya", nereden: "İzmir", nereye: "İstanbul", ucret: 4583, sure: "~6 saat", tarih: "2026-05-11", aracTip: "50 NC Kamyon", aciklama: "Hassas elektronik ürünler. Sarsıntısız taşıma şart. Sigorta zorunlu.", istekSayisi: 0, durum: "aktif", olusturan: "Ege Elektronik", olusturanPuan: 4.3, belgeler: [], odemeTuru: "pesin", odemeGun: 0, kdvOrani: 0.20 },
-  { id: 7, yuk: "Tekstil", nereden: "Bursa", nereye: "İstanbul", ucret: 3500, sure: "~3 saat", tarih: "2026-05-12", aracTip: "Kamyonet", aciklama: "Hazır giyim malı. Su geçirmez kaplama tercih edilir.", istekSayisi: 0, durum: "aktif", olusturan: "Bursa Tekstil A.Ş.", olusturanPuan: 4.6, belgeler: [], odemeTuru: "7-gun", odemeGun: 7, kdvOrani: 0 },
+  { id: 1, yuk: "Kömür", nereden: "Antalya", nereye: "İzmir", ucret: 7083, sure: "~7 saat", tarih: "2026-05-06", arac_tip: "TIR", aciklama: "Antalya Liman'dan İzmir OSB'ye kömür. Sabah 08:00 yükleme.", istek_sayisi: 2, durum: "aktif", olusturan: "Mevlüt Taşımacılık A.Ş.", olusturanPuan: 4.8, belgeler: [], odame_turu: "pesin", odame_gun: 0, kdv_orani: 0.20, toplam_ucret: 8500, iban: "", iban_sahibi: "" },
+  { id: 2, yuk: "Çelik Boru", nereden: "Ankara", nereye: "Bursa", ucret: 5167, sure: "~5 saat", tarih: "2026-05-07", arac_tip: "10 Teker Açık", aciklama: "Flatbed veya lowbed TIR gerekli. Vinçli yükleme yapılacak.", istek_sayisi: 1, durum: "aktif", olusturan: "Kardeşler Çelik Ltd.", olusturanPuan: 4.6, belgeler: [], odame_turu: "7-gun", odame_gun: 7, kdv_orani: 0.20, toplam_ucret: 6200, iban: "", iban_sahibi: "" },
+  { id: 3, yuk: "Soğutmalı Gıda", nereden: "İstanbul", nereye: "Gaziantep", ucret: 9167, sure: "~12 saat", tarih: "2026-05-08", arac_tip: "10 Teker Tenteli", aciklama: "+4°C soğutmalı araç zorunlu. ATP belgeli kamyon şart. Gece vardiyası.", istek_sayisi: 3, durum: "aktif", olusturan: "Metro Gıda Lojistik", olusturanPuan: 4.9, belgeler: [], odame_turu: "15-gun", odame_gun: 15, kdv_orani: 0.20, toplam_ucret: 11000, iban: "", iban_sahibi: "" },
+  { id: 4, yuk: "Meyve (Portakal)", nereden: "Mersin", nereye: "Ankara", ucret: 6500, sure: "~6 saat", tarih: "2026-05-09", arac_tip: "Kırkayak Açık", aciklama: "Portakal yükü. Havalandırmalı araç tercih edilir. Erken sabah yükleme.", istek_sayisi: 0, durum: "aktif", olusturan: "Akdeniz Tarım A.Ş.", olusturanPuan: 4.7, belgeler: [], odame_turu: "pesin", odame_gun: 0, kdv_orani: 0, toplam_ucret: 6500, iban: "", iban_sahibi: "" },
+  { id: 5, yuk: "İnşaat Malzemesi", nereden: "Kocaeli", nereye: "Konya", ucret: 7667, sure: "~4 saat", tarih: "2026-05-10", arac_tip: "10 Teker Tenteli", aciklama: "Çakıl ve kum karışık yük. Damperli araç şart. Hafta içi her gün.", istek_sayisi: 1, durum: "aktif", olusturan: "Anadolu İnşaat", olusturanPuan: 4.5, belgeler: [], odame_turu: "30-gun", odame_gun: 30, kdv_orani: 0.20, toplam_ucret: 9200, iban: "", iban_sahibi: "" },
+  { id: 6, yuk: "Elektronik Eşya", nereden: "İzmir", nereye: "İstanbul", ucret: 4583, sure: "~6 saat", tarih: "2026-05-11", arac_tip: "50 NC Kamyon", aciklama: "Hassas elektronik ürünler. Sarsıntısız taşıma şart. Sigorta zorunlu.", istek_sayisi: 0, durum: "aktif", olusturan: "Ege Elektronik", olusturanPuan: 4.3, belgeler: [], odame_turu: "pesin", odame_gun: 0, kdv_orani: 0.20, toplam_ucret: 5500, iban: "", iban_sahibi: "" },
+  { id: 7, yuk: "Tekstil", nereden: "Bursa", nereye: "İstanbul", ucret: 3500, sure: "~3 saat", tarih: "2026-05-12", arac_tip: "Kamyonet", aciklama: "Hazır giyim malı. Su geçirmez kaplama tercih edilir.", istek_sayisi: 0, durum: "aktif", olusturan: "Bursa Tekstil A.Ş.", olusturanPuan: 4.6, belgeler: [], odame_turu: "7-gun", odame_gun: 7, kdv_orani: 0, toplam_ucret: 3500, iban: "", iban_sahibi: "" },
 ];
 
 const DEMO_SEFERLER = [
-  { id: 1, yuk: "Kömür Nakliyesi", nereden: "Antalya", nereye: "İzmir", ucret: 8200, tarih: "2026-04-28", plaka: "34 TYK 421", kamyoncu: "Mehmet Yılmaz", olusturan: "Mevlüt Taşımacılık A.Ş.", durum: "tamamlandı", teslimTarihi: "2026-04-28", belgeler: [{ ad: "İrsaliye.pdf", tip: "pdf", yuklenen: "Mehmet" }, { ad: "Makbuz.png", tip: "img", yuklenen: "Mehmet" }], odemeTarihi: null, odemeDurumu: "beklemede", iban: "TR 0000 0000 0000 0000 0000 00", ibanSahibi: "Mevlüt Taşımacılık A.Ş." },
-  { id: 2, yuk: "Çelik Boru", nereden: "Ankara", nereye: "Bursa", ucret: 6100, tarih: "2026-04-22", plaka: "06 ALK 99", kamyoncu: "Ali Kaya", olusturan: "Kardeşler Çelik Ltd.", durum: "tamamlandı", teslimTarihi: "2026-04-22", belgeler: [{ ad: "CMR.pdf", tip: "pdf", yuklenen: "Ali" }], odemeTarihi: null, odemeDurumu: "beklemede", iban: "TR 0000 0000 0000 0000 0000 00", ibanSahibi: "Kardeşler Çelik Ltd." },
-  { id: 3, yuk: "Soğutmalı Gıda", nereden: "İstanbul", nereye: "Gaziantep", ucret: 10500, tarih: "2026-04-15", plaka: "34 HSN 07", kamyoncu: "Hasan Tekin", olusturan: "Metro Gıda Lojistik", durum: "yolda", teslimTarihi: null, belgeler: [], odemeTarihi: null, odemeDurumu: "beklemede", iban: "", ibanSahibi: "" },
+  { id: 1, yuk: "Kömür Nakliyesi", nereden: "Antalya", nereye: "İzmir", ucret: 8200, tarih: "2026-04-28", plaka: "34 TYK 421", kamyoncu: "Mehmet Yılmaz", olusturan: "Mevlüt Taşımacılık A.Ş.", durum: "tamamlandı", teslim_tarihi: "2026-04-28", belgeler: [{ ad: "İrsaliye.pdf", tip: "pdf", yuklenen: "Mehmet" }, { ad: "Makbuz.png", tip: "img", yuklenen: "Mehmet" }], odame_tarihi: null, odame_durumu: "beklemede", odame_turu: "pesin", odame_gun: 0, iban: "TR 0000 0000 0000 0000 0000 00", iban_sahibi: "Mevlüt Taşımacılık A.Ş." },
+  { id: 2, yuk: "Çelik Boru", nereden: "Ankara", nereye: "Bursa", ucret: 6100, tarih: "2026-04-22", plaka: "06 ALK 99", kamyoncu: "Ali Kaya", olusturan: "Kardeşler Çelik Ltd.", durum: "tamamlandı", teslim_tarihi: "2026-04-22", belgeler: [{ ad: "CMR.pdf", tip: "pdf", yuklenen: "Ali" }], odame_tarihi: null, odame_durumu: "beklemede", odame_turu: "pesin", odame_gun: 0, iban: "TR 0000 0000 0000 0000 0000 00", iban_sahibi: "Kardeşler Çelik Ltd." },
+  { id: 3, yuk: "Soğutmalı Gıda", nereden: "İstanbul", nereye: "Gaziantep", ucret: 10500, tarih: "2026-04-15", plaka: "34 HSN 07", kamyoncu: "Hasan Tekin", olusturan: "Metro Gıda Lojistik", durum: "yolda", teslim_tarihi: null, belgeler: [], odame_tarihi: null, odame_durumu: "beklemede", odame_turu: "pesin", odame_gun: 0, iban: "", iban_sahibi: "" },
+];
+
+const DEMO_TEKLIFLER = [
+  { id: 1, ilan_id: 1, teklif_sahibi_id: 9001, tutar: 7000, ozellikler: {}, durum: "bekliyor", olusturma_zamani: "2026-04-25" },
+  { id: 2, ilan_id: 3, teklif_sahibi_id: 9002, tutar: 9500, ozellikler: {}, durum: "kabul_edildi", olusturma_zamani: "2026-04-26" },
 ];
 
 export const AppProvider = ({ children }) => {
   const mesajContext = useMesaj();
+  const [loading, setLoading] = useState(true);
+  const [demoDataLoaded, setDemoDataLoaded] = useState(false);
+
+  // Load initial data from Supabase on mount
+  useEffect(() => {
+    const loadInitialData = async () => {
+      if (!supabase) {
+        console.warn('⚠️ Supabase yok, Demo verisi yükleniyor');
+        // Demo verisi yükle - ancak sadece session yoksa
+        if (demoDataLoaded) return;
+        setDemoDataLoaded(true);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        let ilanlarData = null;
+        let seferlerData = null;
+        let tekliflerData = null;
+        let usersData = null;
+
+        // Fetch ilanlar
+        const { data: ilanlarRes, error: ilanlarError } = await supabase
+          .from('ilanlar')
+          .select('*')
+          .order('tarih', { ascending: false })
+          .limit(50);
+
+        if (!ilanlarError && ilanlarRes) {
+          console.log(`✅ ${ilanlarRes.length} ilan yüklendi`);
+          ilanlarData = ilanlarRes;
+        } else {
+          console.error('❌ İlanlar yüklenemedi, DEMO verisi yükleniyor');
+          ilanlarData = DEMO_ILANLAR;
+        }
+
+        // Fetch seferler
+        const { data: seferlerRes, error: seferlerError } = await supabase
+          .from('seferler')
+          .select('*')
+          .order('tarih', { ascending: false })
+          .limit(50);
+
+        if (!seferlerError && seferlerRes) {
+          console.log(`✅ ${seferlerRes.length} sefer yüklendi`);
+          seferlerData = seferlerRes;
+        } else {
+          console.error('❌ Seferler yüklenemedi, DEMO verisi yükleniyor');
+          seferlerData = DEMO_SEFERLER;
+        }
+
+        // Fetch teklifler
+        const { data: tekliflerRes, error: tekliflerError } = await supabase
+          .from('teklifler')
+          .select('*');
+
+        if (!tekliflerError && tekliflerRes) {
+          console.log(`✅ ${tekliflerRes.length} teklif yüklendi`);
+          tekliflerData = tekliflerRes;
+        } else {
+          console.error('❌ Teklifler yüklenemedi, DEMO verisi yükleniyor');
+          tekliflerData = DEMO_TEKLIFLER || [];
+        }
+
+        // Fetch users
+        const { data: usersRes, error: usersError } = await supabase
+          .from('users')
+          .select('*');
+
+        if (!usersError && usersRes) {
+          console.log(`✅ ${usersRes.length} kullanıcı yüklendi`);
+          usersData = usersRes;
+        } else {
+          console.error('❌ Kullanıcılar yüklenemedi');
+        }
+
+        // Set the fetched data
+        if (ilanlarData) setIlanlar(ilanlarData);
+        if (seferlerData) setSeferler(seferlerData);
+        if (tekliflerData) setTeklifler(tekliflerData);
+        if (usersData) setKullanicilar(usersData);
+
+        setDemoDataLoaded(true);
+      } catch (error) {
+        console.error('❌ Veri yüklenemedi:', error);
+        // Fallback: Demo verisi yükle
+        if (!demoDataLoaded) {
+          setIlanlar(DEMO_ILANLAR);
+          setSeferler(DEMO_SEFERLER);
+          setTeklifler(DEMO_TEKLIFLER);
+          setKullanicilar([]);
+          setDemoDataLoaded(true);
+        }
+      } finally {
+        // Timeout ile durumu tamamlıyoruz
+        setTimeout(() => {
+          setLoading(false);
+        }, 2000);
+      }
+    };
+
+    loadInitialData();
+  }, [demoDataLoaded, supabase]);
 
   useEffect(() => {
     initSupabase();
+
+    // Session'ı yükle
+    if (supabase && supabase.auth) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        console.log('🔐 Session yüklendi:', session ? '✅ Var' : '❌ Yok');
+        setLoading(false);
+      }).catch((error) => {
+        console.error('❌ Session yükleme hatası:', error);
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  // Realtime subscriptions
+  // Polling ile veri güncellemesi
   useEffect(() => {
-    if (supabase) {
-      subscribeToIlanlar();
-      subscribeToSeferler();
-      subscribeToTeklifler();
-      subscribeToConversations();
+    if (!supabase) {
+      console.warn('⚠️ Supabase yok, Polling başlatılamıyor')
+      return
     }
-  }, [supabase]);
+
+    console.log('📡 Polling başlatılıyor (3 saniyede bir kontrol)...')
+
+    const cleanup1 = subscribeToIlanlar()
+    const cleanup2 = subscribeToSeferler()
+    const cleanup3 = subscribeToTeklifler()
+    const cleanup4 = subscribeToConversations()
+
+    return () => {
+      cleanup1?.()
+      cleanup2?.()
+      cleanup3?.()
+      cleanup4?.()
+      console.log('🧹 Polling temizleniyor...')
+    }
+  }, [supabase])
 
   const [oturum, setOturum] = useState(null);
   const [kullanicilar, setKullanicilar] = useState([]);
-  const [ilanlar, setIlanlar] = useState(DEMO_ILANLAR);
-  const [seferler, setSeferler] = useState(DEMO_SEFERLER);
+  const [ilanlar, setIlanlar] = useState([]);
+  const [seferler, setSeferler] = useState([]);
   const [teklifler, setTeklifler] = useState([]);
 
   const [bildirimler, setBildirimler] = useState({
@@ -583,82 +721,115 @@ export const AppProvider = ({ children }) => {
   }, [kamyoncuBasvuru, ilanlar]);
 
   const subscribeToIlanlar = () => {
-    if (!supabase) return;
+    if (!supabase) return null;
 
-    supabase
-      .channel('ilanlar-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ilanlar' }, (payload) => {
-        console.log('Yeni ilan:', payload);
-        // Normalize data for display
-        const normalizedData = {
-          ...payload.new,
-          toplamUcret: payload.new.toplam_ucret,
-          kdvOrani: payload.new.kdv_orani,
-          kdvTutari: payload.new.kdv_tutari,
-          aracTip: payload.new.arac_tip,
-          odemeTuru: payload.new.odeme_turu,
-          odemeGun: payload.new.odeme_gun,
-          olusturanPuan: payload.new.olusturan?.puan || 5.0
-        };
-        setIlanlar(prev => [normalizedData, ...prev]);
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ilanlar' }, (payload) => {
-        const normalizedData = {
-          ...payload.new,
-          toplamUcret: payload.new.toplam_ucret,
-          kdvOrani: payload.new.kdv_orani,
-          kdvTutari: payload.new.kdv_tutari,
-          aracTip: payload.new.arac_tip,
-          odemeTuru: payload.new.odeme_turu,
-          odemeGun: payload.new.odeme_gun,
-          olusturanPuan: payload.new.olusturan?.puan || 5.0
-        };
-        setIlanlar(prev => prev.map(i => i.id === payload.new.id ? normalizedData : i));
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'ilanlar' }, (payload) => {
-        setIlanlar(prev => prev.filter(i => i.id !== payload.old.id));
-      })
-      .subscribe();
+    // Polling ile veri güncellemesi
+    const interval = setInterval(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('ilanlar')
+          .select('*')
+
+        if (error) throw error
+        if (data) {
+          // Normalize data for display
+          const normalizedData = data.map(item => ({
+            ...item,
+            toplamUcret: item.toplam_ucret,
+            kdvOrani: item.kdv_orani,
+            kdvTutari: item.kdv_tutari,
+            aracTip: item.arac_tip,
+            odemeTuru: item.odeme_turu,
+            odemeGun: item.odeme_gun,
+            olusturanPuan: item.olusturan?.puan || 5.0
+          }));
+          setIlanlar(normalizedData)
+          console.log('✅ İlanlar güncellendi (Polling)')
+        }
+      } catch (error) {
+        console.error('❌ İlanlar güncellemesi başarısız:', error)
+      }
+    }, 3000) // 3 saniyede bir kontrol et
+
+    return () => {
+      clearInterval(interval)
+      console.log('🧹 İlanlar Polling temizlendi')
+    }
   };
 
   const subscribeToSeferler = () => {
-    if (!supabase) return;
+    if (!supabase) return null;
 
-    supabase
-      .channel('seferler-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'seferler' }, (payload) => {
-        setSeferler(prev => [payload.new, ...prev]);
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'seferler' }, (payload) => {
-        setSeferler(prev => prev.map(s => s.id === payload.new.id ? payload.new : s));
-      })
-      .subscribe();
+    const interval = setInterval(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('seferler')
+          .select('*')
+
+        if (error) throw error
+        if (data) {
+          setSeferler(data)
+          console.log('✅ Seferler güncellendi (Polling)')
+        }
+      } catch (error) {
+        console.error('❌ Seferler güncellemesi başarısız:', error)
+      }
+    }, 3000)
+
+    return () => {
+      clearInterval(interval)
+      console.log('🧹 Seferler Polling temizlendi')
+    }
   };
 
   const subscribeToTeklifler = () => {
-    if (!supabase) return;
+    if (!supabase) return null;
 
-    supabase
-      .channel('teklifler-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'teklifler' }, (payload) => {
-        setTeklifler(prev => [...prev, payload.new]);
-      })
-      .subscribe();
+    const interval = setInterval(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('teklifler')
+          .select('*')
+
+        if (error) throw error
+        if (data) {
+          setTeklifler(data)
+          console.log('✅ Teklifler güncellendi (Polling)')
+        }
+      } catch (error) {
+        console.error('❌ Teklifler güncellemesi başarısız:', error)
+      }
+    }, 3000)
+
+    return () => {
+      clearInterval(interval)
+      console.log('🧹 Teklifler Polling temizlendi')
+    }
   };
 
   const subscribeToConversations = () => {
-    if (!supabase) return;
+    if (!supabase) return null;
 
-    supabase
-      .channel('conversations-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations' }, (payload) => {
-        console.log('Yeni konuşma:', payload);
-        setKonusmalar(prev => [payload.new, ...prev]);
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, (payload) => {
-        setKonusmalar(prev => prev.map(k => k.id === payload.new.id ? payload.new : k));
-      })
-      .subscribe();
+    const interval = setInterval(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('conversations')
+          .select('*')
+
+        if (error) throw error
+        if (data) {
+          console.log('✅ Konuşmalar güncellendi (Polling)')
+          setKonusmalar(data)
+        }
+      } catch (error) {
+        console.error('❌ Konuşmalar güncellemesi başarısız:', error)
+      }
+    }, 3000)
+
+    return () => {
+      clearInterval(interval)
+      console.log('🧹 Konuşmalar Polling temizlendi')
+    }
   };
 
   return (

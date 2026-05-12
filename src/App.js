@@ -32,16 +32,24 @@ function MobilApp() {
 
   // Oturum yüklendiğinde yukleniyor false yap
   useEffect(() => {
+    console.log("Oturum değişti:", oturum);
     if (oturum) {
       setYukleniyor(false);
       setSekme(oturum?.rol === "kamyoncu" ? "ilanlar" : "ilanver");
     }
   }, [oturum]);
 
-  if (!oturum) {
-    console.error("❌ Oturum yok!");
-    return <LoadingScreen />;
-  }
+  // Timeout fallback - en fazla 5 saniye bekler
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      console.log("Loading timeout - oturum null, boş ekran gösteriliyor");
+      if (yukleniyor) {
+        setYukleniyor(false);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
+  }, [yukleniyor]);
 
   if (yukleniyor) return <LoadingScreen />;
 
@@ -136,12 +144,15 @@ function ProfilIcContent({ defaultPath = "profil" }) {
 
 export default function App() {
   try {
+    console.log('🚀 Uygulama başlatılıyor...');
+    console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? '✓ Var' : '❌ Yok');
+
     return (
       <ErrorBoundary>
         <MesajProvider>
           <AppProvider>
             <Routes>
-              <Route path="/" element={<LoadingScreen />} />
+              <Route path="/" element={<GirisEkrani />} />
               <Route path="/app" element={<AppIcerigi />} />
               <Route path="/profil/bildirim" element={<ProfilIcContent defaultPath="bildirim" />} />
             </Routes>

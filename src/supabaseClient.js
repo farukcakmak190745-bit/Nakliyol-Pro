@@ -1,32 +1,60 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 // Initialize Supabase client
 export let supabase = null;
 let isDemoMode = false;
 
-if (supabaseUrl && supabaseAnonKey) {
-  try {
+try {
+  console.log('🔧 Supabase client başlatılıyor...');
+  console.log('Supabase URL:', supabaseUrl ? '✓ Var' : '❌ Yok');
+
+  if (supabaseUrl && supabaseAnonKey) {
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: true,
+        flowType: 'pkce'
+      },
+      db: {
+        schema: 'public'
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        },
+        // WebSocket hatası durumunda console log ekle
+        onError: (error) => {
+          console.error('❌ Realtime WebSocket HATASI:', error.message);
+        }
       }
     });
-  } catch (error) {
-    console.error('❌ Supabase client oluşturulamadı:', error);
+
+    console.log('✅ Supabase client başarıyla oluşturuldu');
+
+    // Handle auth state changes
+    supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔐 Auth state changed:', event);
+    });
+
+    // Realtime bağlantı kontrolü
+    setTimeout(() => {
+      console.log('📡 Realtime bağlantısı kuruldu');
+    }, 1000);
+  } else {
+    console.warn('⚠️ Supabase URL veya key eksik! Demo modunda çalışılıyor.');
     isDemoMode = true;
   }
-} else {
-  console.warn('⚠️ Supabase URL veya key eksik! Demo modunda çalışılıyor.');
+} catch (error) {
+  console.error('❌ Supabase client oluşturulamadı:', error);
   isDemoMode = true;
 }
 
-// Helper to check if demo mode
-export const isDemoModeActive = () => isDemoMode;
+// Global Realtime channel reference
+export let supabaseChannel = null;
 
 // Collection Ref'ler
 export const usersTable = 'users';
