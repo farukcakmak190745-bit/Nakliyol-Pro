@@ -1,7 +1,7 @@
 import { useApp } from "../context/AppContext";
 
-export const Header = ({ baslik, geri, sag }) => {
-  const { oturum } = useApp();
+export const Header = ({ baslik, geri, sag, cikisYap: handleCikisYap }) => {
+  const { oturum, cikisYap } = useApp();
   try {
     return (
       <div className="header">
@@ -15,9 +15,14 @@ export const Header = ({ baslik, geri, sag }) => {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {sag}
           {oturum && (
-            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--bg3)", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
-              {oturum.rol === "kamyoncu" ? "🚛" : "🏢"}
-            </div>
+            <>
+              <button onClick={() => handleCikisYap?.() || cikisYap()} style={{ color: "var(--text3)", fontSize: 13, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                Çıkış
+              </button>
+              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--bg3)", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
+                {oturum.rol === "kamyoncu" ? "🚛" : "🏢"}
+              </div>
+            </>
           )}
         </div>
       </div>

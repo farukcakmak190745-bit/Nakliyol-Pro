@@ -207,7 +207,13 @@ export default function GirisEkrani() {
       aracTip: bilgiler.aracTip || "TIR / Kapalı Kasa",
       secilenTonaj: "20",
     };
-    kayitOl(kayitBilgileri);
+    kayitOl(kayitBilgileri).then(() => {
+      // Kayıt başarılı olursa ekranı ana ekrana dön
+      setEkran("ana");
+    }).catch(error => {
+      console.error("Kayıt hatası:", error);
+      alert("Kayıt başarısız: " + error.message);
+    });
   };
 
   const handleGiris = async () => {

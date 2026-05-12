@@ -92,18 +92,18 @@ function MobilApp() {
 
   return (
     <div className="app-shell">
-      <Header />
+      <Header cikisYap={cikisYap} />
       <div>{sayfa}</div>
       <BottomNav aktif={sekme} setAktif={setSekme} rol={oturum.rol} />
     </div>
   );
 }
 
-function AppIcerigi() {
+function AppIceriki({ cikisYap }) {
   const { oturum } = useApp();
 
   if (!oturum) {
-    console.error("❌ AppIcerigi - Oturum yok!");
+    console.error("❌ AppIceriki - Oturum yok!");
     return <div style={{ padding: 40, textAlign: 'center', color: 'red' }}>Oturum bilgisi yüklenemedi. Giriş yapılıyor...</div>;
   }
 
@@ -143,6 +143,7 @@ function ProfilIcContent({ defaultPath = "profil" }) {
 }
 
 export default function App() {
+  const { cikisYap } = useApp();
   try {
     console.log('🚀 Uygulama başlatılıyor...');
     console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? '✓ Var' : '❌ Yok');
@@ -153,7 +154,7 @@ export default function App() {
           <AppProvider>
             <Routes>
               <Route path="/" element={<GirisEkrani />} />
-              <Route path="/app" element={<AppIcerigi />} />
+              <Route path="/app" element={<AppIceriki cikisYap={cikisYap} />} />
               <Route path="/profil/bildirim" element={<ProfilIcContent defaultPath="bildirim" />} />
             </Routes>
           </AppProvider>
