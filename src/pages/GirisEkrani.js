@@ -193,7 +193,7 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
 };
 
 export default function GirisEkrani() {
-  const { kayitOl } = useApp();
+  const { kayitOl, girisYap } = useApp();
   const navigate = useNavigate();
   const [ekran, setEkran] = useState("ana");
   const [secRol, setSecRol] = useState(null);
