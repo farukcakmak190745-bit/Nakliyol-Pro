@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
-import supabase from "../lib/supabase";
+import { supabase } from "../supabaseClient";
 import { useMesaj } from "./MesajContext";
 
 let supabaseInitialized = false;
@@ -148,17 +148,40 @@ export const AppProvider = ({ children }) => {
 
     // Session'ı yükle
     if (supabase && supabase.auth) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
         console.log('🔐 Session yüklendi:', session ? '✅ Var' : '❌ Yok');
+
+        if (session) {
+          try {
+            // Güncel user verisini çek
+            const { data: userData, error } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+
+            if (error) {
+              console.error('User fetch error after session load:', error);
+              // Session var ama user yoksa oturumu temizle
+              await supabase.auth.signOut();
+            } else if (userData) {
+              setOturum(userData);
+            }
+          } catch (err) {
+            console.error('Error fetching user after session load:', err);
+          }
+        }
+
         setLoading(false);
       }).catch((error) => {
         console.error('❌ Session yükleme hatası:', error);
         setLoading(false);
       });
     } else {
+      console.warn('⚠️ Supabase client yok, Demo modu');
       setLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
   // Polling ile veri güncellemesi
   useEffect(() => {
@@ -223,33 +246,125 @@ export const AppProvider = ({ children }) => {
       }
 
       // Telefon numarasına göre önce user olup olmadığına bak
-      const { data: existingUser } = await supabase
+      const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('*')
         .eq('telefon', telefon)
-        .single();
+        .maybeSingle();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw new Error("Kullanıcı kontrol hatası: " + checkError.message);
+      }
 
       if (existingUser) {
         throw new Error("Bu telefon numarası ile zaten kayıtlısınız.");
       }
 
-      let userId = Date.now();
-
       // Email olarak telefon numarasını kullan
-      const email = `${telefon}@demo.com`;
+      const email = `${telefon}@nakliyol.com`;
 
-      // 1. First try to create user in Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password
-      });
+      let userId = null;
+      let authSession = null;
 
-      if (authError) {
-        console.warn("⚠️ Supabase Auth hatası (rate limit olabilir):", authError.message);
+      try {
+        // 1. First try to create user in Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email,
+          password
+        });
 
-        if (authError.message.includes("rate limit")) {
-          // Rate limit varsa local'e kayıt yap, auth'a gerek yok
+        if (authError) {
+          console.warn("⚠️ Supabase Auth hatası:", authError.message);
+
+          if (authError.message.includes("rate limit")) {
+            // Rate limit varsa kullanıcı oluştur ama auth olmadan
+            const { data: userData, error: userError } = await supabase.from('users').insert([{
+              email: email,
+              role: bilgiler.rol || "issiz",
+              ad: bilgiler.ad,
+              tc_kimlik: bilgiler.tcKimlik,
+              telefon: telefon
+            }]).select().single();
+
+            if (userError) throw new Error("Kayıt hatası: " + userError.message);
+
+            await supabase.from('user_roles').insert([{
+              user_id: userData.id
+            }]);
+
+            userId = userData.id;
+            console.log("✅ Local kayıt başarılı (Auth rate limit dolu)");
+          } else if (authError.message.includes("already registered") || authError.message.includes("User already registered")) {
+            // Email zaten var, önce users tablosundan bulalım
+            const { data: existingUser } = await supabase
+              .from('users')
+              .select('*')
+              .eq('email', email)
+              .maybeSingle();
+
+            if (existingUser) {
+              userId = existingUser.id;
+              // Email ile giriş yap
+              const { data: authUser, error: signInError } = await supabase.auth.signInWithPassword({
+                email,
+                password
+              });
+
+              if (signInError) {
+                throw new Error("Şifre yanlış. Lütfen kontrol edin.");
+              }
+
+              if (authUser?.session) {
+                authSession = authUser.session;
+                // User bilgilerini güncelle
+                await supabase.from('users').update({
+                  role: bilgiler.rol || "issiz",
+                  ad: bilgiler.ad,
+                  tc_kimlik: bilgiler.tcKimlik
+                }).eq('id', userId);
+              } else {
+                throw new Error("Giriş başarısız. Lütfen kontrol edin.");
+              }
+            } else {
+              // Users tablosunda yok ama auth'da var - onu oluştur
+              const { data: authUser } = await supabase.auth.signInWithPassword({
+                email,
+                password
+              });
+
+              if (authUser?.session) {
+                userId = authUser.user.id;
+                authSession = authUser.session;
+
+                const { error: insertError } = await supabase.from('users').insert([{
+                  id: userId,
+                  email: email,
+                  role: bilgiler.rol || "issiz",
+                  ad: bilgiler.ad,
+                  tc_kimlik: bilgiler.tcKimlik,
+                  telefon: telefon
+                }]).select().single();
+
+                if (insertError) throw insertError;
+
+                await supabase.from('user_roles').insert([{
+                  user_id: userId
+                }]);
+              } else {
+                throw new Error("Giriş başarısız. Lütfen kontrol edin.");
+              }
+            }
+          } else {
+            throw new Error("Kayıt hatası: " + authError.message);
+          }
+        } else {
+          // Auth başarılı
+          userId = authData.user?.id;
+          authSession = authData.session;
+
+          // 2. Then insert user data to users table
           const { data: userData, error: userError } = await supabase.from('users').insert([{
+            id: userId,
             email: email,
             role: bilgiler.rol || "issiz",
             ad: bilgiler.ad,
@@ -257,95 +372,61 @@ export const AppProvider = ({ children }) => {
             telefon: telefon
           }]).select().single();
 
-          if (userError) throw userError;
+          if (userError) {
+            console.error("Kullanıcı tablosu hatası, devam etmeyi dene:", userError);
+            // Kullanıcı tablosunda hata olsa bile devam et
+          }
 
-          await supabase.from('user_roles').insert([{
-            user_id: userData.id
+          // 3. Create user role
+          const { error: roleError } = await supabase.from('user_roles').insert([{
+            user_id: userId
           }]);
 
-          userId = userData.id;
-          console.log("✅ Local kayıt başarılı (Auth rate limit dolu)");
-        } else if (authError.message.includes("already registered")) {
-          // Email zaten var, önce users tablosundan bulalım
-          const { data: existingUser } = await supabase
-            .from('users')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-          if (existingUser) {
-            userId = existingUser.id;
-            // Email ile giriş yap
-            const { data: authUser } = await supabase.auth.signInWithPassword({
-              email,
-              password
-            });
-
-            if (authUser?.session) {
-              setOturum(existingUser);
-              return existingUser;
-            } else {
-              throw new Error("Şifre yanlış.");
-            }
-          } else {
-            throw authError;
+          if (roleError) {
+            console.error("Kullanıcı rolü hatası, devam etmeyi dene:", roleError);
           }
-        } else {
-          throw authError;
+
+          console.log("✅ Auth ve database kayıtları oluşturuldu");
         }
-      } else {
-        // Auth başarılı
-        userId = authData.user?.id || Date.now();
-
-        // 2. Then insert user data to users table
-        const { data: userData, error: userError } = await supabase.from('users').insert([{
-          id: userId,
-          email: email,
-          role: bilgiler.rol || "issiz",
-          ad: bilgiler.ad,
-          tc_kimlik: bilgiler.tcKimlik,
-          telefon: telefon
-        }]).select().single();
-
-        if (userError) throw userError;
-
-        // 3. Create user role
-        await supabase.from('user_roles').insert([{
-          user_id: userData.id
-        }]);
-
-        console.log("✅ Auth ve database kayıtları oluşturuldu");
+      } catch (authError) {
+        console.error("Auth işlemi hatası:", authError);
+        throw authError;
       }
 
-      // Son kullanıcıyı çek
-      const { data: finalUser } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      // Son kullanıcıyı çek veya oturumu kullan
+      let finalUser;
 
-      if (!finalUser) {
-        // Local'de oluşturulduysa manuel oluştur
-        setOturum({
+      if (userId && authSession) {
+        // Session varsa doğrudan oturumu kullan
+        finalUser = {
           id: userId,
           email: email,
           role: bilgiler.rol || "issiz",
           ad: bilgiler.ad,
           tc_kimlik: bilgiler.tcKimlik,
-          telefon: telefon
-        });
-        return {
-          id: userId,
-          email: email,
-          role: bilgiler.rol || "issiz",
-          ad: bilgiler.ad,
-          tc_kimlik: bilgiler.tcKimlik,
-          telefon: telefon
+          telefon: telefon,
+          session: authSession
         };
+        setOturum(finalUser);
+        console.log("✅ Kayıt başarılı ve oturum oluşturuldu");
+        return finalUser;
+      } else if (userId) {
+        // Sadece user var
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (userData) {
+          finalUser = userData;
+          setOturum(userData);
+          console.log("✅ Kayıt başarılı (sadece user var)");
+          return userData;
+        }
       }
 
-      setOturum(finalUser);
-      return finalUser;
+      throw new Error("Kullanıcı oluşturulamadı. Lütfen daha sonra tekrar deneyin.");
     } catch (error) {
       console.error("Kayıt hatası:", error);
       throw error;
@@ -354,23 +435,37 @@ export const AppProvider = ({ children }) => {
 
   const girisYap = useCallback(async (telefon, sifre) => {
     if (!supabase) {
-      setOturum({ id: Date.now(), email: telefon + '@demo.com', ad: telefon.split('@')[0], role: 'issiz' });
+      console.warn("⚠️ Supabase yok, Demo modu aktif");
+      setOturum({
+        id: Date.now(),
+        email: `${telefon}@demo.com`,
+        ad: telefon.split('@')[0] || "Demo",
+        role: 'issiz',
+        telefon: telefon
+      });
       return;
     }
 
     try {
+      console.log("🔐 Giriş başlatılıyor:", telefon);
+
       // Önce telefon numarasına göre kullanıcıyı bul
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('telefon', telefon)
-        .single();
+        .maybeSingle();
 
       if (userError) {
         if (userError.code === 'PGRST116') {
           throw new Error("Telefon numarası kayıtlı değil. Önce kayıt olun.");
         }
-        throw userError;
+        console.error("User fetch hatası:", userError);
+        throw new Error("Kullanıcı bulunamadı. Lütfen kontrol edin.");
+      }
+
+      if (!userData) {
+        throw new Error("Telefon numarası kayıtlı değil. Önce kayıt olun.");
       }
 
       const email = userData.email;
@@ -383,11 +478,25 @@ export const AppProvider = ({ children }) => {
 
       if (error) {
         console.error("Supabase Auth hatası:", error);
-        if (error.message.includes("Invalid login credentials")) {
-          throw new Error("Şifre yanlış. Lütfen kontrol edin.");
+
+        if (error.message.includes("Invalid login credentials") ||
+            error.message.includes("Invalid API key") ||
+            error.message.includes("User not found")) {
+          throw new Error("Telefon numarası veya şifre yanlış. Lütfen kontrol edin.");
         }
+
+        if (error.message.includes("Email not confirmed")) {
+          throw new Error("E-posta adresi doğrulanmamış. Lütfen e-posta onayını kontrol edin.");
+        }
+
         throw new Error("Giriş başarısız: " + error.message);
       }
+
+      if (!data || !data.session || !data.user) {
+        throw new Error("Oturum oluşturulamadı. Lütfen daha sonra tekrar deneyin.");
+      }
+
+      console.log("✅ Giriş başarılı, session:", data.session.access_token ? "var" : "yok");
 
       // Güncel user verisini al (supabase'den gelen fresh data)
       const { data: freshUserData, error: freshError } = await supabase
@@ -398,22 +507,48 @@ export const AppProvider = ({ children }) => {
 
       if (freshError) {
         console.error("User data fetch hatası:", freshError);
-        throw freshError;
+        // Session varsa user bilgilerini kullan, yoksa devam et
       }
 
-      setOturum(freshUserData);
-      return freshUserData;
+      if (freshUserData) {
+        setOturum(freshUserData);
+        return freshUserData;
+      }
+
+      // Session varsa oturumu oluştur
+      setOturum({
+        ...data.user,
+        role: userData.role,
+        ad: userData.ad,
+        tc_kimlik: userData.tc_kimlik,
+        email: email,
+        session: data.session
+      });
+      return { ...data.user, role: userData.role };
+
     } catch (error) {
       console.error("Giriş hatası:", error);
       throw error;
     }
-  }, []);
+  }, [supabase]);
 
   const cikisYap = useCallback(async () => {
-    if (supabase) {
-      await supabase.auth.signOut();
+    try {
+      if (supabase) {
+        console.log('🔐 Çıkış yapılıyor...');
+        await supabase.auth.signOut();
+        console.log('✅ Çıkış başarılı');
+      }
+      setOturum(null);
+      // Session yenileme
+      if (window.location.pathname !== '/') {
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Çıkış hatası:', error);
+      // Hata olsa bile oturumu temizle
+      setOturum(null);
     }
-    setOturum(null);
     }, [supabase]);
 
   const sifreSifirla = useCallback(async (email) => {
