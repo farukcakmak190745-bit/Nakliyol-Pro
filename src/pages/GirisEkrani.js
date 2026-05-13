@@ -104,7 +104,6 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
             <input className="input" placeholder="Mehmet" value={form.ad} onChange={e => set("ad", e.target.value)} />
             <Hata alan="ad" />
             <Hata alan="soyad" />
-            <Hata alan="ad" />
           </div>
           <div>
             <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>SOYAD <span style={{ color: "#ea580c" }}>*</span></label>

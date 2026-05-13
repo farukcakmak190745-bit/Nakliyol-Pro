@@ -23,7 +23,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   const [konusmaBitti, setKonusmaBitti] = useState(false);
   const messageContainerRef = useRef(null);
 
-  const konusma = konusmalar.find(k => k.id === konusmaId);
+  const konusma = konusmalar?.find(k => k.id === konusmaId);
   const isBenKamyoncu = oturum?.rol === "kamyoncu";
   const partnerAd = konusma?.partnerAd || "";
   const partnerRol = konusma?.partnerRol || "";
@@ -89,6 +89,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   );
 
   const dosyaYukle = async (e) => {
+    if (!dosyaYukle) return; // dosyaYukle fonksiyonu tanımlı mı?
     const dosya = e.target.files[0];
     if (!dosya) return;
 

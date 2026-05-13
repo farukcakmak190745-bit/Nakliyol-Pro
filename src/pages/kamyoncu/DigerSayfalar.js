@@ -142,7 +142,7 @@ export function MesajlarSayfasi({ onGeri }) {
   const [secili, setSecili] = useState(null);
 
   if (secili) {
-    const konusma = konusmalar.find(k => k.id === secili);
+    const konusma = konusmalar?.find(k => k.id === secili);
     if (!konusma) {
       console.log("Konuşma bulunamadı, çıkılıyor:", secili);
       setSecili(null);
