@@ -61,7 +61,7 @@ const SMSDogrula = ({ telefon, onDogrulandi, onGeri }) => {
 // Kayıt formu
 const KayitFormu = ({ rol, onGeri, onTamam }) => {
   const [adim, setAdim] = useState(1);
-  const [form, setForm] = useState({ ad: "", telefon: "", tc: "", sifre: "", sifre2: "", aracTip: "", plaka: "", firmaAdi: "", vergiNo: "" });
+  const [form, setForm] = useState({ ad: "", soyad: "", telefon: "", tc: "", sifre: "", sifre2: "", aracTip: "", plaka: "", firmaAdi: "", vergiNo: "" });
   const [hatalar, setHatalar] = useState({});
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -103,6 +103,8 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
             <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>AD <span style={{ color: "#ea580c" }}>*</span></label>
             <input className="input" placeholder="Mehmet" value={form.ad} onChange={e => set("ad", e.target.value)} />
             <Hata alan="ad" />
+            <Hata alan="soyad" />
+            <Hata alan="ad" />
           </div>
           <div>
             <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>SOYAD <span style={{ color: "#ea580c" }}>*</span></label>
@@ -121,7 +123,6 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
         <div style={{ marginTop: 12 }}>
           <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>TC KİMLİK NO <span style={{ color: "#ea580c" }}>*</span></label>
           <input className="input" placeholder="xxxxxxxxxxx" maxLength={11} value={form.tc} onChange={e => set("tc", e.target.value.replace(/\D/g, ""))} />
-          <Hata alan="tc" />
         </div>
       </div>
 
@@ -200,6 +201,8 @@ export default function GirisEkrani() {
   const [girisForm, setGirisForm] = useState({ telefon: "", sifre: "" });
 
   const handleKayit = (bilgiler) => {
+    console.log("🔍 Kayıt bilgileri:", bilgiler);
+    console.log("🔍 Rol:", bilgiler.rol);
     // Demo kullanıcı için tonaj varsayılan değer
     const kayitBilgileri = {
       ...bilgiler,
@@ -207,6 +210,7 @@ export default function GirisEkrani() {
       aracTip: bilgiler.aracTip || "TIR / Kapalı Kasa",
       secilenTonaj: "20",
     };
+    console.log("🔍 Gönderilen bilgiler:", kayitBilgileri);
     kayitOl(kayitBilgileri).then(() => {
       // Kayıt başarılı olursa ekranı ana ekrana dön
       setEkran("ana");

@@ -184,7 +184,7 @@ export default function IlanlarSayfasi() {
                     value={secilenBasvuru?.bilgiler?.ad || ""}
                     onChange={e => setSecilenBasvuru(p => ({
                       ...p,
-                      bilgiler: { ad: e.target.value, tel: p?.bilgiler?.tel || "", dorsePlaka: p?.bilgiler?.dorsePlaka || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", tcKimlik: p?.bilgiler?.tcKimlik || "" }
+                      bilgiler: { ad: e.target.value, tel: p?.bilgiler?.tel || "", dorsePlaka: p?.bilgiler?.dorsePlaka || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", tc_kimlik: p?.bilgiler?.tc_kimlik || "" }
                     }))}
                     style={{
                       padding: "16px 14px 16px 50px",
@@ -214,7 +214,7 @@ export default function IlanlarSayfasi() {
                     value={secilenBasvuru?.bilgiler?.tel || ""}
                     onChange={e => setSecilenBasvuru(p => ({
                       ...p,
-                      bilgiler: { ad: p?.bilgiler?.ad || "", tel: e.target.value, dorsePlaka: p?.bilgiler?.dorsePlaka || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", tcKimlik: p?.bilgiler?.tcKimlik || "" }
+                      bilgiler: { ad: p?.bilgiler?.ad || "", tel: e.target.value, dorsePlaka: p?.bilgiler?.dorsePlaka || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", tc_kimlik: p?.bilgiler?.tc_kimlik || "" }
                     }))}
                     style={{
                       padding: "16px 14px 16px 50px",
@@ -247,7 +247,7 @@ export default function IlanlarSayfasi() {
                     value={secilenBasvuru?.bilgiler?.cekiciPlaka || ""}
                     onChange={e => setSecilenBasvuru(p => ({
                       ...p,
-                      bilgiler: { ad: p?.bilgiler?.ad || "", tel: p?.bilgiler?.tel || "", cekiciPlaka: e.target.value, dorsePlaka: p?.bilgiler?.dorsePlaka || "", tcKimlik: p?.bilgiler?.tcKimlik || "" }
+                      bilgiler: { ad: p?.bilgiler?.ad || "", tel: p?.bilgiler?.tel || "", cekiciPlaka: e.target.value, dorsePlaka: p?.bilgiler?.dorsePlaka || "", tc_kimlik: p?.bilgiler?.tc_kimlik || "" }
                     }))}
                     style={{
                       padding: "16px 14px 16px 50px",
@@ -277,7 +277,7 @@ export default function IlanlarSayfasi() {
                     value={secilenBasvuru?.bilgiler?.dorsePlaka || ""}
                     onChange={e => setSecilenBasvuru(p => ({
                       ...p,
-                      bilgiler: { ad: p?.bilgiler?.ad || "", tel: p?.bilgiler?.tel || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", dorsePlaka: e.target.value, tcKimlik: p?.bilgiler?.tcKimlik || "" }
+                      bilgiler: { ad: p?.bilgiler?.ad || "", tel: p?.bilgiler?.tel || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", dorsePlaka: e.target.value, tc_kimlik: p?.bilgiler?.tc_kimlik || "" }
                     }))}
                     style={{
                       padding: "16px 14px 16px 50px",
@@ -306,10 +306,10 @@ export default function IlanlarSayfasi() {
                 <input
                   type="text"
                   placeholder="TC Kimlik No *"
-                  value={secilenBasvuru?.bilgiler?.tcKimlik || ""}
+                  value={secilenBasvuru?.bilgiler?.tc_kimlik || ""}
                   onChange={e => setSecilenBasvuru(p => ({
                     ...p,
-                    bilgiler: { ad: p?.bilgiler?.ad || "", tel: p?.bilgiler?.tel || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", dorsePlaka: p?.bilgiler?.dorsePlaka || "", tcKimlik: e.target.value }
+                    bilgiler: { ad: p?.bilgiler?.ad || "", tel: p?.bilgiler?.tel || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", dorsePlaka: p?.bilgiler?.dorsePlaka || "", tc: e.target.value }
                   }))}
                   style={{
                     width: "100%",
@@ -372,7 +372,7 @@ export default function IlanlarSayfasi() {
                 </button>
                 <button
                   onClick={() => {
-                    if (!secilenBasvuru?.bilgiler?.ad || !secilenBasvuru?.bilgiler?.tel || !secilenBasvuru?.bilgiler?.cekiciPlaka || !secilenBasvuru?.bilgiler?.dorsePlaka || !secilenBasvuru?.bilgiler?.tcKimlik) {
+                    if (!secilenBasvuru?.bilgiler?.ad || !secilenBasvuru?.bilgiler?.tel || !secilenBasvuru?.bilgiler?.cekiciPlaka || !secilenBasvuru?.bilgiler?.dorsePlaka || !secilenBasvuru?.bilgiler?.tc_kimlik) {
                       alert("Lütfen tüm zorunlu alanları doldurun!");
                       return;
                     }
@@ -381,7 +381,7 @@ export default function IlanlarSayfasi() {
                       tel: secilenBasvuru.bilgiler.tel,
                       cekiciPlaka: secilenBasvuru.bilgiler.cekiciPlaka,
                       dorsePlaka: secilenBasvuru.bilgiler.dorsePlaka,
-                      tcKimlik: secilenBasvuru.bilgiler.tcKimlik,
+                      tc_kimlik: secilenBasvuru.bilgiler.tc_kimlik,
                     });
                     setSecilenBasvuru(null);
                     alert("Başvurunuz gönderildi! İşveren onay bekliyor.");

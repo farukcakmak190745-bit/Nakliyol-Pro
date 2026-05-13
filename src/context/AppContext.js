@@ -224,9 +224,23 @@ export const AppProvider = ({ children }) => {
   const [konusmalar, setKonusmalar] = useState([]);
 
   const kayitOl = useCallback(async (bilgiler) => {
+    console.log("📥 kayitOl fonksiyonuna gelen bilgiler:", bilgiler);
+    console.log("🎭 Rol kontrolü:", bilgiler.rol, typeof bilgiler.rol);
+
+    if (!bilgiler.rol) {
+      console.error("❌ Rol bilgisi eksik!");
+      throw new Error("Rol bilgisi eksik. Lütfen kayıt olurken rol seçin.");
+    }
+
     if (!supabase) {
       console.warn("⚠️ Supabase kurulumu yapılmadı. Demo modu aktif.");
-      const yeniKullanici = { ...bilgiler, id: Date.now(), kayitTarihi: new Date().toISOString().split("T")[0], puan: 0, durum: "aktif" };
+      const yeniKullanici = {
+        ...bilgiler,
+        id: Date.now(),
+        kayitTarihi: new Date().toISOString().split("T")[0],
+        puan: 0,
+        durum: "aktif"
+      };
       setKullanicilar(prev => [...prev, yeniKullanici]);
       setOturum(yeniKullanici);
       return yeniKullanici;
@@ -236,6 +250,12 @@ export const AppProvider = ({ children }) => {
       // Sadece telefon ve şifre form'dan geliyor
       const telefon = bilgiler.telefon;
       const password = bilgiler.sifre; // Kullanıcı formdan girdiği şifre
+
+      console.log("📱 Telefon:", telefon);
+      console.log("🔑 Şifre:", password ? "✓ Set" : "✗ Boş");
+      console.log("👤 Ad:", bilgiler.ad);
+      console.log("🆔 TC:", bilgiler.tc_kimlik);
+      console.log("🎭 Rol:", bilgiler.rol, typeof bilgiler.rol);
 
       if (!telefon || telefon.length < 10) {
         throw new Error("Geçerli telefon numarası girin");
@@ -282,15 +302,11 @@ export const AppProvider = ({ children }) => {
               email: email,
               role: bilgiler.rol || "issiz",
               ad: bilgiler.ad,
-              tc_kimlik: bilgiler.tcKimlik,
+              tc_kimlik: bilgiler.tc,
               telefon: telefon
             }]).select().single();
 
             if (userError) throw new Error("Kayıt hatası: " + userError.message);
-
-            await supabase.from('user_roles').insert([{
-              user_id: userData.id
-            }]);
 
             userId = userData.id;
             console.log("✅ Local kayıt başarılı (Auth rate limit dolu)");
@@ -304,6 +320,9 @@ export const AppProvider = ({ children }) => {
 
             if (existingUser) {
               userId = existingUser.id;
+              console.log("✅ Kullanıcı mevcut, ID:", userId);
+              console.log("🎭 Mevcut rol:", existingUser.role);
+
               // Email ile giriş yap
               const { data: authUser, error: signInError } = await supabase.auth.signInWithPassword({
                 email,
@@ -316,12 +335,47 @@ export const AppProvider = ({ children }) => {
 
               if (authUser?.session) {
                 authSession = authUser.session;
-                // User bilgilerini güncelle
-                await supabase.from('users').update({
-                  role: bilgiler.rol || "issiz",
-                  ad: bilgiler.ad,
-                  tc_kimlik: bilgiler.tcKimlik
-                }).eq('id', userId);
+
+                // User rolünü kontrol et, yoksa Supabase'den tekrar çek
+                if (!existingUser.role) {
+                  console.log("⚠️ Rol boş, Supabase'den yeniden çekiliyor...");
+                  const { data: freshUser } = await supabase
+                    .from('users')
+                    .select('role, ad, tc_kimlik, telefon')
+                    .eq('id', userId)
+                    .single();
+
+                  if (freshUser && freshUser.role) {
+                    setOturum({
+                      id: userId,
+                      email: freshUser.email || email,
+                      role: freshUser.role,
+                      ad: freshUser.ad || bilgiler.ad,
+                      tc_kimlik: freshUser.tc_kimlik || bilgiler.tc,
+                      telefon: freshUser.telefon || telefon
+                    });
+                    console.log("✅ Rol güncellendi:", freshUser.role);
+                  } else {
+                    // Veritabanında rol yoksa kullanıcı kaydet
+                    await supabase.from('users').update({
+                      role: bilgiler.rol || "issiz",
+                      ad: bilgiler.ad,
+                      tc_kimlik: bilgiler.tc
+                    }).eq('id', userId);
+                    console.log("✅ Rol Supabase'e kaydedildi:", bilgiler.rol);
+                  }
+                } else {
+                  // Mevcut rolü kullan
+                  setOturum({
+                    id: userId,
+                    email: existingUser.email || email,
+                    role: existingUser.role,
+                    ad: existingUser.ad || bilgiler.ad,
+                    tc_kimlik: existingUser.tc_kimlik || bilgiler.tc,
+                    telefon: existingUser.telefon || telefon
+                  });
+                  console.log("✅ Mevcut rol kullanılıyor:", existingUser.role);
+                }
               } else {
                 throw new Error("Giriş başarısız. Lütfen kontrol edin.");
               }
@@ -341,15 +395,11 @@ export const AppProvider = ({ children }) => {
                   email: email,
                   role: bilgiler.rol || "issiz",
                   ad: bilgiler.ad,
-                  tc_kimlik: bilgiler.tcKimlik,
+                  tc_kimlik: bilgiler.tc,
                   telefon: telefon
                 }]).select().single();
 
                 if (insertError) throw insertError;
-
-                await supabase.from('user_roles').insert([{
-                  user_id: userId
-                }]);
               } else {
                 throw new Error("Giriş başarısız. Lütfen kontrol edin.");
               }
@@ -368,26 +418,35 @@ export const AppProvider = ({ children }) => {
             email: email,
             role: bilgiler.rol || "issiz",
             ad: bilgiler.ad,
-            tc_kimlik: bilgiler.tcKimlik,
+            tc_kimlik: bilgiler.tc,
             telefon: telefon
           }]).select().single();
+
+          console.log("💾 Veritabanına kaydedilen veri:", userData);
+          console.log("🎭 Kaydedilen rol:", userData?.role);
 
           if (userError) {
             console.error("Kullanıcı tablosu hatası, devam etmeyi dene:", userError);
             // Kullanıcı tablosunda hata olsa bile devam et
           }
 
-          // 3. Create user role
-          const { error: roleError } = await supabase.from('user_roles').insert([{
-            user_id: userId
-          }]);
-
-          if (roleError) {
-            console.error("Kullanıcı rolü hatası, devam etmeyi dene:", roleError);
-          }
-
           console.log("✅ Auth ve database kayıtları oluşturuldu");
         }
+          // Kayıttan sonra Supabase'den son kullanıcıyı çek ve rolü kontrol et
+          try {
+            const { data: freshUserData } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', userId)
+              .single();
+
+            if (freshUserData && freshUserData.role) {
+              setOturum(freshUserData);
+              return freshUserData;
+            }
+          } catch (error) {
+            console.error("Kayıt sonrası kullanıcı çekme hatası:", error);
+          }
       } catch (authError) {
         console.error("Auth işlemi hatası:", authError);
         throw authError;
@@ -397,13 +456,30 @@ export const AppProvider = ({ children }) => {
       let finalUser;
 
       if (userId && authSession) {
-        // Session varsa doğrudan oturumu kullan
+        // Kayıttan önce Supabase'den son kullanıcıyı çek ve doğru rolü kullan
+        try {
+          const { data: freshUserData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+          if (freshUserData && freshUserData.role) {
+            finalUser = freshUserData;
+            setOturum(freshUserData);
+            return freshUserData;
+          }
+        } catch (error) {
+          console.error("Son kullanıcı çekme hatası:", error);
+        }
+
+        // Eğer Supabase'de yoksa kaydettiğimiz veriyi kullan
         finalUser = {
           id: userId,
           email: email,
           role: bilgiler.rol || "issiz",
           ad: bilgiler.ad,
-          tc_kimlik: bilgiler.tcKimlik,
+          tc_kimlik: bilgiler.tc,
           telefon: telefon,
           session: authSession
         };
@@ -676,7 +752,7 @@ export const AppProvider = ({ children }) => {
       dorse_plaka: kamyoncu?.dorsePlaka || "",
       kamyoncu: kamyoncu?.ad || kamyoncu || "",
       kamyoncu_tel: kamyoncu?.tel || "",
-      kamyoncu_tc: kamyoncu?.tcKimlik || "",
+      kamyoncu_tc: kamyoncu?.tc_kimlik || "",
       olusturan: ilan.olusturan,
       olusturan_id: ilan.olusturan_id,
       durum: "yolda",
@@ -893,7 +969,7 @@ export const AppProvider = ({ children }) => {
       plaka: "",
       kamyoncu: bilgiler.ad,
       kamyoncu_tel: bilgiler.tel,
-      kamyoncu_tc: bilgiler.tcKimlik,
+      kamyoncu_tc: bilgiler.tc_kimlik,
       dorse_plaka: bilgiler.dorsePlaka,
       olusturan: ilan.olusturan,
       olusturan_id: ilan.olusturan_id,
@@ -916,7 +992,7 @@ export const AppProvider = ({ children }) => {
     setSeferler(prev => [yeniSefer, ...prev]);
   }, [ilanlar, supabase]);
 
-  const ilaniOnayla = useCallback(async (ilanId, kamyoncuAd, kamyoncuTel, plaka, dorsePlaka, tcKimlik) => {
+  const ilaniOnayla = useCallback(async (ilanId, kamyoncuAd, kamyoncuTel, plaka, dorsePlaka, tc) => {
     setSeferOnayDurumu(prev => ({
       ...prev,
       [ilanId]: "onaylandı"
@@ -933,7 +1009,7 @@ export const AppProvider = ({ children }) => {
       dorse_plaka: dorsePlaka,
       kamyoncu: kamyoncuAd,
       kamyoncu_tel: kamyoncuTel,
-      kamyoncu_tc: tcKimlik,
+      kamyoncu_tc: tc,
       durum: "yolda",
       teslim_tarihi: null,
       belgeler: [],
@@ -965,7 +1041,7 @@ export const AppProvider = ({ children }) => {
     });
 
     setTimeout(() => {
-      mesajContext.mesajGonder(yeniKonusma, `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${kamyoncuAd}\n📞 Tel: ${kamyoncuTel}\n🚚 Çekici Plaka: ${plaka}\n🚐 Dorse Plaka: ${dorsePlaka}\n🆔 TC Kimlik: ${tcKimlik}\n\nŞimdi convo üzerinden konuşabiliriz.`);
+      mesajContext.mesajGonder(yeniKonusma, `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${kamyoncuAd}\n📞 Tel: ${kamyoncuTel}\n🚚 Çekici Plaka: ${plaka}\n🚐 Dorse Plaka: ${dorsePlaka}\n🆔 TC Kimlik: ${tc}\n\nŞimdi convo üzerinden konuşabiliriz.`);
     }, 1000);
   }, [ilanlar, seferler, mesajContext, supabase]);
 

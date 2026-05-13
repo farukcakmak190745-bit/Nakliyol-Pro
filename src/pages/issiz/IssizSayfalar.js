@@ -260,13 +260,13 @@ export function TekliflerSayfasi() {
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>TC Kimlik</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4 }}>{o.bilgiler?.tcKimlik}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4 }}>{o.bilgiler?.tc_kimlik}</div>
                 </div>
               </div>
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button
-                  onClick={() => ilaniOnayla(o.ilanId, o.bilgiler.ad, o.bilgiler.tel, o.bilgiler.cekiciPlaka, o.bilgiler.dorsePlaka, o.bilgiler.tcKimlik)}
+                  onClick={() => ilaniOnayla(o.ilanId, o.bilgiler.ad, o.bilgiler.tel, o.bilgiler.cekiciPlaka, o.bilgiler.dorsePlaka, o.bilgiler.tc_kimlik)}
                   className="btn btn-primary"
                   style={{ flex: 1, padding: "12px", fontSize: 13 }}
                 >

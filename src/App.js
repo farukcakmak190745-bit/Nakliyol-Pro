@@ -32,10 +32,37 @@ function MobilApp({ cikisYap }) {
 
   // Oturum yüklendiğinde yukleniyor false yap
   useEffect(() => {
-    console.log("Oturum değişti:", oturum);
+    console.log("🔄 Oturum değişti:", oturum);
+    console.log("🎭 Oturum rolü:", oturum?.role);
+
     if (oturum) {
+      console.log("🔍 Oturum detayları:", {
+        id: oturum.id,
+        email: oturum.email,
+        role: oturum.role,
+        ad: oturum.ad
+      });
+
+      // Rolü kontrol et ve doğru sekmeyi seç
+      const expectedRole = oturum.role?.toLowerCase();
+
+      console.log("🔍 Beklenen rol:", expectedRole);
+
+      if (expectedRole === 'kamyoncu') {
+        console.log("🚚 Kamyoncu olarak giriş yapıldı. Sekme: 'ilanlar'");
+        setSekme("ilanlar");
+      } else if (expectedRole === 'issiz') {
+        console.log("🏢 İşveren olarak giriş yapıldı. Sekme: 'ilanver'");
+        setSekme("ilanver");
+      } else if (expectedRole === 'admin') {
+        console.log("⭐ Admin olarak giriş yapıldı");
+        setSekme("ilanver");
+      } else {
+        console.warn("⚠️ Bilinmeyen rol:", expectedRole, ", default olarak 'ilanver' kullanılıyor");
+        setSekme("ilanver");
+      }
+
       setYukleniyor(false);
-      setSekme(oturum?.rol === "kamyoncu" ? "ilanlar" : "ilanver");
     }
   }, [oturum]);
 
