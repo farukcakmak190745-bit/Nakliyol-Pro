@@ -15,41 +15,15 @@ initSupabase();
 
 const Ctx = createContext();
 
-// Demo verileri (fallback için)
-const DEMO_ILANLAR = [
-  { id: 1, yuk: "Kömür", nereden: "Antalya", nereye: "İzmir", ucret: 7083, sure: "~7 saat", tarih: "2026-05-06", arac_tip: "TIR", aciklama: "Antalya Liman'dan İzmir OSB'ye kömür. Sabah 08:00 yükleme.", istek_sayisi: 2, durum: "aktif", olusturan: "Mevlüt Taşımacılık A.Ş.", olusturanPuan: 4.8, belgeler: [], odame_turu: "pesin", odame_gun: 0, kdv_orani: 0.20, toplam_ucret: 8500, iban: "", iban_sahibi: "" },
-  { id: 2, yuk: "Çelik Boru", nereden: "Ankara", nereye: "Bursa", ucret: 5167, sure: "~5 saat", tarih: "2026-05-07", arac_tip: "10 Teker Açık", aciklama: "Flatbed veya lowbed TIR gerekli. Vinçli yükleme yapılacak.", istek_sayisi: 1, durum: "aktif", olusturan: "Kardeşler Çelik Ltd.", olusturanPuan: 4.6, belgeler: [], odame_turu: "7-gun", odame_gun: 7, kdv_orani: 0.20, toplam_ucret: 6200, iban: "", iban_sahibi: "" },
-  { id: 3, yuk: "Soğutmalı Gıda", nereden: "İstanbul", nereye: "Gaziantep", ucret: 9167, sure: "~12 saat", tarih: "2026-05-08", arac_tip: "10 Teker Tenteli", aciklama: "+4°C soğutmalı araç zorunlu. ATP belgeli kamyon şart. Gece vardiyası.", istek_sayisi: 3, durum: "aktif", olusturan: "Metro Gıda Lojistik", olusturanPuan: 4.9, belgeler: [], odame_turu: "15-gun", odame_gun: 15, kdv_orani: 0.20, toplam_ucret: 11000, iban: "", iban_sahibi: "" },
-  { id: 4, yuk: "Meyve (Portakal)", nereden: "Mersin", nereye: "Ankara", ucret: 6500, sure: "~6 saat", tarih: "2026-05-09", arac_tip: "Kırkayak Açık", aciklama: "Portakal yükü. Havalandırmalı araç tercih edilir. Erken sabah yükleme.", istek_sayisi: 0, durum: "aktif", olusturan: "Akdeniz Tarım A.Ş.", olusturanPuan: 4.7, belgeler: [], odame_turu: "pesin", odame_gun: 0, kdv_orani: 0, toplam_ucret: 6500, iban: "", iban_sahibi: "" },
-  { id: 5, yuk: "İnşaat Malzemesi", nereden: "Kocaeli", nereye: "Konya", ucret: 7667, sure: "~4 saat", tarih: "2026-05-10", arac_tip: "10 Teker Tenteli", aciklama: "Çakıl ve kum karışık yük. Damperli araç şart. Hafta içi her gün.", istek_sayisi: 1, durum: "aktif", olusturan: "Anadolu İnşaat", olusturanPuan: 4.5, belgeler: [], odame_turu: "30-gun", odame_gun: 30, kdv_orani: 0.20, toplam_ucret: 9200, iban: "", iban_sahibi: "" },
-  { id: 6, yuk: "Elektronik Eşya", nereden: "İzmir", nereye: "İstanbul", ucret: 4583, sure: "~6 saat", tarih: "2026-05-11", arac_tip: "50 NC Kamyon", aciklama: "Hassas elektronik ürünler. Sarsıntısız taşıma şart. Sigorta zorunlu.", istek_sayisi: 0, durum: "aktif", olusturan: "Ege Elektronik", olusturanPuan: 4.3, belgeler: [], odame_turu: "pesin", odame_gun: 0, kdv_orani: 0.20, toplam_ucret: 5500, iban: "", iban_sahibi: "" },
-  { id: 7, yuk: "Tekstil", nereden: "Bursa", nereye: "İstanbul", ucret: 3500, sure: "~3 saat", tarih: "2026-05-12", arac_tip: "Kamyonet", aciklama: "Hazır giyim malı. Su geçirmez kaplama tercih edilir.", istek_sayisi: 0, durum: "aktif", olusturan: "Bursa Tekstil A.Ş.", olusturanPuan: 4.6, belgeler: [], odame_turu: "7-gun", odame_gun: 7, kdv_orani: 0, toplam_ucret: 3500, iban: "", iban_sahibi: "" },
-];
-
-const DEMO_SEFERLER = [
-  { id: 1, yuk: "Kömür Nakliyesi", nereden: "Antalya", nereye: "İzmir", ucret: 8200, tarih: "2026-04-28", plaka: "34 TYK 421", kamyoncu: "Mehmet Yılmaz", olusturan: "Mevlüt Taşımacılık A.Ş.", durum: "tamamlandı", teslim_tarihi: "2026-04-28", belgeler: [{ ad: "İrsaliye.pdf", tip: "pdf", yuklenen: "Mehmet" }, { ad: "Makbuz.png", tip: "img", yuklenen: "Mehmet" }], odame_tarihi: null, odame_durumu: "beklemede", odame_turu: "pesin", odame_gun: 0, iban: "TR 0000 0000 0000 0000 0000 00", iban_sahibi: "Mevlüt Taşımacılık A.Ş." },
-  { id: 2, yuk: "Çelik Boru", nereden: "Ankara", nereye: "Bursa", ucret: 6100, tarih: "2026-04-22", plaka: "06 ALK 99", kamyoncu: "Ali Kaya", olusturan: "Kardeşler Çelik Ltd.", durum: "tamamlandı", teslim_tarihi: "2026-04-22", belgeler: [{ ad: "CMR.pdf", tip: "pdf", yuklenen: "Ali" }], odame_tarihi: null, odame_durumu: "beklemede", odame_turu: "pesin", odame_gun: 0, iban: "TR 0000 0000 0000 0000 0000 00", iban_sahibi: "Kardeşler Çelik Ltd." },
-  { id: 3, yuk: "Soğutmalı Gıda", nereden: "İstanbul", nereye: "Gaziantep", ucret: 10500, tarih: "2026-04-15", plaka: "34 HSN 07", kamyoncu: "Hasan Tekin", olusturan: "Metro Gıda Lojistik", durum: "yolda", teslim_tarihi: null, belgeler: [], odame_tarihi: null, odame_durumu: "beklemede", odame_turu: "pesin", odame_gun: 0, iban: "", iban_sahibi: "" },
-];
-
-const DEMO_TEKLIFLER = [
-  { id: 1, ilan_id: 1, teklif_sahibi_id: 9001, tutar: 7000, ozellikler: {}, durum: "bekliyor", olusturma_zamani: "2026-04-25" },
-  { id: 2, ilan_id: 3, teklif_sahibi_id: 9002, tutar: 9500, ozellikler: {}, durum: "kabul_edildi", olusturma_zamani: "2026-04-26" },
-];
-
 export const AppProvider = ({ children }) => {
   const mesajContext = useMesaj();
   const [loading, setLoading] = useState(true);
-  const [demoDataLoaded, setDemoDataLoaded] = useState(false);
 
   // Load initial data from Supabase on mount
   useEffect(() => {
     const loadInitialData = async () => {
       if (!supabase) {
-        console.warn('⚠️ Supabase yok, Demo verisi yükleniyor');
-        // Demo verisi yükle - ancak sadece session yoksa
-        if (demoDataLoaded) return;
-        setDemoDataLoaded(true);
+        console.warn('⚠️ Supabase yok! Lütfen Supabase URL ve key ayarlayın.');
         setLoading(false);
         return;
       }
@@ -71,8 +45,7 @@ export const AppProvider = ({ children }) => {
           console.log(`✅ ${ilanlarRes.length} ilan yüklendi`);
           ilanlarData = ilanlarRes;
         } else {
-          console.error('❌ İlanlar yüklenemedi, DEMO verisi yükleniyor');
-          ilanlarData = DEMO_ILANLAR;
+          console.error('❌ İlanlar yüklenemedi');
         }
 
         // Fetch seferler
@@ -86,8 +59,7 @@ export const AppProvider = ({ children }) => {
           console.log(`✅ ${seferlerRes.length} sefer yüklendi`);
           seferlerData = seferlerRes;
         } else {
-          console.error('❌ Seferler yüklenemedi, DEMO verisi yükleniyor');
-          seferlerData = DEMO_SEFERLER;
+          console.error('❌ Seferler yüklenemedi');
         }
 
         // Fetch teklifler
@@ -99,8 +71,7 @@ export const AppProvider = ({ children }) => {
           console.log(`✅ ${tekliflerRes.length} teklif yüklendi`);
           tekliflerData = tekliflerRes;
         } else {
-          console.error('❌ Teklifler yüklenemedi, DEMO verisi yükleniyor');
-          tekliflerData = DEMO_TEKLIFLER || [];
+          console.error('❌ Teklifler yüklenemedi');
         }
 
         // Fetch users
@@ -121,17 +92,8 @@ export const AppProvider = ({ children }) => {
         if (tekliflerData) setTeklifler(tekliflerData);
         if (usersData) setKullanicilar(usersData);
 
-        setDemoDataLoaded(true);
       } catch (error) {
         console.error('❌ Veri yüklenemedi:', error);
-        // Fallback: Demo verisi yükle
-        if (!demoDataLoaded) {
-          setIlanlar(DEMO_ILANLAR);
-          setSeferler(DEMO_SEFERLER);
-          setTeklifler(DEMO_TEKLIFLER);
-          setKullanicilar([]);
-          setDemoDataLoaded(true);
-        }
       } finally {
         // Timeout ile durumu tamamlıyoruz
         setTimeout(() => {
@@ -141,7 +103,7 @@ export const AppProvider = ({ children }) => {
     };
 
     loadInitialData();
-  }, [demoDataLoaded, supabase]);
+  }, [supabase]);
 
   useEffect(() => {
     initSupabase();
@@ -233,17 +195,8 @@ export const AppProvider = ({ children }) => {
     }
 
     if (!supabase) {
-      console.warn("⚠️ Supabase kurulumu yapılmadı. Demo modu aktif.");
-      const yeniKullanici = {
-        ...bilgiler,
-        id: Date.now(),
-        kayitTarihi: new Date().toISOString().split("T")[0],
-        puan: 0,
-        durum: "aktif"
-      };
-      setKullanicilar(prev => [...prev, yeniKullanici]);
-      setOturum(yeniKullanici);
-      return yeniKullanici;
+      console.warn("⚠️ Supabase kurulumu yapılmadı!");
+      throw new Error("Supabase kurulumu yapılmadı. Lütfen .env dosyasını kontrol edin.");
     }
 
     try {
@@ -511,15 +464,8 @@ export const AppProvider = ({ children }) => {
 
   const girisYap = useCallback(async (telefon, sifre) => {
     if (!supabase) {
-      console.warn("⚠️ Supabase yok, Demo modu aktif");
-      setOturum({
-        id: Date.now(),
-        email: `${telefon}@demo.com`,
-        ad: telefon.split('@')[0] || "Demo",
-        role: 'issiz',
-        telefon: telefon
-      });
-      return;
+      console.warn("⚠️ Supabase yok!");
+      throw new Error("Supabase kurulumu yapılmadı.");
     }
 
     try {
@@ -638,20 +584,6 @@ export const AppProvider = ({ children }) => {
 
     if (error) throw error;
   }, [supabase]);
-
-  const girisYapDemo = useCallback((rol, ad) => {
-    const rolLower = rol?.toLowerCase();
-    const adStr = typeof ad === 'string' ? ad : "Demo Kullanıcı";
-    const demoKullanici = {
-      id: Date.now(),
-      email: `${rolLower}@demo.com`,
-      ad: adStr,
-      role: rolLower === 'kamyoncu' ? 'kamyoncu' : (rolLower === 'issiz' ? 'issiz' : 'issiz'),
-      telefon: "5555555555"
-    };
-    setOturum(demoKullanici);
-    return demoKullanici;
-  }, []);
 
   const ilanEkle = useCallback(async (yeni) => {
     const kdvOrani = yeni.ucretTipi === "kdv" ? 0.20 : 0;
@@ -1198,7 +1130,7 @@ export const AppProvider = ({ children }) => {
   return (
     <Ctx.Provider value={{
       oturum, kullanicilar: adminKullanicilar, ilanlar, seferler, teklifler,
-      kayitOl, girisYap, girisYapDemo, cikisYap,
+      kayitOl, girisYap, cikisYap,
       ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle,
       konusmaOluştur, ilkMesajiGonder,
       bildirimler, bildirimGuncelle,
