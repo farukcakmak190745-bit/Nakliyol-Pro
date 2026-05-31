@@ -209,11 +209,11 @@ export function TekliflerSayfasi() {
   const kabulEt = (sefer) => {
     setKabulEdilen(prev => new Set([...prev, sefer.id]));
     const newConversation = konusmaOluştur({
-      partnerId: sefer.kamyoncu,
-      partnerAd: sefer.kamyoncu,
+      partnerId: sefer.kamyoncu || sefer.kamyoncu_tc || String(sefer.id),
+      partnerAd: sefer.kamyoncu || sefer.kamyoncu_tc || "Kamyoncu",
       partnerRol: "kamyoncu",
       baslik: `${sefer.yuk} - ${sefer.nereden} → ${sefer.nereye}`,
-      resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + sefer.kamyoncu.substring(0, 2).toUpperCase()
+      resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + String(sefer.kamyoncu || sefer.kamyoncu_tc || "K").substring(0, 2).toUpperCase()
     });
     setKonusmaIdMap(prev => ({ ...prev, [sefer.id]: newConversation }));
 
@@ -223,7 +223,7 @@ export function TekliflerSayfasi() {
     setTimeout(() => {
       ilkMesajiGonder(
         newConversation,
-        `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${sefer.kamyoncu}\n📞 Tel: ${sefer.kamyoncuTel}\n🚚 Çekici Plaka: ${sefer.plaka}\n🚐 Dorse Plaka: ${sefer.dorsePlaka}\n🆔 TC Kimlik: ${sefer.kamyoncu_tc || "Belirtilmedi"}\n\nŞimdi convo üzerinden konuşabiliriz.`
+        `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${sefer.kamyoncu || sefer.kamyoncu_tc || "Belirtilmedi"}\n📞 Tel: ${sefer.kamyoncuTel || "Belirtilmedi"}\n🚚 Çekici Plaka: ${sefer.plaka || "Belirtilmedi"}\n🚐 Dorse Plaka: ${sefer.dorsePlaka || "Belirtilmedi"}\n🆔 TC Kimlik: ${sefer.kamyoncu_tc || "Belirtilmedi"}\n\nŞimdi convo üzerinden konuşabiliriz.`
       );
     }, 500);
     return newConversation;
@@ -296,11 +296,11 @@ export function TekliflerSayfasi() {
           {aktifSeferler.map(s => (
             <div key={s.id} className="card" style={{ marginBottom: 14 }} onClick={() => {
               const newConversationId = konusmaOluştur({
-                partnerId: s.kamyoncu,
-                partnerAd: s.kamyoncu,
+                partnerId: s.kamyoncu || s.kamyoncu_tc || String(s.id),
+                partnerAd: s.kamyoncu || s.kamyoncu_tc || "Kamyoncu",
                 partnerRol: "kamyoncu",
                 baslik: `${s.yuk} - ${s.nereden} → ${s.nereye}`,
-                resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + s.kamyoncu.substring(0, 2).toUpperCase(),
+                resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + String(s.kamyoncu || s.kamyoncu_tc || "K").substring(0, 2).toUpperCase(),
                 bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
               });
               setKonusmaIdMap(prev => ({ ...prev, [s.id]: newConversationId }));
@@ -365,15 +365,15 @@ export function TekliflerSayfasi() {
                 <button
                   onClick={() => {
                     const newConversationId = konusmaOluştur({
-                      partnerId: s.kamyoncu,
-                      partnerAd: s.kamyoncu,
+                      partnerId: s.kamyoncu || s.kamyoncu_tc || String(s.id),
+                      partnerAd: s.kamyoncu || s.kamyoncu_tc || "Kamyoncu",
                       partnerRol: "kamyoncu",
                       baslik: `${s.yuk} - ${s.nereden} → ${s.nereye}`,
-                      resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + s.kamyoncu.substring(0, 2).toUpperCase(),
+                      resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + String(s.kamyoncu || s.kamyoncu_tc || "K").substring(0, 2).toUpperCase(),
                       bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                     });
                     setKonusmaIdMap(prev => ({ ...prev, [s.id]: newConversationId }));
-                    ilkMesajiGonder(newConversationId, `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${s.kamyoncu}\n📞 Tel: ${s.kamyoncuTel}\n🚚 Çekici Plaka: ${s.plaka}\n🚐 Dorse Plaka: ${s.dorsePlaka}\n🆔 TC Kimlik: ${s.kamyoncu_tc || "Belirtilmedi"}\n\nŞimdi convo üzerinden konuşabiliriz.`);
+                    ilkMesajiGonder(newConversationId, `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${s.kamyoncu || s.kamyoncu_tc || "Belirtilmedi"}\n📞 Tel: ${s.kamyoncuTel || "Belirtilmedi"}\n🚚 Çekici Plaka: ${s.plaka || "Belirtilmedi"}\n🚐 Dorse Plaka: ${s.dorsePlaka || "Belirtilmedi"}\n🆔 TC Kimlik: ${s.kamyoncu_tc || "Belirtilmedi"}\n\nŞimdi convo üzerinden konuşabiliriz.`);
                   }}
                   className="btn btn-primary"
                   style={{ padding: "10px 18px", fontSize: 12 }}
@@ -424,7 +424,7 @@ export function MesajlarSayfasi({ onGeri }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 600, fontSize: 14, color: "#fbbf24" }}>{k.partnerAd}</div>
               <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {k.mesajlar.length > 0 ? (k.mesajlar[k.mesajlar.length - 1].metin || "📄 Dosya gönderildi") : (k.baslik || "")}
+                {k.mesajlar && k.mesajlar.length > 0 ? (k.mesajlar[k.mesajlar.length - 1].metin || "📄 Dosya gönderildi") : (k.baslik || "")}
               </div>
             </div>
             <div style={{ flexShrink: 0, textAlign: "right" }}>
