@@ -20,7 +20,7 @@ export const Header = ({ baslik, geri, sag, cikisYap: handleCikisYap }) => {
                 Çıkış
               </button>
               <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--bg3)", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
-                {oturum.rol === "kamyoncu" ? "🚛" : "🏢"}
+                {oturum.role === "kamyoncu" ? "🚛" : "🏢"}
               </div>
             </>
           )}

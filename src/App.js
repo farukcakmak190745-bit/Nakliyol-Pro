@@ -30,39 +30,32 @@ function MobilApp({ cikisYap }) {
   const [seciliKonusma, setSeciliKonusma] = useState(null);
   const [yukleniyor, setYukleniyor] = useState(true);
 
+  console.log("🚀 MobilApp render edildi - oturum:", oturum);
+
   // Oturum yüklendiğinde yukleniyor false yap
   useEffect(() => {
     console.log("🔄 Oturum değişti:", oturum);
-    console.log("🎭 Oturum rolü:", oturum?.role);
 
     if (oturum) {
-      console.log("🔍 Oturum detayları:", {
-        id: oturum.id,
-        email: oturum.email,
-        role: oturum.role,
-        ad: oturum.ad
-      });
+      console.log("🎭 Oturum rolü:", oturum?.role, "|||", oturum);
 
-      // Rolü kontrol et ve doğru sekmeyi seç
-      const expectedRole = oturum.role?.toLowerCase();
-
-      console.log("🔍 Beklenen rol:", expectedRole);
-
-      if (expectedRole === 'kamyoncu') {
+      if (oturum.role === 'kamyoncu') {
         console.log("🚚 Kamyoncu olarak giriş yapıldı. Sekme: 'ilanlar'");
         setSekme("ilanlar");
-      } else if (expectedRole === 'issiz') {
+      } else if (oturum.role === 'issiz') {
         console.log("🏢 İşveren olarak giriş yapıldı. Sekme: 'ilanver'");
         setSekme("ilanver");
-      } else if (expectedRole === 'admin') {
+      } else if (oturum.role === 'admin') {
         console.log("⭐ Admin olarak giriş yapıldı");
         setSekme("ilanver");
       } else {
-        console.warn("⚠️ Bilinmeyen rol:", expectedRole, ", default olarak 'ilanver' kullanılıyor");
+        console.warn("⚠️ Bilinmeyen rol:", oturum.role, ", default olarak 'ilanver' kullanılıyor");
         setSekme("ilanver");
       }
 
       setYukleniyor(false);
+    } else {
+      console.log("⚠️ Oturum yok, giriş yapılmamış");
     }
   }, [oturum]);
 
@@ -87,7 +80,7 @@ function MobilApp({ cikisYap }) {
       setSeciliKonusma(null);
       return null;
     }
-    return <ChatSayfasi konusmaId={seciliKonusma} onGeri={() => setSeciliKonusma(null)} isKamyoncu={oturum.rol === "kamyoncu"} />;
+    return <ChatSayfasi konusmaId={seciliKonusma} onGeri={() => setSeciliKonusma(null)} isKamyoncu={oturum.role === "kamyoncu"} />;
   }
 
   const kamyoncuSayfalar = {
@@ -109,7 +102,7 @@ function MobilApp({ cikisYap }) {
   if (sekme === "bildirim") {
     sayfa = <BildirimAyarlariSayfasi />;
   } else {
-    sayfa = oturum.rol === "kamyoncu" ? kamyoncuSayfalar[sekme] : issizSayfalar[sekme];
+    sayfa = oturum.role === "kamyoncu" ? kamyoncuSayfalar[sekme] : issizSayfalar[sekme];
   }
 
   if (!sayfa) {
@@ -121,7 +114,7 @@ function MobilApp({ cikisYap }) {
     <div className="app-shell">
       <Header cikisYap={cikisYap} />
       <div>{sayfa}</div>
-      <BottomNav aktif={sekme} setAktif={setSekme} rol={oturum.rol} />
+      <BottomNav aktif={sekme} setAktif={setSekme} rol={oturum.role} />
     </div>
   );
 }
@@ -134,7 +127,7 @@ function AppIceriki() {
     return <div style={{ padding: 40, textAlign: 'center', color: 'red' }}>Oturum bilgisi yüklenemedi. Giriş yapılıyor...</div>;
   }
 
-  if (oturum.rol === "admin") {
+  if (oturum.role === "admin") {
     return <AdminPanel />;
   }
 
@@ -152,19 +145,19 @@ function ProfilIcContent({ defaultPath = "profil" }) {
     <div className="app-shell">
       <Header />
       <div>
-        {oturum.rol === "kamyoncu" && (
+        {oturum.role === "kamyoncu" && (
           defaultPath === "bildirim"
             ? <BildirimAyarlariSayfasi />
             : <KamyoncuProfil />
         )}
-        {oturum.rol === "issiz" && (
+        {oturum.role === "issiz" && (
           defaultPath === "bildirim"
             ? <BildirimAyarlariSayfasi />
             : <IssizProfilSayfasi />
         )}
-        {oturum.rol === "issiz" && <BottomNav aktif="profil" setAktif={() => {}} rol="issiz" />}
+        {oturum.role === "issiz" && <BottomNav aktif="profil" setAktif={() => {}} rol="issiz" />}
       </div>
-      {oturum.rol === "kamyoncu" && <BottomNav aktif="profil" setAktif={() => {}} rol="kamyoncu" />}
+      {oturum.role === "kamyoncu" && <BottomNav aktif="profil" setAktif={() => {}} rol="kamyoncu" />}
     </div>
   );
 }

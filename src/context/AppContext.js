@@ -116,6 +116,7 @@ export const AppProvider = ({ children }) => {
         if (session) {
           try {
             // Güncel user verisini çek
+            console.log('🔐 Session ID:', session.user.id);
             const { data: userData, error } = await supabase
               .from('users')
               .select('*')
@@ -123,17 +124,23 @@ export const AppProvider = ({ children }) => {
               .maybeSingle();
 
             if (error) {
-              console.error('User fetch error after session load:', error);
+              console.error('❌ User fetch error after session load:', error);
               // Session var ama user yoksa oturumu temizle
               await supabase.auth.signOut();
             } else if (userData) {
+              console.log('✅ User verisi alındı:', userData);
               setOturum(userData);
+            } else {
+              console.error('❌ User yok! Session ID:', session.user.id);
             }
           } catch (err) {
-            console.error('Error fetching user after session load:', err);
+            console.error('❌ Error fetching user after session load:', err);
           }
+        } else {
+          console.log('⚠️ Session yok');
         }
 
+        console.log('🚀 Loading tamamlandı, oturum:', oturum);
         setLoading(false);
       }).catch((error) => {
         console.error('❌ Session yükleme hatası:', error);
