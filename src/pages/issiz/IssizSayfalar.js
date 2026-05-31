@@ -198,13 +198,42 @@ export function TekliflerSayfasi() {
   const kabulEdilecekler = mevcutSeferler.filter(s => kabulEdilen.has(s.id));
   const aktifSeferler = seferler.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
 
-  // İşveren için bekleyen onayları yükle
+  // İşveren için bekleyen onayları yükle - Backend'den gelen seferleri de kontrol et
   const [yeniBekleyenler, setYeniBekleyenler] = useState([]);
+
   useEffect(() => {
-    const onaylar = bekleyenOnaylariGetir();
-    setBekleyenOnaylar(onaylar);
-    setYeniBekleyenler(onaylar);
-  }, [bekleyenOnaylariGetir]);
+    // Backend'den gelen 'bekliyor' durumundaki seferleri al
+    const backendBekleyenler = seferler.filter(s => s.durum === "bekliyor");
+
+    // Yerel state'teki bekleyen onayları al
+    const localOnaylar = bekleyenOnaylariGetir();
+
+    // Her iki kaynakla da birleştir - uniq ilanId'ye sahip olanları al
+    const allBekleyenler = [
+      ...backendBekleyenler.map(s => ({
+        ilanId: s.ilan_id,
+        yuk: s.yuk,
+        nereden: s.nereden,
+        nereye: s.nereye,
+        bilgiler: {
+          ad: s.kamyoncu,
+          tel: s.kamyoncu_tel,
+          cekiciPlaka: s.plaka,
+          dorsePlaka: s.dorse_plaka,
+          tc_kimlik: s.kamyoncu_tc
+        }
+      })),
+      ...localOnaylar
+    ];
+
+    // Aynı ilanId'ye sahip olanları uniq yap
+    const uniqOnaylar = allBekleyenler.filter((item, index, self) =>
+      index === self.findIndex(t => t.ilanId === item.ilanId)
+    );
+
+    setBekleyenOnaylar(uniqOnaylar);
+    setYeniBekleyenler(uniqOnaylar);
+  }, [seferler, bekleyenOnaylariGetir]);
 
   const kabulEt = (sefer) => {
     setKabulEdilen(prev => new Set([...prev, sefer.id]));
