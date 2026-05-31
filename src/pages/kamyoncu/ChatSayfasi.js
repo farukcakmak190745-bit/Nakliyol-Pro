@@ -74,7 +74,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
     setDosya(null);
   };
 
-  const ilkMesajiOkundu = konusma.mesajlar.length > 0 && konusma.mesajlar[0].gonderen === "konusmaci";
+  const ilkMesajiOkundu = konusma?.mesajlar?.length > 0 && konusma.mesajlar[0]?.gonderen === "konusmaci";
 
   return (
     <div className="scroll-content" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 140px)" }}>
@@ -132,7 +132,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
 
       {/* Mesajlar */}
       <div ref={messageContainerRef} style={{ flex: 1, overflowY: "auto", padding: 16, background: "var(--bg0)" }}>
-        {konusma.mesajlar.length === 0 ? (
+        {konusma?.mesajlar?.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text3)" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
             <div>İlk mesajınızı gönderin</div>
