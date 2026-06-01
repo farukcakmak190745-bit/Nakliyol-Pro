@@ -18,6 +18,7 @@ export default function AdminPanel() {
   const ilanlarList = ilanlar || [];
   const seferlerList = seferler || [];
   const kullanicilarList = kullanicilar || [];
+  const aktifSeferler = seferlerList.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
 
   const thStyle = { padding: "12px 14px", textAlign: "left", color: "var(--text3)", fontWeight: 700, fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", borderBottom: "1px solid rgba(251,191,36,0.2)", background: "var(--bg2)" };
   const tdStyle = { padding: "14px 14px", borderBottom: "1px solid rgba(251,191,36,0.1)", color: "var(--text)", fontSize: 13, verticalAlign: "middle" };
@@ -121,7 +122,7 @@ export default function AdminPanel() {
           <table className="tbl">
             <thead><tr><th style={thStyle}>Ad</th><th style={thStyle}>Rol</th><th style={thStyle}>Puan</th><th style={thStyle}>Aktif Sefer</th><th style={thStyle}>Durum</th><th style={thStyle}>İşlem</th></tr></thead>
             <tbody>{kullanicilar.map(k => {
-              const seferlerim = seferler.filter(s => s.kamyoncu === k.ad);
+              const seferlerim = seferlerList.filter(s => s.kamyoncu === k.ad);
               const aktifSeferler = seferlerim.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
               return (
               <tr key={k.id}>
