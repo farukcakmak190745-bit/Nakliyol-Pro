@@ -140,7 +140,6 @@ export const AppProvider = ({ children }) => {
           console.log('⚠️ Session yok');
         }
 
-        console.log('🚀 Loading tamamlandı, oturum:', oturum);
         setLoading(false);
       }).catch((error) => {
         console.error('❌ Session yükleme hatası:', error);
@@ -152,34 +151,15 @@ export const AppProvider = ({ children }) => {
     }
   }, [supabase]);
 
-  // Polling ile veri güncellemesi
-  useEffect(() => {
-    if (!supabase) {
-      console.warn('⚠️ Supabase yok, Polling başlatılamıyor')
-      return
-    }
-
-    console.log('📡 Polling başlatılıyor (3 saniyede bir kontrol)...')
-
-    const cleanup1 = subscribeToIlanlar()
-    const cleanup2 = subscribeToSeferler()
-    const cleanup3 = subscribeToTeklifler()
-    const cleanup4 = subscribeToConversations()
-
-    return () => {
-      cleanup1?.()
-      cleanup2?.()
-      cleanup3?.()
-      cleanup4?.()
-      console.log('🧹 Polling temizleniyor...')
-    }
-  }, [supabase])
-
+  // State'leri başlat
   const [oturum, setOturum] = useState(null);
   const [kullanicilar, setKullanicilar] = useState([]);
   const [ilanlar, setIlanlar] = useState([]);
   const [seferler, setSeferler] = useState([]);
   const [teklifler, setTeklifler] = useState([]);
+  const [bildirimlerList, setBildirimlerList] = useState([]);
+  const [gosterenBildirim, setGosterenBildirim] = useState(null);
+  const [toastBildirim, setToastBildirim] = useState(null);
 
   const [bildirimler, setBildirimler] = useState({
     ilan: true,
@@ -888,6 +868,30 @@ export const AppProvider = ({ children }) => {
     setBildirimler(prev => ({ ...prev, [tur]: deger }));
   }, []);
 
+  const bildirimGoster = useCallback((baslik, icerik, icon = "🔔") => {
+    setGosterenBildirim({ baslik, icerik, icon });
+    setToastBildirim({ baslik, icerik, icon });
+
+    // 5 saniye sonra otomatik kapat
+    setTimeout(() => {
+      setToastBildirim(null);
+    }, 5000);
+  }, []);
+
+  // Bildirimleri otomatik göster
+  useEffect(() => {
+    if (bildirimlerList && bildirimlerList.length > 0) {
+      const enSonBildirim = bildirimlerList[0];
+      if (!gosterenBildirim || gosterenBildirim.id !== enSonBildirim.id) {
+        bildirimGoster(
+          enSonBildirim.baslik,
+          enSonBildirim.icerik,
+          '🔔'
+        );
+      }
+    }
+  }, [bildirimlerList, gosterenBildirim, bildirimGoster]);
+
   const başvuruGonder = useCallback(async (ilanId, bilgiler) => {
     setKamyoncuBasvuru({ ilanId, ...bilgiler });
     setSeferOnayDurumu(prev => ({ ...prev, [ilanId]: "bekliyor_onay" }));
@@ -926,6 +930,17 @@ export const AppProvider = ({ children }) => {
     if (supabase) {
       const { error } = await supabase.from('seferler').insert([yeniSefer]);
       if (error) console.error("Sefer ekleme hatası:", error);
+    }
+
+    // Bildirim oluştur - İşveren için
+    if (supabase && ilan.olusturan_id) {
+      await supabase.from('bildirimler').insert({
+        kullanici_id: ilan.olusturan_id,
+        tur: 'basvuru',
+        baslik: 'Yeni iş başvurusu',
+        icerik: `${bilgiler.ad} (${bilgiler.tel})\n\n${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}\n\nÇekici: ${bilgiler.cekiciPlaka}\nDorse: ${bilgiler.dorsePlaka}\nTC: ${bilgiler.tc_kimlik}`,
+        ilan_id: ilanId
+      });
     }
 
     setSeferler(prev => [yeniSefer, ...prev]);
@@ -979,10 +994,22 @@ export const AppProvider = ({ children }) => {
       bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
     });
 
+    // Bildirim oluştur - İşveren için
+    if (supabase && mevcutSefer.olusturan_id) {
+      await supabase.from('bildirimler').insert({
+        kullanici_id: mevcutSefer.olusturan_id,
+        tur: 'sefer_onay',
+        baslik: `${kamyoncuAd} iş başvurusunu kabul etti`,
+        icerik: `${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}\n\nÇekici: ${plaka}\nDorse: ${dorsePlaka}\nTel: ${kamyoncuTel}`,
+        sefer_id: mevcutSefer.id,
+        ilan_id: ilanId
+      });
+    }
+
     setTimeout(() => {
       mesajContext.mesajGonder(yeniKonusma, `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${kamyoncuAd}\n📞 Tel: ${kamyoncuTel}\n🚚 Çekici Plaka: ${plaka}\n🚐 Dorse Plaka: ${dorsePlaka}\n🆔 TC Kimlik: ${tc}\n\nŞimdi convo üzerinden konuşabiliriz.`);
     }, 1000);
-  }, [ilanlar, seferler, mesajContext, supabase]);
+  }, [ilanlar, seferler, mesajContext, supabase, oturum]);
 
   const ilaniReddet = useCallback((ilanId) => {
     setSeferOnayDurumu(prev => ({ ...prev, [ilanId]: "reddedildi" }));
@@ -1084,6 +1111,36 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const subscribeToBildirimler = () => {
+    if (!supabase || !oturum) return null;
+
+    console.log('🔔 Bildirim Polling başlatılıyor...')
+
+    const interval = setInterval(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('bildirimler')
+          .select('*')
+          .eq('kullanici_id', oturum.user?.id)
+          .order('olusturma_zamani', { ascending: false })
+          .limit(50)
+
+        if (error) throw error
+        if (data) {
+          console.log(`✅ ${data.length} bildirim yüklendi`)
+          setBildirimlerList(data)
+        }
+      } catch (error) {
+        console.error('❌ Bildirimler güncellemesi başarısız:', error)
+      }
+    }, 3000) // 3 saniyede bir kontrol et
+
+    return () => {
+      clearInterval(interval)
+      console.log('🧹 Bildirimler Polling temizlendi')
+    }
+  };
+
   const subscribeToTeklifler = () => {
     if (!supabase) return null;
 
@@ -1140,7 +1197,7 @@ export const AppProvider = ({ children }) => {
       kayitOl, girisYap, cikisYap,
       ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle,
       konusmaOluştur, ilkMesajiGonder,
-      bildirimler, bildirimGuncelle,
+      bildirimler: bildirimlerList, bildirimGuncelle,
       kamyoncuBasvuru, setKamyoncuBasvuru,
       seferOnayDurumu, ilaniOnayla, ilaniReddet,
       bekleyenOnaylariGetir,

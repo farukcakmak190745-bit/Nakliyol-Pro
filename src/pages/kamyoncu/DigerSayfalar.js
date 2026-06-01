@@ -75,22 +75,30 @@ export function SeferlerSayfasi() {
               </div>
 
               {sefer.durum === "yolda" && (
-                <button
-                  onClick={() => islemiTeslimEt(sefer.id)}
-                  className="btn btn-success"
-                  style={{ width: "100%", fontSize: 13, padding: "12px", marginBottom: "12px" }}
-                >
-                  🎉 İşi Teslim Et
-                </button>
+                <>
+                  <button
+                    onClick={() => setTeslimEdildiModal(sefer)}
+                    className="btn btn-success"
+                    style={{ width: "100%", fontSize: 13, padding: "12px", marginBottom: "12px" }}
+                  >
+                    🎉 İşi Teslim Et
+                  </button>
+                  <button
+                    onClick={() => konusmaAc(sefer)}
+                    className="btn btn-primary"
+                    style={{ padding: "12px", fontSize: 13 }}
+                  >
+                    💬 Konuş
+                  </button>
+                </>
               )}
 
-              <button
-                onClick={() => konusmaAc(sefer)}
-                className="btn btn-primary"
-                style={{ padding: "12px", fontSize: 13 }}
-              >
-                💬 Konuş
-              </button>
+              {teslimEdildiModal && (
+                <TeslimEdildiModal
+                  sefer={teslimEdildiModal}
+                  onClose={() => setTeslimEdildiModal(null)}
+                />
+              )}
             </div>
           ))}
         </>
@@ -131,6 +139,90 @@ export function SeferlerSayfasi() {
             </div>
           ))}
         </>
+      )}
+    </div>
+  );
+}
+
+export function IlanlarSayfasi() {
+  const { oturum, ilanlar, ilanSil, ilanAl } = useApp();
+
+  const mevcutIlanlar = ilanlar.filter(i => i.olusturan_id === oturum?.id);
+
+  const handleSil = async (ilanId) => {
+    if (confirm("Bu ilanı silmek istediğinize emin misiniz?")) {
+      ilanSil(ilanId);
+      alert("İlan başarıyla silindi!");
+    }
+  };
+
+  const handleAl = async (ilan) => {
+    ilanAl(ilan.id, oturum);
+  };
+
+  return (
+    <div className="scroll-content">
+      <div className="section-title">KENDİ İLANLARIM ({mevcutIlanlar.length})</div>
+
+      {mevcutIlanlar.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
+          <div style={{ fontSize: 56, marginBottom: 20 }}>📋</div>
+          <div style={{ fontSize: 16, marginBottom: 8 }}>Henüz ilanınız yok</div>
+          <div style={{ fontSize: 13 }}>Yeni ilan vererek başlayın!</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {mevcutIlanlar.map(ilan => (
+            <div key={ilan.id} className="card" style={{ marginBottom: 0, border: ilan.durum === "aktif" ? "2px solid rgba(251,191,36,0.3)" : "1px solid rgba(239,68,68,0.2)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <div>
+                  <div className="display" style={{ fontSize: 18, color: "#fbbf24" }}>{ilan.yuk}</div>
+                  <div style={{ fontSize: 12, color: "var(--text3)", letterSpacing: 1.5 }}>{ilan.nereden} → {ilan.nereye}</div>
+                </div>
+                <div style={{
+                  padding: "6px 12px",
+                  borderRadius: "20px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textTransform: "uppercase"
+                }}>
+                  {ilan.durum === "aktif" ? (
+                    <span style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)", color: "#10b981" }}>
+                      ✓ AKTİF
+                    </span>
+                  ) : (
+                    <span style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.1) 100%)", color: "#ef4444" }}>
+                      ✗ PASİF
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#fbbf24" }}>₺{ilan.ucret.toLocaleString()}</div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  {ilan.durum === "aktif" && (
+                    <button
+                      onClick={() => handleAl(ilan)}
+                      className="btn btn-primary"
+                      style={{ padding: "10px 18px", fontSize: 12 }}
+                    >
+                      ✓ Alındı
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleSil(ilan.id)}
+                    className="btn btn-danger"
+                    style={{ padding: "10px 18px", fontSize: 12 }}
+                  >
+                    🗑️ Sil
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

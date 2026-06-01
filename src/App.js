@@ -7,8 +7,7 @@ import IlanlarSayfasi from "./pages/kamyoncu/IlanlarSayfasi";
 import KamyoncuProfil from "./pages/kamyoncu/ProfilSayfasi";
 import {
   SeferlerSayfasi,
-  MesajlarSayfasi as KamyoncuMesajlarSayfasi,
-  DigerSayfalar
+  MesajlarSayfasi as KamyoncuMesajlarSayfasi
 } from "./pages/kamyoncu/DigerSayfalar";
 import {
   IlanVerSayfasi,
@@ -17,6 +16,7 @@ import {
   IssizProfilSayfasi
 } from "./pages/issiz/IssizSayfalar";
 import BildirimAyarlariSayfasi from "./pages/kamyoncu/BildirimAyarlariSayfasi";
+import { BildirimlerModal } from "./components/BildirimlerModal";
 import ChatSayfasi from "./components/ChatSayfasi";
 import { Header, BottomNav } from "./components/UI";
 import "./index.css";
@@ -25,12 +25,26 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingScreen from "./components/LoadingScreen";
 
 function MobilApp({ cikisYap }) {
-  const { oturum, konusmalar } = useApp();
+  const { oturum, konusmalar, bildirimGoster } = useApp();
   const [sekme, setSekme] = useState("ilanlar");
   const [seciliKonusma, setSeciliKonusma] = useState(null);
   const [yukleniyor, setYukleniyor] = useState(true);
 
   console.log("🚀 MobilApp render edildi - oturum:", oturum);
+
+  // Bildirimleri göster
+  useEffect(() => {
+    if (bildirimlerList && bildirimlerList.length > 0) {
+      const enSonBildirim = bildirimlerList[0];
+      if (!gosterenBildirim || gosterenBildirim.id !== enSonBildirim.id) {
+        bildirimGoster(
+          enSonBildirim.baslik,
+          enSonBildirim.icerik,
+          '🔔'
+        );
+      }
+    }
+  }, [bildirimlerList, gosterenBildirim, bildirimGoster]);
 
   // Oturum yüklendiğinde yukleniyor false yap
   useEffect(() => {
@@ -92,6 +106,7 @@ function MobilApp({ cikisYap }) {
   };
   const issizSayfalar = {
     ilanver:   <IlanVerSayfasi />,
+    ilanlar:   <IlanlarSayfasi />,
     teklifler: <TekliflerSayfasi />,
     mesajlar:  <MesajlarSayfasi />,
     profil:    <IssizProfilSayfasi />,
@@ -115,6 +130,7 @@ function MobilApp({ cikisYap }) {
       <Header cikisYap={cikisYap} />
       <div>{sayfa}</div>
       <BottomNav aktif={sekme} setAktif={setSekme} rol={oturum.role} />
+      <BildirimlerModal />
     </div>
   );
 }

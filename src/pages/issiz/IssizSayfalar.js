@@ -5,7 +5,7 @@ import { useApp } from "../../context/AppContext";
 import { EmptyState } from "../../components/UI";
 
 export function IlanVerSayfasi() {
-  const { ilanEkle } = useApp();
+  const { ilanEkle, ilanSil } = useApp();
   const [form, setForm] = useState({
     nereden: "", nereye: "", yuk: "",
     tonaj: "20",
@@ -187,14 +187,105 @@ export function IlanVerSayfasi() {
   );
 }
 
+// İlan Listesi sayfası - işverenlerin kendi ilanlarını görüp silebilmesi için
+export function IlanlarSayfasi() {
+  const { oturum, ilanlar, ilanSil, ilanAl } = useApp();
+
+  const mevcutIlanlar = ilanlar.filter(i => i.olusturan_id === oturum?.id);
+
+  const handleSil = async (ilanId) => {
+    if (confirm("Bu ilanı silmek istediğinize emin misiniz?")) {
+      ilanSil(ilanId);
+      alert("İlan başarıyla silindi!");
+    }
+  };
+
+  const handleAl = async (ilan) => {
+    ilanAl(ilan.id, oturum);
+  };
+
+  return (
+    <div className="scroll-content">
+      <div className="section-title">KENDİ İLANLARIM ({mevcutIlanlar.length})</div>
+
+      {mevcutIlanlar.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
+          <div style={{ fontSize: 56, marginBottom: 20 }}>📋</div>
+          <div style={{ fontSize: 16, marginBottom: 8 }}>Henüz ilanınız yok</div>
+          <div style={{ fontSize: 13 }}>Yeni ilan vererek başlayın!</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {mevcutIlanlar.map(ilan => (
+            <div key={ilan.id} className="card" style={{ marginBottom: 0, border: ilan.durum === "aktif" ? "2px solid rgba(251,191,36,0.3)" : "1px solid rgba(239,68,68,0.2)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <div>
+                  <div className="display" style={{ fontSize: 18, color: "#fbbf24" }}>{ilan.yuk}</div>
+                  <div style={{ fontSize: 12, color: "var(--text3)", letterSpacing: 1.5 }}>{ilan.nereden} → {ilan.nereye}</div>
+                </div>
+                <div style={{
+                  padding: "6px 12px",
+                  borderRadius: "20px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textTransform: "uppercase"
+                }}>
+                  {ilan.durum === "aktif" ? (
+                    <span style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)", color: "#10b981" }}>
+                      ✓ AKTİF
+                    </span>
+                  ) : (
+                    <span style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.1) 100%)", color: "#ef4444" }}>
+                      ✗ PASİF
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#fbbf24" }}>₺{ilan.ucret.toLocaleString()}</div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  {ilan.durum === "aktif" && (
+                    <button
+                      onClick={() => handleAl(ilan)}
+                      className="btn btn-primary"
+                      style={{ padding: "10px 18px", fontSize: 12 }}
+                    >
+                      ✓ Alındı
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleSil(ilan.id)}
+                    className="btn btn-danger"
+                    style={{ padding: "10px 18px", fontSize: 12 }}
+                  >
+                    🗑️ Sil
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TekliflerSayfasi() {
-  const { oturum, konusmaOluştur, ilkMesajiGonder, seferler, bekleyenOnaylariGetir, kamyoncuBasvuruBekleyenleriGetir, ilaniOnayla } = useApp();
+  const { oturum, konusmaOluştur, ilkMesajiGonder, seferler, bekleyenOnaylariGetir, kamyoncuBasvuruBekleyenleriGetir, ilaniOnayla, ilanlar } = useApp();
   const [kabulEdilen, setKabulEdilen] = useState(new Set());
   const [seciliSefer, setSeciliSefer] = useState(null);
   const [konusmaIdMap, setKonusmaIdMap] = useState({});
   const [bekleyenOnaylar, setBekleyenOnaylar] = useState([]);
 
-  const mevcutSeferler = seferler.filter(s => s.durum === "bekliyor");
+  // İşverenin kendi ilanlarını filtrele
+  const kendiIlanlar = ilanlar.filter(i => i.olusturan_id === oturum?.id);
+  const kendiIlanIdleri = yeniBekleyenler.map(b => b.ilanId);
+
+  // Sadece kendi ilanlarına ait seferleri göster
+  const kendiSeferler = seferler.filter(s => s.ilan_id && kendiIlanIdleri.includes(s.ilan_id));
+  const mevcutSeferler = kendiSeferler.filter(s => s.durum === "bekliyor");
   const kabulEdilecekler = mevcutSeferler.filter(s => kabulEdilen.has(s.id));
   const aktifSeferler = seferler.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
 
@@ -260,9 +351,28 @@ export function TekliflerSayfasi() {
 
   return (
     <div className="scroll-content">
-      {/* BEKLEYEN ONAYLAR */}
+      {/* BEKLEYEN ONAYLAR - İşveren */}
       {yeniBekleyenler.length > 0 && (
         <>
+          <div style={{
+            background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)",
+            padding: "14px 20px",
+            borderRadius: "12px",
+            marginBottom: "16px",
+            border: "1px solid rgba(251,191,36,0.2)"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 20 }}>⏳</span>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#fbbf24" }}>
+                  {yeniBekleyenler.length} yeni başvuru var
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>
+                  Kamyoncuların bilgilerini görüp onaylayın
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="section-title">🔔 BAŞVURU BEKLENIYOR ({yeniBekleyenler.length})</div>
           {yeniBekleyenler.map(o => (
             <div key={o.ilanId} className="card" style={{ marginBottom: 14, border: "2px solid rgba(251,191,36,0.3)" }}>
@@ -295,7 +405,7 @@ export function TekliflerSayfasi() {
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button
-                  onClick={() => ilaniOnayla(o.ilanId, o.bilgiler.ad, o.bilgiler.tel, o.bilgiler.cekiciPlaka, o.bilgiler.dorsePlaka, o.bilgiler.tc_kimlik)}
+                  onClick={() => ilaniOnayla(o.ilanId, o.bilgiler.ad, o.bilgiler.tel, o.bilgiler.cekiciPlaka, o.bilgiler.dorsePlaka, o.bilgiler.tc_kimlik, oturum?.user?.id)}
                   className="btn btn-primary"
                   style={{ flex: 1, padding: "12px", fontSize: 13 }}
                 >
@@ -415,7 +525,7 @@ export function TekliflerSayfasi() {
         </>
       )}
 
-      {mevcutSeferler.length === 0 && (
+      {yeniBekleyenler.length === 0 && aktifSeferler.length === 0 && (
         <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>📋</div>
           <div style={{ fontSize: 16, marginBottom: 8 }}>Henüz teklif veya aktif iş yok</div>
@@ -759,6 +869,90 @@ export function IssizProfilSayfasi() {
       <button onClick={cikisYap} className="btn btn-danger btn-full" style={{ marginTop: 10, padding: "14px" }}>
         🚪 Çıkış Yap
       </button>
+    </div>
+  );
+}
+
+export function IssizIlanlarSayfasi() {
+  const { oturum, ilanlar, ilanSil, ilanAl } = useApp();
+
+  const mevcutIlanlar = ilanlar.filter(i => i.olusturan_id === oturum?.id);
+
+  const handleSil = async (ilanId) => {
+    if (confirm("Bu ilanı silmek istediğinize emin misiniz?")) {
+      ilanSil(ilanId);
+      alert("İlan başarıyla silindi!");
+    }
+  };
+
+  const handleAl = async (ilan) => {
+    ilanAl(ilan.id, oturum);
+  };
+
+  return (
+    <div className="scroll-content">
+      <div className="section-title">KENDİ İLANLARIM ({mevcutIlanlar.length})</div>
+
+      {mevcutIlanlar.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
+          <div style={{ fontSize: 56, marginBottom: 20 }}>📋</div>
+          <div style={{ fontSize: 16, marginBottom: 8 }}>Henüz ilanınız yok</div>
+          <div style={{ fontSize: 13 }}>Yeni ilan vererek başlayın!</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {mevcutIlanlar.map(ilan => (
+            <div key={ilan.id} className="card" style={{ marginBottom: 0, border: ilan.durum === "aktif" ? "2px solid rgba(251,191,36,0.3)" : "1px solid rgba(239,68,68,0.2)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <div>
+                  <div className="display" style={{ fontSize: 18, color: "#fbbf24" }}>{ilan.yuk}</div>
+                  <div style={{ fontSize: 12, color: "var(--text3)", letterSpacing: 1.5 }}>{ilan.nereden} → {ilan.nereye}</div>
+                </div>
+                <div style={{
+                  padding: "6px 12px",
+                  borderRadius: "20px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textTransform: "uppercase"
+                }}>
+                  {ilan.durum === "aktif" ? (
+                    <span style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)", color: "#10b981" }}>
+                      ✓ AKTİF
+                    </span>
+                  ) : (
+                    <span style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.1) 100%)", color: "#ef4444" }}>
+                      ✗ PASİF
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#fbbf24" }}>₺{ilan.ucret.toLocaleString()}</div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  {ilan.durum === "aktif" && (
+                    <button
+                      onClick={() => handleAl(ilan)}
+                      className="btn btn-primary"
+                      style={{ padding: "10px 18px", fontSize: 12 }}
+                    >
+                      ✓ Alındı
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleSil(ilan.id)}
+                    className="btn btn-danger"
+                    style={{ padding: "10px 18px", fontSize: 12 }}
+                  >
+                    🗑️ Sil
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
