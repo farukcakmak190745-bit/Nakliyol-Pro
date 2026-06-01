@@ -550,8 +550,8 @@ export function MesajlarSayfasi({ onGeri }) {
 
   return (
     <div className="scroll-content">
-      <div className="section-title">MESAJLAR ({konusmalar.length})</div>
-      {konusmalar.length === 0 ? (
+      <div className="section-title">MESAJLAR ({konusmalar?.length || 0})</div>
+      {(!konusmalar || konusmalar.length === 0) ? (
         <EmptyState icon="💬" text="Henüz mesaj yok" />
       ) : (
         konusmalar.map(k => (

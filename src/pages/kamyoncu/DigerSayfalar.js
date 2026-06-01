@@ -11,8 +11,9 @@ export function SeferlerSayfasi() {
   const [konusmaIdMap, setKonusmaIdMap] = useState({});
   const [teslimEdildiModal, setTeslimEdildiModal] = useState(null);
 
-  const aktifSeferler = seferler.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
-  const bitmisSeferler = seferler.filter(s => s.durum === "tamamlandı");
+  const seferlerList = seferler || [];
+  const aktifSeferler = seferlerList.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
+  const bitmisSeferler = seferlerList.filter(s => s.durum === "tamamlandı");
 
   const konusmaAc = (sefer) => {
     const newConversationId = konusmaOluştur({
@@ -245,8 +246,8 @@ export function MesajlarSayfasi({ onGeri }) {
 
   return (
     <div className="scroll-content">
-      <div className="section-title">MESAJLAR ({konusmalar.length})</div>
-      {konusmalar.length === 0 ? (
+      <div className="section-title">MESAJLAR ({konusmalar?.length || 0})</div>
+      {(!konusmalar || konusmalar.length === 0) ? (
         <EmptyState icon="💬" text="Henüz mesaj yok" />
       ) : (
         konusmalar.map(k => (

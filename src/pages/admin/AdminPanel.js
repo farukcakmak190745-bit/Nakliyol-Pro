@@ -15,6 +15,10 @@ export default function AdminPanel() {
   const [aktif, setAktif] = useState("ozet");
   const [mobilMenu, setMobilMenu] = useState(false);
 
+  const ilanlarList = ilanlar || [];
+  const seferlerList = seferler || [];
+  const kullanicilarList = kullanicilar || [];
+
   const thStyle = { padding: "12px 14px", textAlign: "left", color: "var(--text3)", fontWeight: 700, fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", borderBottom: "1px solid rgba(251,191,36,0.2)", background: "var(--bg2)" };
   const tdStyle = { padding: "14px 14px", borderBottom: "1px solid rgba(251,191,36,0.1)", color: "var(--text)", fontSize: 13, verticalAlign: "middle" };
   const btnStyle = { fontSize: 11, padding: "6px 14px", borderRadius: "8px", cursor: "pointer", marginRight: 6, transition: "var(--tr)" };
@@ -25,9 +29,9 @@ export default function AdminPanel() {
         <div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12, marginBottom: 24 }}>
             {[
-              { val: ilanlar.filter(i=>i.durum==="aktif").length, lbl: "Aktif İlan", renk: "#10b981", icon: "📢" },
-              { val: seferler.filter(s=>s.durum==="yolda"||s.durum==="teslima_bekleniyor").length, lbl: "Aktif Sefer", renk: "#3b82f6", icon: "✈️" },
-              { val: kullanicilar.length, lbl: "Toplam Kullanıcı", renk: "#3b82f6", icon: "👥" },
+              { val: ilanlarList.filter(i=>i.durum==="aktif").length, lbl: "Aktif İlan", renk: "#10b981", icon: "📢" },
+              { val: seferlerList.filter(s=>s.durum==="yolda"||s.durum==="teslima_bekleniyor").length, lbl: "Aktif Sefer", renk: "#3b82f6", icon: "✈️" },
+              { val: kullanicilarList.length, lbl: "Toplam Kullanıcı", renk: "#3b82f6", icon: "👥" },
               { val: "₺142K", lbl: "Bu Ay Ciro", renk: "#fbbf24", icon: "💰" },
             ].map(s => (
               <div key={s.lbl} style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "16px", padding: 18 }}>
@@ -251,7 +255,7 @@ export default function AdminPanel() {
         <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(251,191,36,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(15,15,15,0.95)", backdropFilter: "blur(14px)", zIndex: 10 }}>
           <div style={{ fontFamily: "var(--font-d)", fontSize: 18, letterSpacing: 1, color: "#fbbf24" }}>{menu.find(m=>m.key===aktif)?.label?.toUpperCase()}</div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", color: "#fbbf24", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, border: "1px solid rgba(251,191,36,0.2)" }}>{seferler.filter(s=>s.durum==="teslima_bekleniyor").length} teslim bekliyor</div>
+            <div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", color: "#fbbf24", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, border: "1px solid rgba(251,191,36,0.2)" }}>{seferlerList.filter(s=>s.durum==="teslima_bekleniyor").length} teslim bekliyor</div>
             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>⚙️</div>
           </div>
         </div>
