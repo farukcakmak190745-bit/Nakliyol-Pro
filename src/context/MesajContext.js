@@ -5,7 +5,7 @@ const Ctx = createContext();
 export const MesajProvider = ({ children }) => {
   const [konusmalar, setKonusmalar] = useState([]);
   const [konusmaIDs, setKonusmaIDs] = useState({});
-  const konusmaIDsRef = useRef(konusmaIDs);
+  const konusmaIDsRef = useRef({});
   konusmaIDsRef.current = konusmaIDs;
 
   const konusmaAc = useCallback((params) => {

@@ -170,7 +170,6 @@ export const AppProvider = ({ children }) => {
 
   const [kamyoncuBasvuru, setKamyoncuBasvuru] = useState(null);
   const [seferOnayDurumu, setSeferOnayDurumu] = useState(() => ({}));
-  const [konusmalar, setKonusmalar] = useState([]);
 
   const kayitOl = useCallback(async (bilgiler) => {
     console.log("📥 kayitOl fonksiyonuna gelen bilgiler:", bilgiler);
