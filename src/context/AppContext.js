@@ -933,12 +933,22 @@ export const AppProvider = ({ children }) => {
 
     // Bildirim oluştur - İşveren için
     if (supabase && ilan.olusturan_id) {
+      console.log('🔔 Bildirim oluşturuluyor:', {
+        kullanici_id: ilan.olusturan_id,
+        tur: 'basvuru',
+        baslik: 'Yeni iş başvurusu',
+        ilan_id: ilanId
+      });
       await supabase.from('bildirimler').insert({
         kullanici_id: ilan.olusturan_id,
         tur: 'basvuru',
         baslik: 'Yeni iş başvurusu',
         icerik: `${bilgiler.ad} (${bilgiler.tel})\n\n${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}\n\nÇekici: ${bilgiler.cekiciPlaka}\nDorse: ${bilgiler.dorsePlaka}\nTC: ${bilgiler.tc_kimlik}`,
         ilan_id: ilanId
+      }).then(() => {
+        console.log('✅ Bildirim başarıyla oluşturuldu');
+      }).catch(err => {
+        console.error('❌ Bildirim oluşturma hatası:', err);
       });
     }
 
@@ -1058,7 +1068,11 @@ export const AppProvider = ({ children }) => {
           .from('ilanlar')
           .select('*')
 
-        if (error) throw error
+        if (error) {
+          console.error('❌ İlanlar fetch hatası:', error)
+          return
+        }
+
         if (data) {
           // Normalize data for display
           const normalizedData = data.map(item => ({
@@ -1072,7 +1086,10 @@ export const AppProvider = ({ children }) => {
             olusturanPuan: item.olusturan?.puan || 5.0
           }));
           setIlanlar(normalizedData)
-          console.log('✅ İlanlar güncellendi (Polling)')
+          console.log(`✅ İlanlar güncellendi: ${normalizedData.length} adet`)
+        } else {
+          console.log('⚠️ İlanlar listesi boş')
+          setIlanlar([])
         }
       } catch (error) {
         console.error('❌ İlanlar güncellemesi başarısız:', error)
@@ -1094,10 +1111,17 @@ export const AppProvider = ({ children }) => {
           .from('seferler')
           .select('*')
 
-        if (error) throw error
+        if (error) {
+          console.error('❌ Seferler fetch hatası:', error)
+          return
+        }
+
         if (data) {
           setSeferler(data)
-          console.log('✅ Seferler güncellendi (Polling)')
+          console.log(`✅ Seferler güncellendi: ${data.length} adet`)
+        } else {
+          console.log('⚠️ Seferler listesi boş')
+          setSeferler([])
         }
       } catch (error) {
         console.error('❌ Seferler güncellemesi başarısız:', error)
@@ -1117,6 +1141,7 @@ export const AppProvider = ({ children }) => {
 
     const interval = setInterval(async () => {
       try {
+        // Tüm bildirimleri çek
         const { data, error } = await supabase
           .from('bildirimler')
           .select('*')
@@ -1127,12 +1152,20 @@ export const AppProvider = ({ children }) => {
           console.error('❌ Bildirimler fetch hatası:', error)
           return
         }
+
         if (data) {
-          console.log(`✅ ${data.length} bildirim yüklendi`)
+          console.log(`📥 Tüm bildirimler yüklendi: ${data.length} adet`)
+
           // Bildirimleri oturuma göre filtrele
-          const filtered = data.filter(b => b.kullanici_id === oturum?.user?.id);
+          const filtered = oturum?.user?.id
+            ? data.filter(b => b.kullanici_id === oturum.user.id)
+            : [];
+
           setBildirimlerList(filtered);
-          console.log(`📊 ${filtered.length} bildirim gösteriliyor (oturum: ${oturum?.user?.id || 'none'})`)
+          console.log(`✅ Bildirimler state'e kaydedildi: ${filtered.length} adet (oturum: ${oturum?.user?.id || 'none'})`)
+        } else {
+          console.log('⚠️ Bildirimler listesi boş')
+          setBildirimlerList([])
         }
       } catch (error) {
         console.error('❌ Bildirimler güncellemesi başarısız:', error)
@@ -1154,10 +1187,17 @@ export const AppProvider = ({ children }) => {
           .from('teklifler')
           .select('*')
 
-        if (error) throw error
+        if (error) {
+          console.error('❌ Teklifler fetch hatası:', error)
+          return
+        }
+
         if (data) {
           setTeklifler(data)
-          console.log('✅ Teklifler güncellendi (Polling)')
+          console.log(`✅ Teklifler güncellendi: ${data.length} adet`)
+        } else {
+          console.log('⚠️ Teklifler listesi boş')
+          setTeklifler([])
         }
       } catch (error) {
         console.error('❌ Teklifler güncellemesi başarısız:', error)
