@@ -1111,7 +1111,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const subscribeToBildirimler = () => {
-    if (!supabase || !oturum) return null;
+    if (!supabase) return null;
 
     console.log('🔔 Bildirim Polling başlatılıyor...')
 
@@ -1120,11 +1120,13 @@ export const AppProvider = ({ children }) => {
         const { data, error } = await supabase
           .from('bildirimler')
           .select('*')
-          .eq('kullanici_id', oturum.user?.id)
           .order('olusturma_zamani', { ascending: false })
           .limit(50)
 
-        if (error) throw error
+        if (error) {
+          console.warn('⚠️ Bildirimler fetch hatası:', error)
+          return
+        }
         if (data) {
           console.log(`✅ ${data.length} bildirim yüklendi`)
           setBildirimlerList(data)
