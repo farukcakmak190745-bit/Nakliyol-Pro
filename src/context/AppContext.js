@@ -1121,15 +1121,18 @@ export const AppProvider = ({ children }) => {
           .from('bildirimler')
           .select('*')
           .order('olusturma_zamani', { ascending: false })
-          .limit(50)
+          .limit(100)
 
         if (error) {
-          console.warn('⚠️ Bildirimler fetch hatası:', error)
+          console.error('❌ Bildirimler fetch hatası:', error)
           return
         }
         if (data) {
           console.log(`✅ ${data.length} bildirim yüklendi`)
-          setBildirimlerList(data)
+          // Bildirimleri oturuma göre filtrele
+          const filtered = data.filter(b => b.kullanici_id === oturum?.user?.id);
+          setBildirimlerList(filtered);
+          console.log(`📊 ${filtered.length} bildirim gösteriliyor (oturum: ${oturum?.user?.id || 'none'})`)
         }
       } catch (error) {
         console.error('❌ Bildirimler güncellemesi başarısız:', error)

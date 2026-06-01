@@ -15,6 +15,7 @@ import {
   MesajlarSayfasi,
   IssizProfilSayfasi
 } from "./pages/issiz/IssizSayfalar";
+import { BildirimlerSayfasi } from "./pages/BildirimlerSayfasi";
 import BildirimAyarlariSayfasi from "./pages/kamyoncu/BildirimAyarlariSayfasi";
 import { BildirimlerModal } from "./components/BildirimlerModal";
 import ChatSayfasi from "./components/ChatSayfasi";
@@ -191,6 +192,7 @@ export default function App() {
               <Route path="/" element={<GirisEkrani />} />
               <Route path="/app" element={<AppIceriki />} />
               <Route path="/profil/bildirim" element={<ProfilIcContent defaultPath="bildirim" />} />
+              <Route path="/bildirimler" element={<BildirimlerSayfasi />} />
             </Routes>
           </AppProvider>
         </MesajProvider>

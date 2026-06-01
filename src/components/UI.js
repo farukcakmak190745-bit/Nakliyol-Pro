@@ -41,6 +41,7 @@ export const BottomNav = ({ aktif, setAktif, rol }) => {
     const kamyoncuMenu = [
       { key: "ilanlar",  icon: "📢", label: "İlanlar" },
       { key: "seferler", icon: "🗺️", label: "Seferlerim" },
+      { key: "bildirimler", icon: "🔔", label: "Bildirimler" },
       { key: "mesajlar", icon: "💬", label: "Mesajlar" },
       { key: "profil",   icon: "👤", label: "Profil" },
     ];

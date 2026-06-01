@@ -4,6 +4,7 @@ import { useMesaj } from "../../context/MesajContext";
 import { EmptyState } from "../../components/UI";
 import ChatSayfasi from "../../components/ChatSayfasi";
 import TeslimEdildiModal from "../../components/TeslimEdildiModal";
+import { BildirimlerSayfasi } from "../../pages/BildirimlerSayfasi";
 
 export function SeferlerSayfasi() {
   const { seferler, konusmaOluştur, oturum, islemiTeslimEt } = useApp();
