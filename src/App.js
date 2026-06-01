@@ -25,7 +25,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingScreen from "./components/LoadingScreen";
 
 function MobilApp({ cikisYap }) {
-  const { oturum, konusmalar, bildirimGoster } = useApp();
+  const { oturum, kullanicilar: adminKullanicilar, ilanlar, seferler, teklifler, bildirimlerList, konusmalar, bildirimGoster } = useApp();
   const [sekme, setSekme] = useState("ilanlar");
   const [seciliKonusma, setSeciliKonusma] = useState(null);
   const [yukleniyor, setYukleniyor] = useState(true);
