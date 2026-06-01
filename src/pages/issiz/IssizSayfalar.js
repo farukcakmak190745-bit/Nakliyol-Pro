@@ -281,15 +281,15 @@ export function TekliflerSayfasi() {
   const [yeniBekleyenler, setYeniBekleyenler] = useState([]);
 
   // İşverenin kendi ilanlarını filtrele
-  const kendiIlanlar = ilanlar.filter(i => i.olusturan_id === oturum?.id);
-  const yeniBekleyenlerMap = new Map(yeniBekleyenler.map(b => [b.ilanId, b]));
+  const kendiIlanlar = ilanlar ? ilanlar.filter(i => i.olusturan_id === oturum?.id) : [];
+  const yeniBekleyenlerMap = yeniBekleyenler ? new Map(yeniBekleyenler.map(b => [b.ilanId, b])) : new Map();
   const kendiIlanIdleri = Array.from(yeniBekleyenlerMap.keys());
 
   // Sadece kendi ilanlarına ait seferleri göster
-  const kendiSeferler = seferler.filter(s => s.ilan_id && yeniBekleyenlerMap.has(s.ilan_id));
+  const kendiSeferler = seferler ? seferler.filter(s => s.ilan_id && yeniBekleyenlerMap.has(s.ilan_id)) : [];
   const mevcutSeferler = kendiSeferler.filter(s => s.durum === "bekliyor");
   const kabulEdilecekler = mevcutSeferler.filter(s => kabulEdilen.has(s.id));
-  const aktifSeferler = seferler.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
+  const aktifSeferler = seferler ? seferler.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor") : [];
 
   useEffect(() => {
     // Backend'den gelen 'bekliyor' durumundaki seferleri al
