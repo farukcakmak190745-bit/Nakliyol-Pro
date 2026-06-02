@@ -290,26 +290,18 @@ export const MesajProvider = ({ children }) => {
     }));
 
     if (supabase) {
-      // Konuşmanın user_id'sini bul (gonderen = user_id)
-      const { data: conv } = await supabase
-        .from('conversations')
-        .select('user_id, partner_id')
-        .eq('id', konusmaId)
-        .maybeSingle();
-
-      if (!conv) {
-        console.error('Mesaj gönderilemedi: konuşma bulunamadı');
+      // Gönderen = şu an giriş yapmış kullanıcı (auth.uid() ile aynı)
+      const gonderenId = currentUserIdRef.current;
+      if (!gonderenId) {
+        console.error('❌ mesajGonder: giriş yapmış kullanıcı bulunamadı (currentUserIdRef boş)');
         return;
       }
 
-      // Gönderen = konuşmayı açan kişi (user_id).
-      // Not: İşveren "kabul et" yaptığında user_id = işveren, mesajları işveren olarak gönderir.
-      // Bu basit model - gerçek uygulamada gonderen login olan kullanıcı.
       const { data: msgRow, error } = await supabase
         .from('messages')
         .insert({
           conversation_id: konusmaId,
-          gonderen: conv.user_id,
+          gonderen: gonderenId,
           metin,
           veri_tipi: veriTipi,
           veri: veri || null
