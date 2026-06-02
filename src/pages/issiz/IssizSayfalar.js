@@ -326,8 +326,8 @@ export function TekliflerSayfasi() {
 
     setBekleyenOnaylar(uniqOnaylar);
     setYeniBekleyenler(uniqOnaylar);
-    // kendiIlanIdleri bir Set'tir, değişiklikleri yakalamak için array'e çevirip dependency'ye koyuyoruz
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // kendiIlanIdleri bir Set'tir; değişiklikleri yakalamak için string olarak dependency'ye koyuyoruz
+    // eslint-disable-next-line
   }, [seferler, bekleyenOnaylariGetir, Array.from(kendiIlanIdleri).join(',')]);
 
   const kabulEt = (sefer) => {
