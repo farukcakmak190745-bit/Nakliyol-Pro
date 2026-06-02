@@ -928,7 +928,15 @@ export const AppProvider = ({ children }) => {
 
     if (supabase) {
       const { error } = await supabase.from('seferler').insert([yeniSefer]);
-      if (error) console.error("Sefer ekleme hatası:", error);
+      if (error) {
+        console.error("Sefer ekleme hatası:", error);
+        // RLS veya başka bir sebeple sefer yazılamadıysa kullanıcıyı bilgilendir,
+        // aksi halde başvuru gitmiş gibi görünür ama işveren Teklifler'de göremez.
+        alert(`Başvuru kaydedilemedi:\n${error.message || 'Bilinmeyen hata'}\n\nLütfen destek ile iletişime geçin.`);
+        return;
+      } else {
+        console.log('✅ Sefer başarıyla eklendi (işveren Teklifler sekmesinde görecek)');
+      }
     }
 
     // Bildirim oluştur - İşveren için

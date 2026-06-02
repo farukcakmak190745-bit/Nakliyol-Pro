@@ -282,18 +282,21 @@ export function TekliflerSayfasi() {
 
   // İşverenin kendi ilanlarını filtrele
   const kendiIlanlar = ilanlar ? ilanlar.filter(i => i.olusturan_id === oturum?.id) : [];
-  const yeniBekleyenlerMap = yeniBekleyenler ? new Map(yeniBekleyenler.map(b => [b.ilanId, b])) : new Map();
-  const kendiIlanIdleri = Array.from(yeniBekleyenlerMap.keys());
+  const kendiIlanIdleri = new Set(kendiIlanlar.map(i => i.id));
 
-  // Sadece kendi ilanlarına ait seferleri göster
-  const kendiSeferler = seferler ? seferler.filter(s => s.ilan_id && yeniBekleyenlerMap.has(s.ilan_id)) : [];
+  // Sadece bu işverene ait (kendi ilanına yapılmış) bekleyen seferleri al
+  const kendiSeferler = seferler
+    ? seferler.filter(s => s.ilan_id && kendiIlanIdleri.has(s.ilan_id))
+    : [];
   const mevcutSeferler = kendiSeferler.filter(s => s.durum === "bekliyor");
   const kabulEdilecekler = mevcutSeferler.filter(s => kabulEdilen.has(s.id));
-  const aktifSeferler = seferler ? seferler.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor") : [];
+  const aktifSeferler = kendiSeferler.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
 
   useEffect(() => {
-    // Backend'den gelen 'bekliyor' durumundaki seferleri al
-    const backendBekleyenler = seferler.filter(s => s.durum === "bekliyor");
+    // Backend'den gelen ve bu işverene ait 'bekliyor' durumundaki seferleri al
+    const backendBekleyenler = seferler.filter(s =>
+      s.durum === "bekliyor" && s.ilan_id && kendiIlanIdleri.has(s.ilan_id)
+    );
 
     // Yerel state'teki bekleyen onayları al
     const localOnaylar = bekleyenOnaylariGetir();
@@ -323,7 +326,9 @@ export function TekliflerSayfasi() {
 
     setBekleyenOnaylar(uniqOnaylar);
     setYeniBekleyenler(uniqOnaylar);
-  }, [seferler, bekleyenOnaylariGetir]);
+    // kendiIlanIdleri bir Set'tir, değişiklikleri yakalamak için array'e çevirip dependency'ye koyuyoruz
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seferler, bekleyenOnaylariGetir, Array.from(kendiIlanIdleri).join(',')]);
 
   const kabulEt = (sefer) => {
     setKabulEdilen(prev => new Set([...prev, sefer.id]));

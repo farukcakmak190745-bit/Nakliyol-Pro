@@ -204,6 +204,30 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'seferler' AND policyname = 'Creator can update own seferler') THEN
     CREATE POLICY "Creator can update own seferler" ON seferler FOR UPDATE USING (auth.uid() = olusturan_id::uuid OR kamyoncu_tc = auth.uid()::text);
   END IF;
+
+  -- KRİTİK: Kamyoncu başvurusu seferler tablosuna kayıt yazar.
+  -- RLS etkin olduğu için INSERT policy'si yoksa başvuru sessizce reddedilir
+  -- ve işverenin "Teklifler" sekmesinde görünmez.
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'seferler' AND policyname = 'Authenticated can insert seferler') THEN
+    CREATE POLICY "Authenticated can insert seferler" ON seferler FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+  END IF;
+END $$;
+
+-- BILDIRIMLER (ayrı tablo — AppContext supabase.from('bildirimler').insert çağırıyor)
+-- Tablo dashboard'da manuel oluşturulduysa RLS etkinse INSERT policy gerekir.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'bildirimler') THEN
+    ALTER TABLE bildirimler ENABLE ROW LEVEL SECURITY;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'bildirimler' AND policyname = 'Authenticated can insert bildirimler') THEN
+      CREATE POLICY "Authenticated can insert bildirimler" ON bildirimler FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'bildirimler' AND policyname = 'Authenticated can view bildirimler') THEN
+      CREATE POLICY "Authenticated can view bildirimler" ON bildirimler FOR SELECT USING (auth.uid() IS NOT NULL);
+    END IF;
+  END IF;
 END $$;
 
 ALTER TABLE teklifler ENABLE ROW LEVEL SECURITY;

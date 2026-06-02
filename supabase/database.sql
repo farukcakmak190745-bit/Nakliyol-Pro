@@ -179,6 +179,16 @@ CREATE POLICY "Creator can view own seferler" ON seferler
 CREATE POLICY "Creator can update own seferler" ON seferler
   FOR UPDATE USING (auth.uid() = olusturan_id::uuid OR kamyoncu_tc = auth.uid()::text);
 
+-- NOT: Kamyoncu başvurusu (başvuruGonder) seferler tablosuna kayıt yazar;
+-- işverenin "Teklifler" sekmesinde görünmesi için INSERT policy'si zorunludur.
+CREATE POLICY "Authenticated can insert seferler" ON seferler
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+-- BILDIRIMLER (ayrı tablo — dashboard'da oluşturulduysa)
+-- Kod supabase.from('bildirimler').insert(...) çağırıyor; RLS etkinse INSERT policy gerekir.
+CREATE POLICY "Authenticated can insert bildirimler" ON bildirimler
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
 -- TEKLIFLER
 ALTER TABLE teklifler ENABLE ROW LEVEL SECURITY;
 
