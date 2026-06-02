@@ -12,7 +12,11 @@ export function SeferlerSayfasi() {
   const [konusmaIdMap, setKonusmaIdMap] = useState({});
   const [teslimEdildiModal, setTeslimEdildiModal] = useState(null);
 
-  const seferlerList = seferler || [];
+  // Kamyoncu sadece KENDİ seferlerini görmeli (tc_kimlik veya telefon eşleşmeli)
+  const seferlerList = (seferler || []).filter(s => {
+    if (!oturum) return false;
+    return s.kamyoncu_tc === oturum.tc_kimlik || s.kamyoncu_tel === oturum.telefon;
+  });
   const aktifSeferler = seferlerList.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
   const bitmisSeferler = seferlerList.filter(s => s.durum === "tamamlandı");
 
