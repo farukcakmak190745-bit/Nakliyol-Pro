@@ -170,8 +170,9 @@ export const MesajProvider = ({ children }) => {
     });
 
     // 2) Auth state değişikliklerini dinle (giriş/çıkış)
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       const newUserId = session?.user?.id || null;
+      console.log('📨 MesajContext auth event:', event, '→ userId:', newUserId, '(önceki:', currentUserIdRef.current + ')');
       if (newUserId !== currentUserIdRef.current) {
         currentUserIdRef.current = newUserId;
         subscribedRef.current = false; // yeni kullanıcı için yeniden subscribe ol
@@ -290,12 +291,19 @@ export const MesajProvider = ({ children }) => {
     }));
 
     if (supabase) {
-      // Gönderen = şu an giriş yapmış kullanıcı (auth.uid() ile aynı)
-      const gonderenId = currentUserIdRef.current;
+      // Gönderen = şu an giriş yapmış kullanıcı.
+      // currentUserIdRef yerine doğrudan supabase.auth.getUser() ile alıyoruz
+      // ki auth state değişimlerinde her zaman doğru kullanıcıyı yakalayalım.
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const gonderenId = authUser?.id || currentUserIdRef.current;
+
       if (!gonderenId) {
-        console.error('❌ mesajGonder: giriş yapmış kullanıcı bulunamadı (currentUserIdRef boş)');
+        console.error('❌ mesajGonder: giriş yapmış kullanıcı bulunamadı');
+        alert('Mesaj gönderilemedi: oturum bulunamadı. Lütfen tekrar giriş yapın.');
         return;
       }
+
+      console.log('📤 mesajGonder:', { konusmaId, gonderenId, metin: metin.substring(0, 30) });
 
       const { data: msgRow, error } = await supabase
         .from('messages')
