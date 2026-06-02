@@ -39,11 +39,13 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
       let konusma = mesajContext.konusmalar?.find(k => k.ilan_id === ilanId);
 
       // Konuşma yoksa, oluştur
-      if (!konusma && ilanId && sefer.olusturan_id && sefer.kamyoncu_user_id) {
+      // KRİTİK: userId = giriş yapan kullanıcı (auth.uid() ile eşleşmeli,
+      // RLS insert policy gereği). Kamyoncu teslim ettiği için user_id = kamyoncu.
+      if (!konusma && ilanId && oturum?.id && sefer.olusturan_id) {
         const yeniId = await mesajContext.konusmaAc({
-          userId: sefer.olusturan_id,
-          partnerId: sefer.kamyoncu_user_id,
-          partnerAd: oturum?.ad || "Kamyoncu",
+          userId: oturum.id,                       // kamyoncu (giriş yapan)
+          partnerId: sefer.olusturan_id,          // işveren (karşı taraf)
+          partnerAd: sefer.olusturan || "İşveren",
           isTrucker: true,
           baslik: `${sefer.yuk} - ${sefer.nereden} → ${sefer.nereye}`,
           konusmaTuru: "is",
