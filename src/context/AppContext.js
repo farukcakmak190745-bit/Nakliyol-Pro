@@ -760,6 +760,17 @@ export const AppProvider = ({ children }) => {
     }));
   }, [oturum]);
 
+  // Oturum açıldığında konuşmaları yükle + realtime dinle
+  useEffect(() => {
+    if (!oturum?.id) return;
+    console.log('💬 Oturum değişti, konuşmalar yükleniyor:', oturum.id);
+    mesajContext.loadConversations(oturum.id);
+    const unsubscribe = mesajContext.subscribeRealtime(oturum.id);
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [oturum?.id]);
+
   const odemeYap = useCallback(async (seferId) => {
     const sefer = seferler.find(s => s.id === seferId);
     if (sefer && sefer.odemeDurumu === "beklemede") {
@@ -1013,16 +1024,50 @@ export const AppProvider = ({ children }) => {
     }));
 
     const baslik = `${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}`;
-    const yeniKonusma = mesajContext.konusmaAc({
-      partnerId: ilanId,
-      partnerAd: kamyoncuAd,
-      partnerRol: "kamyoncu",
-      isTrucker: false,
-      baslik,
-      konusmaTuru: "sefer",
-      resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + kamyoncuAd.substring(0, 2).toUpperCase(),
-      bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-    });
+
+    // Kamyoncu'nun user_id'sini tc_kimlik'ten bul
+    let kamyoncuUserId = null;
+    if (supabase && tc) {
+      const { data: kamyoncuUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('tc_kimlik', tc)
+        .maybeSingle();
+      if (kamyoncuUser) {
+        kamyoncuUserId = kamyoncuUser.id;
+        console.log('✅ Kamyoncu user bulundu:', kamyoncuUserId);
+      } else {
+        console.warn('⚠️ Kamyoncu user bulunamadı, tc_kimlik ile. Sadece telefon deneniyor...');
+        const { data: kamyoncuUser2 } = await supabase
+          .from('users')
+          .select('id')
+          .eq('telefon', kamyoncuTel)
+          .maybeSingle();
+        if (kamyoncuUser2) {
+          kamyoncuUserId = kamyoncuUser2.id;
+          console.log('✅ Kamyoncu user bulundu (telefon ile):', kamyoncuUserId);
+        }
+      }
+    }
+
+    // Konuşma oluştur (Supabase)
+    let yeniKonusma = null;
+    if (supabase && ilan.olusturan_id && kamyoncuUserId) {
+      yeniKonusma = await mesajContext.konusmaAc({
+        userId: ilan.olusturan_id,
+        partnerId: kamyoncuUserId,
+        partnerAd: kamyoncuAd,
+        isTrucker: false,
+        baslik,
+        konusmaTuru: "is",
+        ilanId: ilanId,
+        resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + kamyoncuAd.substring(0, 2).toUpperCase(),
+        bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+      });
+      console.log('✅ Konuşma oluşturuldu/açıldı:', yeniKonusma);
+    } else {
+      console.warn('⚠️ Konuşma açılamadı:', { olusturan_id: ilan.olusturan_id, kamyoncuUserId });
+    }
 
     // Bildirim oluştur - İşveren için
     if (supabase && mevcutSefer.olusturan_id) {
@@ -1033,12 +1078,14 @@ export const AppProvider = ({ children }) => {
         icerik: `${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}\n\nÇekici: ${plaka}\nDorse: ${dorsePlaka}\nTel: ${kamyoncuTel}`,
         sefer_id: mevcutSefer.id,
         ilan_id: ilanId
-      });
+      }).catch(err => console.error('Bildirim hatası:', err));
     }
 
-    setTimeout(() => {
-      mesajContext.mesajGonder(yeniKonusma, `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${kamyoncuAd}\n📞 Tel: ${kamyoncuTel}\n🚚 Çekici Plaka: ${plaka}\n🚐 Dorse Plaka: ${dorsePlaka}\n🆔 TC Kimlik: ${tc}\n\nŞimdi convo üzerinden konuşabiliriz.`);
-    }, 1000);
+    // Bilgi mesajını konuşmaya gönder
+    if (yeniKonusma) {
+      const bilgiMesaji = `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${kamyoncuAd}\n📞 Tel: ${kamyoncuTel}\n🚚 Çekici Plaka: ${plaka}\n🚐 Dorse Plaka: ${dorsePlaka}\n🆔 TC Kimlik: ${tc}\n\nŞimdi convo üzerinden konuşabiliriz.`;
+      await mesajContext.mesajGonder(yeniKonusma, bilgiMesaji);
+    }
   }, [ilanlar, seferler, mesajContext, supabase, oturum]);
 
   const ilaniReddet = useCallback(async (ilanId) => {
