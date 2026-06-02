@@ -1,35 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useMesaj } from "../context/MesajContext";
 
 export default function TeslimEdildiModal({ sefer, onClose }) {
   const { oturum, islemiTeslimEt } = useApp();
   const mesajContext = useMesaj();
+
+  // Form state — kamyonun kendi IBAN'ı + açıklama
+  const [iban, setIban] = useState("");
+  const [ibanSahibi, setIbanSahibi] = useState("");
   const [aciklama, setAciklama] = useState("");
   const [gonderiyor, setGonderiyor] = useState(false);
 
-  const ceviciIban = oturum?.iban;
-  const ceviciIbanSahibi = oturum?.ibanSahibi || "";
-  const aliciIban = sefer?.iban;
-  const aliciIbanSahibi = sefer?.ibanSahibi || "";
+  // Profilindeki IBAN'ı default olarak göster
+  useEffect(() => {
+    if (oturum?.iban) setIban(oturum.iban);
+    if (oturum?.ibanSahibi) setIbanSahibi(oturum.ibanSahibi);
+  }, [oturum]);
 
-  const mesajGonder = async () => {
+  const handleSubmit = async () => {
     if (!aciklama.trim()) {
       alert("Lütfen teslimat açıklaması giriniz!");
+      return;
+    }
+    if (!iban.trim()) {
+      alert("Lütfen IBAN numaranızı giriniz!");
       return;
     }
     if (gonderiyor) return;
     setGonderiyor(true);
 
     try {
-      // 1) Sefer durumunu güncelle (teslima_bekleniyor)
+      // 1) Sefer durumunu güncelle
       await islemiTeslimEt(sefer.id);
 
       // 2) Konuşmayı bul (ilan_id üzerinden)
       const ilanId = sefer.ilan_id || sefer.ilanId;
       let konusma = mesajContext.konusmalar?.find(k => k.ilan_id === ilanId);
 
-      // Konuşma yoksa, oluşturma
+      // Konuşma yoksa, oluştur
       if (!konusma && ilanId && sefer.olusturan_id && sefer.kamyoncu_user_id) {
         const yeniId = await mesajContext.konusmaAc({
           userId: sefer.olusturan_id,
@@ -48,28 +57,26 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
       }
 
       // 3) Mesaj içeriği
-      const mesajMetni = `✅ İŞ TESLİM EDİLDİ\n\n` +
-        `📝 Açıklama: ${aciklama}\n\n` +
+      const mesajMetni =
+        `✅ İŞ TESLİM EDİLDİ\n\n` +
+        `📝 ${aciklama}\n\n` +
         `💳 Ödeme Yapılacak IBAN:\n` +
-        `   ${aliciIbanSahibi ? `👤 ${aliciIbanSahibi}\n` : ''}` +
-        `   🏦 ${aliciIban || 'IBAN belirtilmemiş'}\n\n` +
-        `📤 Gönderen IBAN (benim):\n` +
-        `   ${ceviciIbanSahibi ? `👤 ${ceviciIbanSahibi}\n` : ''}` +
-        `   🏦 ${ceviciIban || 'IBAN belirtilmemiş'}`;
+        `${ibanSahibi ? `👤 ${ibanSahibi}\n` : ''}` +
+        `🏦 ${iban}`;
 
       // 4) Mesajı gönder
       if (konusma?.id) {
         await mesajContext.mesajGonder(konusma.id, mesajMetni);
-        console.log('✅ Teslimat mesajı konuşmaya gönderildi');
+        console.log('✅ Teslimat mesajı gönderildi');
       } else {
-        console.warn('⚠️ Konuşma bulunamadı, mesaj sadece sefer durumuna yazıldı');
+        console.warn('⚠️ Konuşma bulunamadı, mesaj gönderilemedi');
       }
 
-      alert(`✅ İş teslim edildi! IBAN bilgileri işverene iletildi.`);
+      alert(`✅ İş teslim edildi!\n\nİşverene IBAN bilgileriniz iletildi.`);
       onClose();
     } catch (err) {
       console.error('❌ Teslim etme hatası:', err);
-      alert(`Hata oluştu: ${err.message || err}`);
+      alert(`Hata: ${err.message || err}`);
     } finally {
       setGonderiyor(false);
     }
@@ -78,171 +85,142 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
   return (
     <div className="sheet-overlay" onClick={onClose}>
       <div className="sheet" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} style={{ position: "fixed", top: 20, right: 20, background: "var(--bg1)", border: "1px solid var(--border2)", borderRadius: "12px", padding: "12px 16px", fontSize: 18, cursor: "pointer", zIndex: 101 }}>✕</button>
+        <button
+          onClick={onClose}
+          style={{
+            position: "fixed", top: 20, right: 20,
+            background: "var(--bg1)", border: "1px solid var(--border2)",
+            borderRadius: "12px", padding: "12px 16px",
+            fontSize: 18, cursor: "pointer", zIndex: 101
+          }}
+        >✕</button>
+
         <div style={{ maxWidth: 440, margin: "0 auto", padding: 24, paddingTop: 60 }}>
-          <div style={{ fontSize: 24, color: "#10b981", marginBottom: 8 }}>🎉 İŞİ TESLİM ET</div>
+          <div style={{ fontSize: 24, color: "#10b981", marginBottom: 4 }}>🎉 İŞİ TESLİM ET</div>
+          <div style={{ fontSize: 13, color: "var(--text2)", marginBottom: 20 }}>
+            {sefer?.yuk} • {sefer?.nereden} → {sefer?.nereye}
+          </div>
 
-          {/* Sefer Bilgileri */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "#fbbf24", marginBottom: 12 }}>
-              {sefer?.yuk} - {sefer?.nereden} → {sefer?.nereye}
+          {/* Sefer özeti */}
+          <div style={{
+            background: "var(--bg2)",
+            borderRadius: "12px",
+            padding: "14px",
+            marginBottom: 18,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            border: "1px solid rgba(251,191,36,0.15)"
+          }}>
+            <div>
+              <div style={{ fontSize: 11, color: "var(--text3)" }}>ÜCRET</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#fbbf24" }}>
+                ₺{sefer?.ucret?.toLocaleString()}
+              </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, background: "var(--bg2)", borderRadius: "12px", padding: "16px", border: "1px solid rgba(251,191,36,0.15)" }}>
-              <div>
-                <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 4 }}>ÜCRET</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#fbbf24" }}>₺{sefer?.ucret?.toLocaleString()}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 4 }}>TARİH</div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{sefer?.tarih}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 4 }}>TONAJ</div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{sefer?.ton > 0 ? `${sefer.ton} Ton` : "🔥 Serbest"}</div>
-              </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 11, color: "var(--text3)" }}>TARİH</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{sefer?.tarih}</div>
             </div>
           </div>
 
-          {/* IBAN Bilgileri */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>💳 ÖDEME BİLGİLERİ</div>
-
-            <div style={{
-              background: "linear-gradient(135deg, rgba(251,191,36,0.1) 0%, rgba(251,191,36,0.05) 100%)",
+          {/* IBAN Sahibi */}
+          <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text3)", display: "block", marginBottom: 6 }}>
+            👤 IBAN SAHİBİ
+          </label>
+          <input
+            type="text"
+            value={ibanSahibi}
+            onChange={e => setIbanSahibi(e.target.value)}
+            placeholder="Ad Soyad / Firma Adı"
+            style={{
+              width: "100%", padding: "14px",
+              background: "var(--bg2)",
+              border: "1px solid var(--border2)",
               borderRadius: "12px",
-              padding: "16px",
-              marginBottom: "12px",
-              border: "1px solid rgba(251,191,36,0.2)"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 18 }}>👤</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: "var(--text3)" }}>ALICI</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#fbbf24" }}>{aliciIbanSahibi || "IBAN bilgisi bekleniyor..."}</div>
-                </div>
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#2563eb", wordBreak: "break-all", display: "flex", alignItems: "center", gap: 8 }}>
-                <span>TR</span>
-                <span>{aliciIban?.replace(/^TR\s*/i, "") || ""}</span>
-              </div>
-            </div>
+              fontSize: 14, outline: "none",
+              marginBottom: 14
+            }}
+          />
 
-            <div style={{
-              background: "linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.05) 100%)",
+          {/* IBAN */}
+          <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text3)", display: "block", marginBottom: 6 }}>
+            💳 IBAN NUMARASI *
+          </label>
+          <input
+            type="text"
+            value={iban}
+            onChange={e => setIban(e.target.value)}
+            placeholder="TR00 0000 0000 0000 0000 0000 00"
+            style={{
+              width: "100%", padding: "14px",
+              background: "var(--bg2)",
+              border: "1px solid var(--border2)",
               borderRadius: "12px",
-              padding: "16px",
-              border: "1px solid rgba(59,130,246,0.2)"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 18 }}>📤</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: "var(--text3)" }}>GÖNDERİLEN (SİZİN)</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#3b82f6" }}>{ceviciIbanSahibi || "IBAN bilgisi yok"}</div>
-                </div>
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#3b82f6", wordBreak: "break-all", display: "flex", alignItems: "center", gap: 8 }}>
-                <span>TR</span>
-                <span>{ceviciIban?.replace(/^TR\s*/i, "") || ""}</span>
-              </div>
-            </div>
-          </div>
+              fontSize: 14, outline: "none",
+              fontFamily: "monospace",
+              letterSpacing: 0.5,
+              marginBottom: 18
+            }}
+          />
 
-          {/* Teslimat Açıklaması */}
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text3)", marginBottom: 8, display: "block" }}>✅ TESLİMAT AÇIKLAMASI *</label>
-            <textarea
-              style={{
-                width: "100%",
-                padding: "14px",
-                background: "var(--bg2)",
-                border: "1px solid rgba(251,191,36,0.3)",
-                borderRadius: "12px",
-                fontSize: 14,
-                outline: "none",
-                transition: "all 0.3s ease",
-                minHeight: "100px",
-                resize: "vertical"
-              }}
-              placeholder="İşin teslimat durumunu giriniz..."
-              value={aciklama}
-              onChange={e => setAciklama(e.target.value)}
-              onFocus={(e) => {
-                e.target.style.borderColor = "#10b981";
-                e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.2), 0 0 0 3px rgba(16,185,129,0.2)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "rgba(251,191,36,0.3)";
-                e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.2)";
-              }}
-            />
-          </div>
+          {/* Açıklama */}
+          <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text3)", display: "block", marginBottom: 6 }}>
+            ✅ TESLİMAT AÇIKLAMASI *
+          </label>
+          <textarea
+            value={aciklama}
+            onChange={e => setAciklama(e.target.value)}
+            placeholder="Teslimat ile ilgili kısa açıklama yazın..."
+            style={{
+              width: "100%", padding: "14px",
+              background: "var(--bg2)",
+              border: "1px solid var(--border2)",
+              borderRadius: "12px",
+              fontSize: 14, outline: "none",
+              minHeight: 90, resize: "vertical",
+              marginBottom: 22,
+              fontFamily: "inherit"
+            }}
+          />
 
-          {/* Aksiyon Butonları */}
-          <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
+          {/* Butonlar */}
+          <div style={{ display: "flex", gap: 10 }}>
             <button
               onClick={onClose}
+              disabled={gonderiyor}
               style={{
-                flex: 1,
-                padding: "18px",
+                flex: 1, padding: "16px",
                 background: "var(--bg1)",
-                border: "1px solid rgba(239, 68, 68, 0.3)",
-                borderRadius: "16px",
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-                color: "#ef4444"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#ef4444";
-                e.currentTarget.style.background = "linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.3)";
-                e.currentTarget.style.background = "var(--bg1)";
+                border: "1px solid var(--border2)",
+                borderRadius: "14px",
+                fontSize: 14, fontWeight: 600,
+                cursor: gonderiyor ? "not-allowed" : "pointer",
+                color: "var(--text2)",
+                opacity: gonderiyor ? 0.5 : 1
               }}
             >
-              ✕ İptal
+              İptal
             </button>
             <button
-              onClick={mesajGonder}
+              onClick={handleSubmit}
+              disabled={gonderiyor}
               style={{
-                flex: 1,
-                padding: "18px",
+                flex: 2, padding: "16px",
                 background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                color: "#fff",
-                border: "none",
-                borderRadius: "16px",
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: "pointer",
-                transition: "all 0.3s ease",
+                color: "#fff", border: "none",
+                borderRadius: "14px",
+                fontSize: 14, fontWeight: 700,
+                cursor: gonderiyor ? "not-allowed" : "pointer",
                 boxShadow: "0 4px 20px rgba(16, 185, 129, 0.3)"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.boxShadow = "0 8px 25px rgba(16, 185, 129, 0.5)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 20px rgba(16, 185, 129, 0.3)";
               }}
             >
               {gonderiyor ? "⏳ Gönderiliyor..." : "✅ Teslim Et"}
             </button>
           </div>
 
-          {/* Bilgi Notu */}
-          <div style={{ marginTop: 20, padding: 12, background: "rgba(251,191,36,0.08)", borderRadius: "12px", border: "1px solid rgba(251,191,36,0.2)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <span style={{ fontSize: 14 }}>ℹ️</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#fbbf24" }}>ÖDEMENİZİ YAPMADAN ÖNCE</span>
-            </div>
-            <div style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>
-              • Alıcı IBAN: <span style={{ color: "#fbbf24" }}>{aliciIban}</span>
-              <br/>
-              • Ödeme tamamlandığında sefer durumunun "Ödendi" olarak güncelleneceği
-            </div>
+          <div style={{ marginTop: 16, padding: 12, background: "rgba(251,191,36,0.06)", borderRadius: "10px", border: "1px solid rgba(251,191,36,0.15)", fontSize: 11, color: "var(--text3)", lineHeight: 1.6 }}>
+            ℹ️ İşveren ile IBAN ve açıklamanız otomatik olarak paylaşılacak.
           </div>
         </div>
       </div>

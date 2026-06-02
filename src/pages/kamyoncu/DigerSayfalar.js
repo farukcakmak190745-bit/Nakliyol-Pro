@@ -106,13 +106,6 @@ export function SeferlerSayfasi() {
                   </button>
                 </>
               )}
-
-              {teslimEdildiModal && (
-                <TeslimEdildiModal
-                  sefer={teslimEdildiModal}
-                  onClose={() => setTeslimEdildiModal(null)}
-                />
-              )}
             </div>
           ))}
         </>
@@ -153,6 +146,13 @@ export function SeferlerSayfasi() {
             </div>
           ))}
         </>
+      )}
+
+      {teslimEdildiModal && (
+        <TeslimEdildiModal
+          sefer={teslimEdildiModal}
+          onClose={() => setTeslimEdildiModal(null)}
+        />
       )}
     </div>
   );
