@@ -158,7 +158,11 @@ export default function IlanlarSayfasi() {
                 ))}
               </div>
 
-              <button onClick={() => setSecilenBasvuru(secilen?.id)} className="btn btn-display-gold btn-full" style={{ fontSize: 20, padding: "18px", letterSpacing: 3 }}>
+              <button
+                onClick={() => setSecilenBasvuru({ id: secilen?.id, bilgiler: {} })}
+                className="btn btn-display-gold btn-full"
+                style={{ fontSize: 20, padding: "18px", letterSpacing: 3 }}
+              >
                 📝 BAŞVURU YAP
               </button>
             </div>
