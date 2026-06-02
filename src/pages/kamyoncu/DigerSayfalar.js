@@ -12,13 +12,18 @@ export function SeferlerSayfasi() {
   const [konusmaIdMap, setKonusmaIdMap] = useState({});
   const [teslimEdildiModal, setTeslimEdildiModal] = useState(null);
 
-  // Kamyoncu sadece KENDİ seferlerini görmeli
-  // Eşleşme: user_id (en güvenilir) > tc_kimlik > telefon
+  // Kamyoncu sadece KENDİ (giriş yaptığı hesabın) seferlerini görmeli.
+  // Filtre: kamyoncu_user_id === oturum.id (giriş yapan kullanıcının id'si)
+  // Eski kayıtlar için fallback: tc_kimlik veya telefon eşleşmesi
+  // (Bunlar şoförün değil hesap sahibinin bilgileri olduğu eski versiyon kayıtlar için)
   const seferlerList = (seferler || []).filter(s => {
     if (!oturum) return false;
-    return s.kamyoncu_user_id === oturum.id
-      || s.kamyoncu_tc === oturum.tc_kimlik
-      || s.kamyoncu_tel === oturum.telefon;
+    // Yeni kayıtlar: user_id eşleşmesi
+    if (s.kamyoncu_user_id === oturum.id) return true;
+    // Eski kayıtlar için fallback (şoför bilgileri === hesap sahibi bilgileri durumunda)
+    if (s.kamyoncu_tc && s.kamyoncu_tc === oturum.tc_kimlik) return true;
+    if (s.kamyoncu_tel && s.kamyoncu_tel === oturum.telefon) return true;
+    return false;
   });
   const aktifSeferler = seferlerList.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
   const bitmisSeferler = seferlerList.filter(s => s.durum === "tamamlandı");

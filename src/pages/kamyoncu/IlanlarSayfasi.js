@@ -162,9 +162,10 @@ export default function IlanlarSayfasi() {
                 onClick={() => setSecilenBasvuru({
                   id: secilen?.id,
                   bilgiler: {
-                    ad: oturum?.ad || "",
-                    tel: oturum?.telefon || "",
-                    tc_kimlik: oturum?.tc_kimlik || "",
+                    // Form alanları ŞOFÖRÜN bilgilerini alır — boş başlar
+                    ad: "",
+                    tel: "",
+                    tc_kimlik: "",
                     cekiciPlaka: "",
                     dorsePlaka: ""
                   }

@@ -927,18 +927,17 @@ export const AppProvider = ({ children }) => {
     }
     console.log('✅ İlan bulundu:', { id: ilan.id, olusturan_id: ilan.olusturan_id, yuk: ilan.yuk });
 
-    // KRİTİK: Formdaki tc/tel değerleri yerine OTURUMDAN gelen değerleri kullan.
-    // Bu sayede:
-    //   1) Kamyoncu "Seferlerim" filtresi (kamyoncu_tc === oturum.tc_kimlik) eşleşir
-    //   2) İşveren onayladığında users tablosundan tc ile user bulunabilir → konuşma açılabilir
-    // Ayrıca kamyoncu_user_id'yi de yazıyoruz ki ileride user_id bazlı filtre yapılabilsin.
-    const kamyoncuTc = oturum?.tc_kimlik || bilgiler.tc_kimlik;
-    const kamyoncuTel = oturum?.telefon || bilgiler.tel;
+    // Formdaki Ad/Tel/TC/Plaka bilgileri ŞOFÖRÜN bilgileridir.
+    // İşveren firmaya gönderdiği şoförün kim olduğunu bilmek ister.
+    // Bu yüzden bu alanlar formdan gelir, oturumdan ZORLA ALINMAZ.
+    //
+    // ANCAK: Seferlerim filtresi için "bu başvuruyu HANGİ KULLANICI yaptığını"
+    // bilmemiz lazım. Bu yüzden kamyoncu_user_id = oturum.id (giriş yapan kullanıcı).
     const kamyoncuUserId = oturum?.id || null;
 
-    if (!kamyoncuTc || !kamyoncuTel) {
-      console.error('❌ Oturumda tc_kimlik/telefon yok - başvuru reddedildi', { oturum });
-      alert('Oturum bilgilerinizde TC kimlik veya telefon eksik. Lütfen çıkış yapıp tekrar giriş yapın.');
+    if (!kamyoncuUserId) {
+      console.error('❌ Oturum yok - başvuru reddedildi');
+      alert('Oturum bulunamadı. Lütfen çıkış yapıp tekrar giriş yapın.');
       return;
     }
 
@@ -953,11 +952,13 @@ export const AppProvider = ({ children }) => {
       arac_tip: ilan.arac_tip,
       ilan_id: ilan.id,
       plaka: "",
+      // Şoförün bilgileri (formdan gelir — işverenin firmaya verdiği personel)
       kamyoncu: bilgiler.ad,
-      kamyoncu_tel: kamyoncuTel,
-      kamyoncu_tc: kamyoncuTc,
-      kamyoncu_user_id: kamyoncuUserId,
+      kamyoncu_tel: bilgiler.tel,
+      kamyoncu_tc: bilgiler.tc_kimlik,
       dorse_plaka: bilgiler.dorsePlaka,
+      // Hesap sahibi kullanıcı (kim başvurdu) — Seferlerim filtresi için kritik
+      kamyoncu_user_id: kamyoncuUserId,
       olusturan: ilan.olusturan,
       olusturan_id: ilan.olusturan_id,
       durum: "bekliyor",
@@ -1054,36 +1055,37 @@ export const AppProvider = ({ children }) => {
 
     const baslik = `${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}`;
 
-    // Kamyoncu'nun user_id'sini bul (önce seferin kamyoncu_user_id'si, sonra tc, sonra telefon)
+    // Kamyoncu (hesap sahibi) user_id'sini al.
+    // Eski kayıtlar için fallback: tc/telefon ile users tablosundan bul.
     let kamyoncuUserId = mevcutSefer.kamyoncu_user_id || null;
-    if (!kamyoncuUserId && supabase && tc) {
-      const { data: kamyoncuUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('tc_kimlik', tc)
-        .maybeSingle();
-      if (kamyoncuUser) {
-        kamyoncuUserId = kamyoncuUser.id;
-        console.log('✅ Kamyoncu user bulundu (tc):', kamyoncuUserId);
+    if (!kamyoncuUserId && supabase) {
+      // Önce tc ile dene
+      if (tc) {
+        const { data: u } = await supabase
+          .from('users')
+          .select('id')
+          .eq('tc_kimlik', tc)
+          .maybeSingle();
+        if (u) { kamyoncuUserId = u.id; console.log('✅ Kamyoncu user bulundu (tc fallback):', kamyoncuUserId); }
       }
-    }
-    if (!kamyoncuUserId && supabase && kamyoncuTel) {
-      const { data: kamyoncuUser2 } = await supabase
-        .from('users')
-        .select('id')
-        .eq('telefon', kamyoncuTel)
-        .maybeSingle();
-      if (kamyoncuUser2) {
-        kamyoncuUserId = kamyoncuUser2.id;
-        console.log('✅ Kamyoncu user bulundu (telefon):', kamyoncuUserId);
+      // Sonra telefon ile dene
+      if (!kamyoncuUserId && kamyoncuTel) {
+        const { data: u } = await supabase
+          .from('users')
+          .select('id')
+          .eq('telefon', kamyoncuTel)
+          .maybeSingle();
+        if (u) { kamyoncuUserId = u.id; console.log('✅ Kamyoncu user bulundu (telefon fallback):', kamyoncuUserId); }
       }
     }
     if (!kamyoncuUserId) {
-      console.warn('⚠️ Kamyoncu user bulunamadı (tc/telefon/user_id yok)', { tc, kamyoncuTel, kamyoncu_user_id: mevcutSefer.kamyoncu_user_id });
+      console.warn('⚠️ Kamyoncu user_id bulunamadı — konuşma açılamayacak', {
+        kamyoncu_user_id: mevcutSefer.kamyoncu_user_id, tc, kamyoncuTel
+      });
     }
 
-    // guncelSefer'e kamyoncu_user_id'yi de eyle ki sonradan filtreleme çalışsın
-    if (kamyoncuUserId) {
+    // guncelSefer'e kamyoncu_user_id'yi de ekle (yoksa)
+    if (kamyoncuUserId && !guncelSefer.kamyoncu_user_id) {
       guncelSefer.kamyoncu_user_id = kamyoncuUserId;
     }
 
