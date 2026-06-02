@@ -273,7 +273,7 @@ export function IlanlarSayfasi() {
 }
 
 export function TekliflerSayfasi() {
-  const { oturum, konusmaOluştur, ilkMesajiGonder, seferler, bekleyenOnaylariGetir, kamyoncuBasvuruBekleyenleriGetir, ilaniOnayla, ilanlar } = useApp();
+  const { oturum, konusmaOluştur, ilkMesajiGonder, seferler, bekleyenOnaylariGetir, kamyoncuBasvuruBekleyenleriGetir, ilaniOnayla, ilaniReddet, ilanlar } = useApp();
   const [kabulEdilen, setKabulEdilen] = useState(new Set());
   const [seciliSefer, setSeciliSefer] = useState(null);
   const [konusmaIdMap, setKonusmaIdMap] = useState({});
@@ -416,10 +416,10 @@ export function TekliflerSayfasi() {
                   ✓ Kabul Et
                 </button>
                 <button
-                  onClick={() => {
-                    // Onay listesinden kaldır
+                  onClick={async () => {
+                    if (!confirm("Bu başvuruyu reddetmek istediğine emin misin?")) return;
+                    await ilaniReddet(o.ilanId);
                     setBekleyenOnaylar(prev => prev.filter(i => i.ilanId !== o.ilanId));
-                    alert("Başvuru reddedildi!");
                   }}
                   style={{ flex: 1, padding: "12px", background: "var(--bg1)", border: "1px solid var(--border2)", borderRadius: "12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
                 >

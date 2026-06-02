@@ -980,8 +980,13 @@ export const AppProvider = ({ children }) => {
     const ilan = ilanlar.find(i => i.id === ilanId);
     if (!ilan) return;
 
-    const mevcutSefer = seferler.find(s => s.ilanId === ilanId && s.durum === "bekliyor");
-    if (!mevcutSefer) return;
+    const mevcutSefer = seferler.find(s => (s.ilan_id === ilanId || s.ilanId === ilanId) && s.durum === "bekliyor");
+    if (!mevcutSefer) {
+      console.error('❌ ilaniOnayla: bekleyen sefer bulunamadı', { ilanId, seferler: seferler.map(s => ({ id: s.id, ilan_id: s.ilan_id, durum: s.durum })) });
+      alert('Başvuru bulunamadı! Sayfayı yenileyip tekrar deneyin.');
+      return;
+    }
+    console.log('✅ Onanacak sefer bulundu:', mevcutSefer.id);
 
     const guncelSefer = {
       plaka: plaka,
@@ -1036,9 +1041,33 @@ export const AppProvider = ({ children }) => {
     }, 1000);
   }, [ilanlar, seferler, mesajContext, supabase, oturum]);
 
-  const ilaniReddet = useCallback((ilanId) => {
+  const ilaniReddet = useCallback(async (ilanId) => {
     setSeferOnayDurumu(prev => ({ ...prev, [ilanId]: "reddedildi" }));
-  }, []);
+
+    // Seferi veritabanında 'reddedildi' olarak işaretle ki Teklifler sekmesinden kalksın
+    const mevcutSefer = seferler.find(s => (s.ilan_id === ilanId || s.ilanId === ilanId) && s.durum === "bekliyor");
+    if (!mevcutSefer) {
+      console.warn('ilaniReddet: bekleyen sefer bulunamadı, zaten kaldırılmış olabilir', { ilanId });
+      return;
+    }
+
+    if (supabase) {
+      const { error } = await supabase
+        .from('seferler')
+        .update({ durum: 'reddedildi' })
+        .eq('id', mevcutSefer.id);
+      if (error) {
+        console.error('Sefer reddetme hatası:', error);
+        alert(`Reddetme başarısız: ${error.message}`);
+        return;
+      }
+      console.log('✅ Sefer reddedildi:', mevcutSefer.id);
+    }
+
+    setSeferler(prev => prev.map(s =>
+      s.id === mevcutSefer.id ? { ...s, durum: 'reddedildi' } : s
+    ));
+  }, [seferler, supabase]);
 
   const bekleyenOnaylariGetir = useCallback(() => {
     const onayBekleyenler = [];
