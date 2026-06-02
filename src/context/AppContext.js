@@ -892,11 +892,20 @@ export const AppProvider = ({ children }) => {
   }, [bildirimlerList, gosterenBildirim, bildirimGoster]);
 
   const başvuruGonder = useCallback(async (ilanId, bilgiler) => {
+    // DEBUG: başvuruGonder çağrılıyor mu?
+    console.log('🚀 başvuruGonder ÇAĞRILDI', { ilanId, bilgiler, supabaseVarMi: !!supabase, ilanSayisi: ilanlar?.length });
+    alert('🚀 başvuruGonder tetiklendi! Console aç ve kontrol et.');
+
     setKamyoncuBasvuru({ ilanId, ...bilgiler });
     setSeferOnayDurumu(prev => ({ ...prev, [ilanId]: "bekliyor_onay" }));
 
     const ilan = ilanlar.find(i => i.id === ilanId);
-    if (!ilan) return;
+    if (!ilan) {
+      console.error('❌ İlan bulunamadı!', { ilanId, mevcutIlanlar: ilanlar?.map(i => i.id) });
+      alert('❌ İlan bulunamadı! ilanId: ' + ilanId);
+      return;
+    }
+    console.log('✅ İlan bulundu:', { id: ilan.id, olusturan_id: ilan.olusturan_id, yuk: ilan.yuk });
 
     const yeniSefer = {
       yuk: ilan.yuk,
