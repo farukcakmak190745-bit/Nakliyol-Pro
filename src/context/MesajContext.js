@@ -9,6 +9,7 @@ export const MesajProvider = ({ children }) => {
   const konusmaIDsRef = useRef({});
   konusmaIDsRef.current = konusmaIDs;
   const subscribedRef = useRef(false);
+  const currentUserIdRef = useRef(null);
 
   // =============================================
   // LOAD: Supabase'den konuşmaları ve mesajları çek
@@ -152,6 +153,45 @@ export const MesajProvider = ({ children }) => {
   }, [loadConversations]);
 
   // =============================================
+  // AUTH LISTENER + INITIAL LOAD
+  // Oturum açıldığında / sayfa yenilendiğinde konuşmaları yükle
+  // =============================================
+  useEffect(() => {
+    if (!supabase) return;
+
+    // 1) Mevcut session'ı kontrol et (F5 sonrası)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.id) {
+        currentUserIdRef.current = session.user.id;
+        console.log('📨 MesajContext: initial load for', session.user.id);
+        loadConversations(session.user.id);
+        subscribeRealtime(session.user.id);
+      }
+    });
+
+    // 2) Auth state değişikliklerini dinle (giriş/çıkış)
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const newUserId = session?.user?.id || null;
+      if (newUserId !== currentUserIdRef.current) {
+        currentUserIdRef.current = newUserId;
+        subscribedRef.current = false; // yeni kullanıcı için yeniden subscribe ol
+        if (newUserId) {
+          console.log('📨 MesajContext: auth changed, loading for', newUserId);
+          loadConversations(newUserId);
+          subscribeRealtime(newUserId);
+        } else {
+          setKonusmalar([]);
+          setKonusmaIDs({});
+        }
+      }
+    });
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
+  }, [loadConversations, subscribeRealtime]);
+
+  // =============================================
   // KONUSMA AC: Supabase conversations'a yaz
   // =============================================
   const konusmaAc = useCallback(async (params) => {
@@ -211,13 +251,19 @@ export const MesajProvider = ({ children }) => {
       if (params.ilanId) {
         setKonusmaIDs(prev => ({ ...prev, [params.ilanId]: data.id }));
       }
+      // Konuşma listesini yeniden yükle ki yeni konuşma görünsün
+      // (realtime yetişmeyebilir)
+      const uid = params.userId || currentUserIdRef.current;
+      if (uid) {
+        loadConversations(uid);
+      }
       return data.id;
     }
 
     // Supabase yoksa fallback (local)
     const fallbackId = `local_${Date.now()}`;
     return fallbackId;
-  }, []);
+  }, [loadConversations]);
 
   // =============================================
   // MESAJ GONDER: Supabase messages'a yaz

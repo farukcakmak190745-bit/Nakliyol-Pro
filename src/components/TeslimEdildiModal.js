@@ -1,22 +1,78 @@
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
+import { useMesaj } from "../context/MesajContext";
 
 export default function TeslimEdildiModal({ sefer, onClose }) {
-  const { oturum } = useApp();
+  const { oturum, islemiTeslimEt } = useApp();
+  const mesajContext = useMesaj();
   const [aciklama, setAciklama] = useState("");
+  const [gonderiyor, setGonderiyor] = useState(false);
 
   const ceviciIban = oturum?.iban;
   const ceviciIbanSahibi = oturum?.ibanSahibi || "";
   const aliciIban = sefer?.iban;
   const aliciIbanSahibi = sefer?.ibanSahibi || "";
 
-  const mesajGonder = () => {
+  const mesajGonder = async () => {
     if (!aciklama.trim()) {
       alert("Lütfen teslimat açıklaması giriniz!");
       return;
     }
-    alert(`İş teslim edildi! IBAN bilgileri gönderildi.`);
-    onClose();
+    if (gonderiyor) return;
+    setGonderiyor(true);
+
+    try {
+      // 1) Sefer durumunu güncelle (teslima_bekleniyor)
+      await islemiTeslimEt(sefer.id);
+
+      // 2) Konuşmayı bul (ilan_id üzerinden)
+      const ilanId = sefer.ilan_id || sefer.ilanId;
+      let konusma = mesajContext.konusmalar?.find(k => k.ilan_id === ilanId);
+
+      // Konuşma yoksa, oluşturma
+      if (!konusma && ilanId && sefer.olusturan_id && sefer.kamyoncu_user_id) {
+        const yeniId = await mesajContext.konusmaAc({
+          userId: sefer.olusturan_id,
+          partnerId: sefer.kamyoncu_user_id,
+          partnerAd: oturum?.ad || "Kamyoncu",
+          isTrucker: true,
+          baslik: `${sefer.yuk} - ${sefer.nereden} → ${sefer.nereye}`,
+          konusmaTuru: "is",
+          ilanId: ilanId,
+          resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + (oturum?.ad || "K").substring(0, 2).toUpperCase(),
+          bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+        });
+        if (yeniId) {
+          konusma = mesajContext.konusmalar?.find(k => k.id === yeniId);
+        }
+      }
+
+      // 3) Mesaj içeriği
+      const mesajMetni = `✅ İŞ TESLİM EDİLDİ\n\n` +
+        `📝 Açıklama: ${aciklama}\n\n` +
+        `💳 Ödeme Yapılacak IBAN:\n` +
+        `   ${aliciIbanSahibi ? `👤 ${aliciIbanSahibi}\n` : ''}` +
+        `   🏦 ${aliciIban || 'IBAN belirtilmemiş'}\n\n` +
+        `📤 Gönderen IBAN (benim):\n` +
+        `   ${ceviciIbanSahibi ? `👤 ${ceviciIbanSahibi}\n` : ''}` +
+        `   🏦 ${ceviciIban || 'IBAN belirtilmemiş'}`;
+
+      // 4) Mesajı gönder
+      if (konusma?.id) {
+        await mesajContext.mesajGonder(konusma.id, mesajMetni);
+        console.log('✅ Teslimat mesajı konuşmaya gönderildi');
+      } else {
+        console.warn('⚠️ Konuşma bulunamadı, mesaj sadece sefer durumuna yazıldı');
+      }
+
+      alert(`✅ İş teslim edildi! IBAN bilgileri işverene iletildi.`);
+      onClose();
+    } catch (err) {
+      console.error('❌ Teslim etme hatası:', err);
+      alert(`Hata oluştu: ${err.message || err}`);
+    } finally {
+      setGonderiyor(false);
+    }
   };
 
   return (
@@ -172,7 +228,7 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
                 e.currentTarget.style.boxShadow = "0 4px 20px rgba(16, 185, 129, 0.3)";
               }}
             >
-              ✅ Teslim Et
+              {gonderiyor ? "⏳ Gönderiliyor..." : "✅ Teslim Et"}
             </button>
           </div>
 
