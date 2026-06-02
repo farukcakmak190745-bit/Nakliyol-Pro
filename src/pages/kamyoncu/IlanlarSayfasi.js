@@ -159,7 +159,16 @@ export default function IlanlarSayfasi() {
               </div>
 
               <button
-                onClick={() => setSecilenBasvuru({ id: secilen?.id, bilgiler: {} })}
+                onClick={() => setSecilenBasvuru({
+                  id: secilen?.id,
+                  bilgiler: {
+                    ad: oturum?.ad || "",
+                    tel: oturum?.telefon || "",
+                    tc_kimlik: oturum?.tc_kimlik || "",
+                    cekiciPlaka: "",
+                    dorsePlaka: ""
+                  }
+                })}
                 className="btn btn-display-gold btn-full"
                 style={{ fontSize: 20, padding: "18px", letterSpacing: 3 }}
               >

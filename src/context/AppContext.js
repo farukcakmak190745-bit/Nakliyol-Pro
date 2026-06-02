@@ -541,21 +541,31 @@ export const AppProvider = ({ children }) => {
   }, [supabase]);
 
   const cikisYap = useCallback(async () => {
+    console.log('🔐 Çıkış yapılıyor...');
     try {
       if (supabase) {
-        console.log('🔐 Çıkış yapılıyor...');
         await supabase.auth.signOut();
-        console.log('✅ Çıkış başarılı');
-      }
-      setOturum(null);
-      // Session yenileme
-      if (window.location.pathname !== '/') {
-        window.location.href = '/';
+        console.log('✅ Supabase signOut başarılı');
       }
     } catch (error) {
-      console.error('Çıkış hatası:', error);
-      // Hata olsa bile oturumu temizle
-      setOturum(null);
+      console.error('Supabase signOut hatası (yine de devam):', error);
+    }
+
+    // React state'i temizle
+    setOturum(null);
+
+    // HashRouter URL'i ne olursa olsun, anasayfaya tam yenilemeyle dön.
+    // pathname '/' + hash '#/app' olabilir → replace ile birlikte URL '/' olur.
+    // window.location.replace, tarayıcı history'sine bile eklemeden tam yenileme yapar.
+    try {
+      const target = window.location.origin + window.location.pathname;
+      if (window.location.hash || window.location.href !== target) {
+        window.location.replace(target);
+      }
+    } catch (e) {
+      console.error('Navigate hatası:', e);
+      // son çare: sayfayı yenile, AppIceriki zaten Navigate to="/" yapacak
+      window.location.reload();
     }
     }, [supabase]);
 
@@ -917,6 +927,21 @@ export const AppProvider = ({ children }) => {
     }
     console.log('✅ İlan bulundu:', { id: ilan.id, olusturan_id: ilan.olusturan_id, yuk: ilan.yuk });
 
+    // KRİTİK: Formdaki tc/tel değerleri yerine OTURUMDAN gelen değerleri kullan.
+    // Bu sayede:
+    //   1) Kamyoncu "Seferlerim" filtresi (kamyoncu_tc === oturum.tc_kimlik) eşleşir
+    //   2) İşveren onayladığında users tablosundan tc ile user bulunabilir → konuşma açılabilir
+    // Ayrıca kamyoncu_user_id'yi de yazıyoruz ki ileride user_id bazlı filtre yapılabilsin.
+    const kamyoncuTc = oturum?.tc_kimlik || bilgiler.tc_kimlik;
+    const kamyoncuTel = oturum?.telefon || bilgiler.tel;
+    const kamyoncuUserId = oturum?.id || null;
+
+    if (!kamyoncuTc || !kamyoncuTel) {
+      console.error('❌ Oturumda tc_kimlik/telefon yok - başvuru reddedildi', { oturum });
+      alert('Oturum bilgilerinizde TC kimlik veya telefon eksik. Lütfen çıkış yapıp tekrar giriş yapın.');
+      return;
+    }
+
     const yeniSefer = {
       yuk: ilan.yuk,
       nereden: ilan.nereden,
@@ -929,8 +954,9 @@ export const AppProvider = ({ children }) => {
       ilan_id: ilan.id,
       plaka: "",
       kamyoncu: bilgiler.ad,
-      kamyoncu_tel: bilgiler.tel,
-      kamyoncu_tc: bilgiler.tc_kimlik,
+      kamyoncu_tel: kamyoncuTel,
+      kamyoncu_tc: kamyoncuTc,
+      kamyoncu_user_id: kamyoncuUserId,
       dorse_plaka: bilgiler.dorsePlaka,
       olusturan: ilan.olusturan,
       olusturan_id: ilan.olusturan_id,
@@ -980,7 +1006,7 @@ export const AppProvider = ({ children }) => {
     }
 
     setSeferler(prev => [yeniSefer, ...prev]);
-  }, [ilanlar, supabase]);
+  }, [ilanlar, supabase, oturum]);
 
   const ilaniOnayla = useCallback(async (ilanId, kamyoncuAd, kamyoncuTel, plaka, dorsePlaka, tc) => {
     setSeferOnayDurumu(prev => ({
@@ -1015,7 +1041,10 @@ export const AppProvider = ({ children }) => {
     };
 
     if (supabase) {
-      await supabase.from('seferler').update(guncelSefer).eq('id', mevcutSefer.id);
+      const { error: updErr } = await supabase.from('seferler').update(guncelSefer).eq('id', mevcutSefer.id);
+      if (updErr) {
+        console.error('❌ Sefer güncellenemedi (RLS?):', updErr);
+      }
     }
 
     setSeferler(prev => prev.map(s => {
@@ -1025,9 +1054,9 @@ export const AppProvider = ({ children }) => {
 
     const baslik = `${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}`;
 
-    // Kamyoncu'nun user_id'sini tc_kimlik'ten bul
-    let kamyoncuUserId = null;
-    if (supabase && tc) {
+    // Kamyoncu'nun user_id'sini bul (önce seferin kamyoncu_user_id'si, sonra tc, sonra telefon)
+    let kamyoncuUserId = mevcutSefer.kamyoncu_user_id || null;
+    if (!kamyoncuUserId && supabase && tc) {
       const { data: kamyoncuUser } = await supabase
         .from('users')
         .select('id')
@@ -1035,36 +1064,48 @@ export const AppProvider = ({ children }) => {
         .maybeSingle();
       if (kamyoncuUser) {
         kamyoncuUserId = kamyoncuUser.id;
-        console.log('✅ Kamyoncu user bulundu:', kamyoncuUserId);
-      } else {
-        console.warn('⚠️ Kamyoncu user bulunamadı, tc_kimlik ile. Sadece telefon deneniyor...');
-        const { data: kamyoncuUser2 } = await supabase
-          .from('users')
-          .select('id')
-          .eq('telefon', kamyoncuTel)
-          .maybeSingle();
-        if (kamyoncuUser2) {
-          kamyoncuUserId = kamyoncuUser2.id;
-          console.log('✅ Kamyoncu user bulundu (telefon ile):', kamyoncuUserId);
-        }
+        console.log('✅ Kamyoncu user bulundu (tc):', kamyoncuUserId);
       }
+    }
+    if (!kamyoncuUserId && supabase && kamyoncuTel) {
+      const { data: kamyoncuUser2 } = await supabase
+        .from('users')
+        .select('id')
+        .eq('telefon', kamyoncuTel)
+        .maybeSingle();
+      if (kamyoncuUser2) {
+        kamyoncuUserId = kamyoncuUser2.id;
+        console.log('✅ Kamyoncu user bulundu (telefon):', kamyoncuUserId);
+      }
+    }
+    if (!kamyoncuUserId) {
+      console.warn('⚠️ Kamyoncu user bulunamadı (tc/telefon/user_id yok)', { tc, kamyoncuTel, kamyoncu_user_id: mevcutSefer.kamyoncu_user_id });
+    }
+
+    // guncelSefer'e kamyoncu_user_id'yi de eyle ki sonradan filtreleme çalışsın
+    if (kamyoncuUserId) {
+      guncelSefer.kamyoncu_user_id = kamyoncuUserId;
     }
 
     // Konuşma oluştur (Supabase)
     let yeniKonusma = null;
     if (supabase && ilan.olusturan_id && kamyoncuUserId) {
-      yeniKonusma = await mesajContext.konusmaAc({
-        userId: ilan.olusturan_id,
-        partnerId: kamyoncuUserId,
-        partnerAd: kamyoncuAd,
-        isTrucker: false,
-        baslik,
-        konusmaTuru: "is",
-        ilanId: ilanId,
-        resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + kamyoncuAd.substring(0, 2).toUpperCase(),
-        bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-      });
-      console.log('✅ Konuşma oluşturuldu/açıldı:', yeniKonusma);
+      try {
+        yeniKonusma = await mesajContext.konusmaAc({
+          userId: ilan.olusturan_id,
+          partnerId: kamyoncuUserId,
+          partnerAd: kamyoncuAd,
+          isTrucker: false,
+          baslik,
+          konusmaTuru: "is",
+          ilanId: ilanId,
+          resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + kamyoncuAd.substring(0, 2).toUpperCase(),
+          bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+        });
+        console.log('✅ Konuşma oluşturuldu/açıldı:', yeniKonusma);
+      } catch (err) {
+        console.error('❌ Konuşma açılırken hata:', err);
+      }
     } else {
       console.warn('⚠️ Konuşma açılamadı:', { olusturan_id: ilan.olusturan_id, kamyoncuUserId });
     }
@@ -1329,7 +1370,7 @@ export const AppProvider = ({ children }) => {
 
   return (
     <Ctx.Provider value={{
-      oturum, kullanicilar: adminKullanicilar, ilanlar, seferler, teklifler,
+      oturum, loading, kullanicilar: adminKullanicilar, ilanlar, seferler, teklifler,
       kayitOl, girisYap, cikisYap,
       ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle,
       konusmaOluştur, ilkMesajiGonder,

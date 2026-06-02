@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useNavigate } from "react-router-dom";
 
@@ -193,11 +193,19 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
 };
 
 export default function GirisEkrani() {
-  const { kayitOl, girisYap } = useApp();
+  const { kayitOl, girisYap, oturum, loading } = useApp();
   const navigate = useNavigate();
   const [ekran, setEkran] = useState("ana");
   const [secRol, setSecRol] = useState(null);
   const [girisForm, setGirisForm] = useState({ telefon: "", sifre: "" });
+
+  // Oturum varsa (örn. F5 sonrası session restore olduysa) otomatik /app'e git
+  useEffect(() => {
+    if (!loading && oturum) {
+      console.log("✅ GirisEkrani: oturum var, /app'e yönlendiriliyor");
+      navigate("/app", { replace: true });
+    }
+  }, [oturum, loading, navigate]);
 
   const handleKayit = (bilgiler) => {
     console.log("🔍 Kayıt bilgileri:", bilgiler);

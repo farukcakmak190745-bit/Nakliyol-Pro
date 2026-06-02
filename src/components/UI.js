@@ -16,7 +16,13 @@ export const Header = ({ baslik, geri, sag, cikisYap: handleCikisYap }) => {
           {sag}
           {oturum && (
             <>
-              <button onClick={() => handleCikisYap?.() || cikisYap()} style={{ color: "var(--text3)", fontSize: 13, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+              <button
+                onClick={async () => {
+                  const fn = handleCikisYap || cikisYap;
+                  try { await fn(); } catch (e) { console.error(e); }
+                }}
+                style={{ color: "var(--text3)", fontSize: 13, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+              >
                 Çıkış
               </button>
               <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--bg3)", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>

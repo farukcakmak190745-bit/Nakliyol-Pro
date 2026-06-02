@@ -16,7 +16,6 @@ import {
   IssizProfilSayfasi
 } from "./pages/issiz/IssizSayfalar";
 import { BildirimlerSayfasi } from "./pages/BildirimlerSayfasi";
-import BildirimAyarlariSayfasi from "./pages/kamyoncu/BildirimAyarlariSayfasi";
 import { BildirimlerModal } from "./components/BildirimlerModal";
 import ChatSayfasi from "./components/ChatSayfasi";
 import { Header, BottomNav } from "./components/UI";
@@ -29,7 +28,6 @@ function MobilApp({ cikisYap }) {
   const { oturum, kullanicilar: adminKullanicilar, ilanlar, seferler, teklifler, bildirimlerList, gosterenBildirim, konusmalar, bildirimGoster } = useApp();
   const [sekme, setSekme] = useState("ilanlar");
   const [seciliKonusma, setSeciliKonusma] = useState(null);
-  const [yukleniyor, setYukleniyor] = useState(true);
 
   console.log("🚀 MobilApp render edildi - oturum:", oturum);
 
@@ -47,49 +45,18 @@ function MobilApp({ cikisYap }) {
     }
   }, [bildirimlerList, gosterenBildirim, bildirimGoster]);
 
-  // Oturum yüklendiğinde yukleniyor false yap
+  // Oturum değiştiğinde默认 sekme'yi ayarla
   useEffect(() => {
-    console.log("🔄 Oturum değişti:", oturum);
-
     if (oturum) {
-      console.log("🎭 Oturum rolü:", oturum?.role, "|||", oturum);
-
       if (oturum.role === 'kamyoncu') {
-        console.log("🚚 Kamyoncu olarak giriş yapıldı. Sekme: 'ilanlar'");
         setSekme("ilanlar");
-      } else if (oturum.role === 'issiz') {
-        console.log("🏢 İşveren olarak giriş yapıldı. Sekme: 'ilanver'");
-        setSekme("ilanver");
-      } else if (oturum.role === 'admin') {
-        console.log("⭐ Admin olarak giriş yapıldı");
+      } else if (oturum.role === 'issiz' || oturum.role === 'admin') {
         setSekme("ilanver");
       } else {
-        console.warn("⚠️ Bilinmeyen rol:", oturum.role, ", default olarak 'ilanver' kullanılıyor");
         setSekme("ilanver");
       }
-
-      setYukleniyor(false);
-    } else {
-      console.log("⚠️ Oturum yok, giriş yapılmamış");
     }
-  }, [oturum]);
-
-  // Timeout fallback - en fazla 5 saniye bekler
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      console.log("Loading timeout - oturum null, boş ekran gösteriliyor");
-      if (yukleniyor) {
-        setYukleniyor(false);
-      }
-    }, 1000); // 1 saniye yerine 1 saniye yaptım
-
-    return () => clearTimeout(timeoutId);
-  }, [yukleniyor]);
-
-  if (yukleniyor) {
-    console.log("⏳ Yükleniyor... oturum:", oturum ? "var" : "yok");
-    return <LoadingScreen />;
-  }
+  }, [oturum?.id]);  // sadece kullanıcı değişiminde, sekme değişimlerinde tetiklenmesin
 
   if (seciliKonusma) {
     const konusma = konusmalar?.find(k => k.id === seciliKonusma);
@@ -106,7 +73,7 @@ function MobilApp({ cikisYap }) {
     seferler: <SeferlerSayfasi />,
     mesajlar: <KamyoncuMesajlarSayfasi />,
     profil:   <KamyoncuProfil />,
-    bildirim: <BildirimAyarlariSayfasi />,
+    bildirim: <BildirimlerSayfasi />,
   };
   const issizSayfalar = {
     ilanver:   <IlanVerSayfasi />,
@@ -119,7 +86,7 @@ function MobilApp({ cikisYap }) {
   let sayfa;
 
   if (sekme === "bildirim") {
-    sayfa = <BildirimAyarlariSayfasi />;
+    sayfa = <BildirimlerSayfasi />;
   } else {
     sayfa = oturum.role === "kamyoncu" ? kamyoncuSayfalar[sekme] : issizSayfalar[sekme];
   }
@@ -140,14 +107,20 @@ function MobilApp({ cikisYap }) {
 }
 
 function AppIceriki() {
-  const { oturum, cikisYap } = useApp();
+  const { oturum, loading, cikisYap } = useApp();
 
+  console.log("🔄 AppIceriki render", { oturum: !!oturum, loading });
+
+  // Session yükleniyorsa (F5 refresh sonrası) bekle
+  if (loading && !oturum) {
+    console.log("⏳ Session yükleniyor (F5 sonrası normal)");
+    return <LoadingScreen />;
+  }
+
+  // Loading bitti ama oturum hala yok → giriş ekranına yönlendir
   if (!oturum) {
-    console.log("🔄 AppIceriki - Oturum yükleniyor...");
-    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>
-      <div style={{ fontSize: 24, marginBottom: 20 }}>⏳</div>
-      <div>Oturum bilgisi yükleniyor...</div>
-    </div>;
+    console.log("⚠️ Oturum yok, GirisEkrani'a yönlendiriliyor");
+    return <Navigate to="/" replace />;
   }
 
   console.log("✅ AppIceriki - Oturum yüklendi:", oturum.role);
@@ -172,12 +145,12 @@ function ProfilIcContent({ defaultPath = "profil" }) {
       <div>
         {oturum.role === "kamyoncu" && (
           defaultPath === "bildirim"
-            ? <BildirimAyarlariSayfasi />
+            ? <BildirimlerSayfasi />
             : <KamyoncuProfil />
         )}
         {oturum.role === "issiz" && (
           defaultPath === "bildirim"
-            ? <BildirimAyarlariSayfasi />
+            ? <BildirimlerSayfasi />
             : <IssizProfilSayfasi />
         )}
         {oturum.role === "issiz" && <BottomNav aktif="profil" setAktif={() => {}} rol="issiz" />}
@@ -200,7 +173,6 @@ export default function App() {
               <Route path="/" element={<GirisEkrani />} />
               <Route path="/app" element={<AppIceriki />} />
               <Route path="/profil/bildirim" element={<ProfilIcContent defaultPath="bildirim" />} />
-              <Route path="/bildirimler" element={<BildirimlerSayfasi />} />
             </Routes>
           </AppProvider>
         </MesajProvider>
