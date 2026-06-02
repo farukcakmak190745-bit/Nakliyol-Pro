@@ -1370,6 +1370,111 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // ============================================
+  // REALTIME SUBSCRIPTIONS
+  // Supabase postgres_changes ile tüm tabloları dinle
+  // Oturum açıldığında subscribe ol, kapandığında unsubscribe
+  // ============================================
+  useEffect(() => {
+    if (!supabase) return;
+
+    console.log('🔔 Realtime subscriptions başlatılıyor...');
+
+    // Helper: tek bir tabloyu dinle, değişiklik olunca callback çalışsın
+    const subscribeTable = (tableName, callback, event = '*') => {
+      const channel = supabase
+        .channel(`realtime-${tableName}`)
+        .on('postgres_changes',
+          { event, schema: 'public', table: tableName },
+          (payload) => {
+            console.log(`📡 [${tableName}] değişiklik:`, payload.eventType, payload.new?.id || payload.old?.id);
+            try { callback(payload); } catch (e) { console.error(`[${tableName}] callback hatası:`, e); }
+          }
+        )
+        .subscribe();
+      return channel;
+    };
+
+    // ilanlar değişiklikleri → state'i yeniden yükle
+    const ilanlarChannel = subscribeTable('ilanlar', async () => {
+      const { data } = await supabase.from('ilanlar').select('*').order('tarih', { ascending: false }).limit(50);
+      if (data) {
+        console.log(`📋 İlanlar realtime güncellendi: ${data.length}`);
+        setIlanlar(data);
+      }
+    });
+
+    // seferler değişiklikleri → state'i yeniden yükle
+    const seferlerChannel = subscribeTable('seferler', async () => {
+      const { data } = await supabase.from('seferler').select('*').order('tarih', { ascending: false }).limit(50);
+      if (data) {
+        console.log(`🚚 Seferler realtime güncellendi: ${data.length}`);
+        setSeferler(data);
+      }
+    });
+
+    // teklifler değişiklikleri
+    const tekliflerChannel = subscribeTable('teklifler', async () => {
+      const { data } = await supabase.from('teklifler').select('*');
+      if (data) {
+        console.log(`💼 Teklifler realtime güncellendi: ${data.length}`);
+        setTeklifler(data);
+      }
+    });
+
+    // users değişiklikleri
+    const usersChannel = subscribeTable('users', async () => {
+      const { data } = await supabase.from('users').select('*');
+      if (data) {
+        console.log(`👥 Users realtime güncellendi: ${data.length}`);
+        setKullanicilar(data);
+      }
+    });
+
+    // bildirimler — sadece oturum açıksa ve kendi kullanıcısına ait olanları dinle
+    let bildirimlerChannel = null;
+    if (oturum?.id) {
+      bildirimlerChannel = supabase
+        .channel(`realtime-bildirimler-${oturum.id}`)
+        .on('postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'bildirimler',
+            filter: `kullanici_id=eq.${oturum.id}`
+          },
+          async (payload) => {
+            console.log('🔔 Yeni bildirim (realtime):', payload.new);
+            // Yeni bildirimi direkt state'e ekle (en başa)
+            setBildirimlerList(prev => [payload.new, ...(prev || [])]);
+          }
+        )
+        .subscribe();
+
+      // Ayrıca tüm bildirim listesini de yenile (offscreen durumlar için)
+      const refreshBildirimler = async () => {
+        const { data } = await supabase
+          .from('bildirimler')
+          .select('*')
+          .eq('kullanici_id', oturum.id)
+          .order('olusturma_zamani', { ascending: false })
+          .limit(100);
+        if (data) setBildirimlerList(data);
+      };
+      refreshBildirimler();
+    }
+
+    // Cleanup: tüm kanalları kapat
+    return () => {
+      console.log('🧹 Realtime subscriptions temizleniyor...');
+      ilanlarChannel?.unsubscribe();
+      seferlerChannel?.unsubscribe();
+      tekliflerChannel?.unsubscribe();
+      usersChannel?.unsubscribe();
+      bildirimlerChannel?.unsubscribe();
+    };
+  }, [supabase, oturum?.id]);
+
   return (
     <Ctx.Provider value={{
       oturum, loading, kullanicilar: adminKullanicilar, ilanlar, seferler, teklifler,
