@@ -81,12 +81,15 @@ function MobilApp({ cikisYap }) {
       if (yukleniyor) {
         setYukleniyor(false);
       }
-    }, 5000);
+    }, 1000); // 1 saniye yerine 1 saniye yaptım
 
     return () => clearTimeout(timeoutId);
   }, [yukleniyor]);
 
-  if (yukleniyor) return <LoadingScreen />;
+  if (yukleniyor) {
+    console.log("⏳ Yükleniyor... oturum:", oturum ? "var" : "yok");
+    return <LoadingScreen />;
+  }
 
   if (seciliKonusma) {
     const konusma = konusmalar?.find(k => k.id === seciliKonusma);
@@ -140,9 +143,14 @@ function AppIceriki() {
   const { oturum, cikisYap } = useApp();
 
   if (!oturum) {
-    console.error("❌ AppIceriki - Oturum yok!");
-    return <div style={{ padding: 40, textAlign: 'center', color: 'red' }}>Oturum bilgisi yüklenemedi. Giriş yapılıyor...</div>;
+    console.log("🔄 AppIceriki - Oturum yükleniyor...");
+    return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>
+      <div style={{ fontSize: 24, marginBottom: 20 }}>⏳</div>
+      <div>Oturum bilgisi yükleniyor...</div>
+    </div>;
   }
+
+  console.log("✅ AppIceriki - Oturum yüklendi:", oturum.role);
 
   if (oturum.role === "admin") {
     return <AdminPanel />;
