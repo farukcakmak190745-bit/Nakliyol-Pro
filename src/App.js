@@ -69,11 +69,11 @@ function MobilApp({ cikisYap }) {
   }
 
   const kamyoncuSayfalar = {
-    ilanlar:  <IlanlarSayfasi />,
-    seferler: <SeferlerSayfasi />,
-    mesajlar: <KamyoncuMesajlarSayfasi />,
-    profil:   <KamyoncuProfil />,
-    bildirim: <BildirimlerSayfasi />,
+    ilanlar:     <IlanlarSayfasi />,
+    seferler:    <SeferlerSayfasi />,
+    mesajlar:    <KamyoncuMesajlarSayfasi />,
+    profil:      <KamyoncuProfil />,
+    bildirimler: <BildirimlerSayfasi />,
   };
   const issizSayfalar = {
     ilanver:   <IlanVerSayfasi />,
@@ -83,13 +83,7 @@ function MobilApp({ cikisYap }) {
     profil:    <IssizProfilSayfasi />,
   };
 
-  let sayfa;
-
-  if (sekme === "bildirim") {
-    sayfa = <BildirimlerSayfasi />;
-  } else {
-    sayfa = oturum.role === "kamyoncu" ? kamyoncuSayfalar[sekme] : issizSayfalar[sekme];
-  }
+  let sayfa = oturum.role === "kamyoncu" ? kamyoncuSayfalar[sekme] : issizSayfalar[sekme];
 
   if (!sayfa) {
     console.log("Sayfa bulunamadı:", sekme);
@@ -132,33 +126,6 @@ function AppIceriki() {
   return <MobilApp cikisYap={cikisYap} />;
 }
 
-function ProfilIcContent({ defaultPath = "profil" }) {
-  const { oturum } = useApp();
-
-  if (!oturum) {
-    return <Navigate to="/" replace />;
-  }
-
-  return (
-    <div className="app-shell">
-      <Header />
-      <div>
-        {oturum.role === "kamyoncu" && (
-          defaultPath === "bildirim"
-            ? <BildirimlerSayfasi />
-            : <KamyoncuProfil />
-        )}
-        {oturum.role === "issiz" && (
-          defaultPath === "bildirim"
-            ? <BildirimlerSayfasi />
-            : <IssizProfilSayfasi />
-        )}
-        {oturum.role === "issiz" && <BottomNav aktif="profil" setAktif={() => {}} rol="issiz" />}
-      </div>
-      {oturum.role === "kamyoncu" && <BottomNav aktif="profil" setAktif={() => {}} rol="kamyoncu" />}
-    </div>
-  );
-}
 
 export default function App() {
   try {
@@ -172,7 +139,6 @@ export default function App() {
             <Routes>
               <Route path="/" element={<GirisEkrani />} />
               <Route path="/app" element={<AppIceriki />} />
-              <Route path="/profil/bildirim" element={<ProfilIcContent defaultPath="bildirim" />} />
             </Routes>
           </AppProvider>
         </MesajProvider>

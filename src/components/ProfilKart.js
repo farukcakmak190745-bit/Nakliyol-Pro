@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
-import { useNavigate } from "react-router-dom";
 
 /**
  * Premium Profil Kartı - hem işveren (issiz) hem kamyoncu için ortak
@@ -9,7 +8,6 @@ import { useNavigate } from "react-router-dom";
  */
 export default function ProfilKart({ rol }) {
   const { oturum, cikisYap, ibanGuncelle, profilGuncelle } = useApp();
-  const navigate = useNavigate();
 
   const isKamyoncu = rol === "kamyoncu";
 
@@ -138,8 +136,6 @@ export default function ProfilKart({ rol }) {
       setTimeout(() => setBelgeEklendi(false), 2200);
     }
   };
-
-  const handleNav = (path) => navigate(`/profil/${path}`);
 
   // Renk paleti
   const tema = isKamyoncu
@@ -688,7 +684,6 @@ export default function ProfilKart({ rol }) {
         {/* ============ AYARLAR MENÜSÜ ============ */}
         <div className="card" style={{ marginBottom: 14, padding: 6 }}>
           {[
-            { icon: "🔔", text: "Bildirim Ayarları", color: "#fbbf24", action: () => handleNav("bildirim") },
             { icon: "❓", text: "Yardım & Destek", color: "var(--text2)", action: () => alert("Yardım merkezi yakında!") },
             { icon: "📜", text: "İş Geçmişim", color: "#3b82f6", action: () => alert("İş geçmişi sayfasına yönlendiriliyorsunuz...") },
             { icon: "⭐", text: "Aldığım Yorumlar", color: "#fbbf24", action: () => alert("Yorumlar yakında!") },
