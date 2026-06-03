@@ -852,6 +852,37 @@ export const AppProvider = ({ children }) => {
     });
   }, []);
 
+  // Profil güncelleme - hem Supabase hem local state
+  const profilGuncelle = useCallback(async (guncellemeler) => {
+    if (!oturum?.id) return { ok: false, error: "Oturum yok" };
+    try {
+      const updateData = {};
+      Object.entries(guncellemeler).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) updateData[k] = v;
+      });
+      if (Object.keys(updateData).length === 0) return { ok: false, error: "Boş güncelleme" };
+
+      const { error } = await supabase
+        .from('users')
+        .update(updateData)
+        .eq('id', oturum.id);
+
+      if (error) {
+        console.warn("⚠️ Profil güncelleme hatası:", error.message);
+        // Local state yine de güncelle (offline demo modu)
+        setOturum(prev => prev ? { ...prev, ...updateData } : prev);
+        return { ok: false, error: error.message };
+      }
+
+      setOturum(prev => prev ? { ...prev, ...updateData } : prev);
+      return { ok: true };
+    } catch (err) {
+      console.warn("⚠️ Profil güncelleme exception:", err);
+      setOturum(prev => prev ? { ...prev, ...guncellemeler } : prev);
+      return { ok: false, error: String(err) };
+    }
+  }, [supabase, oturum?.id]);
+
   const adminKullanicilar = [...kullanicilar,
     { id: 9001, ad: "Mehmet Yılmaz", rol: "kamyoncu", puan: 4.9, durum: "aktif", kayitTarihi: "2024-01-15", plaka: "34 TYK 421", aracTip: "TIR", iban: "TR 0000 0000 0000 0000 0000 00", ibanSahibi: "Mehmet Yılmaz" },
     { id: 9002, ad: "Metro Gıda Lojistik", rol: "issiz", puan: 4.9, durum: "aktif", kayitTarihi: "2024-02-10", iban: "TR 0000 0000 0000 0000 0000 00", ibanSahibi: "Metro Gıda Lojistik" },
@@ -1479,7 +1510,7 @@ export const AppProvider = ({ children }) => {
     <Ctx.Provider value={{
       oturum, loading, kullanicilar: adminKullanicilar, ilanlar, seferler, teklifler,
       kayitOl, girisYap, cikisYap,
-      ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle,
+      ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle, profilGuncelle,
       konusmaOluştur, ilkMesajiGonder,
       bildirimler: bildirimlerList, bildirimGuncelle,
       kamyoncuBasvuru, setKamyoncuBasvuru,
