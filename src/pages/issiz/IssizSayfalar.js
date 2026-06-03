@@ -600,82 +600,194 @@ export function IssizProfilSayfasi() {
 
 export function IssizIlanlarSayfasi() {
   const { oturum, ilanlar, ilanSil, ilanAl } = useApp();
+  const [silinenId, setSilinenId] = useState(null);
+  const [toast, setToast] = useState(null);
 
   const mevcutIlanlar = ilanlar.filter(i => i.olusturan_id === oturum?.id);
+  const aktifSayi = mevcutIlanlar.filter(i => i.durum === "aktif").length;
 
-  const handleSil = async (ilanId) => {
-    if (confirm("Bu ilanı silmek istediğinize emin misiniz?")) {
-      ilanSil(ilanId);
-      alert("İlan başarıyla silindi!");
+  const gosterToast = (tur, metin) => {
+    setToast({ tur, metin });
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const handleSil = async (ilan) => {
+    if (!confirm(`"${ilan.yuk}" ilanını silmek istediğine emin misin?\n\nBu işlem geri alınamaz ve ilan tüm kamyonculardan kaldırılır.`)) return;
+    setSilinenId(ilan.id);
+    try {
+      await ilanSil(ilan.id);
+      gosterToast("ok", "✓ İlan silindi ve listeden kaldırıldı");
+    } catch (err) {
+      gosterToast("hata", "✗ Silme hatası: " + err.message);
+    } finally {
+      setTimeout(() => setSilinenId(null), 600);
     }
   };
 
   const handleAl = async (ilan) => {
     ilanAl(ilan.id, oturum);
+    gosterToast("ok", "✓ İlan alındı olarak işaretlendi");
   };
 
   return (
     <div className="scroll-content">
-      <div className="section-title">KENDİ İLANLARIM ({mevcutIlanlar.length})</div>
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: "fixed", top: 70, left: "50%", transform: "translateX(-50%)",
+          padding: "12px 20px",
+          background: toast.tur === "ok" ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" : "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+          color: "#fff", borderRadius: "12px", fontSize: 13, fontWeight: 700,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.3)", zIndex: 1000,
+          animation: "fadeIn 0.3s"
+        }}>
+          {toast.metin}
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="section-title">
+        İLANLARIM ({mevcutIlanlar.length})
+      </div>
+
+      <div className="card" style={{ marginBottom: 14, padding: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "#fbbf24", fontFamily: "var(--font-d)" }}>
+              {aktifSayi} <span style={{ fontSize: 13, color: "var(--text3)" }}>aktif</span>
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>
+              Toplam {mevcutIlanlar.length} ilan
+            </div>
+          </div>
+          <div style={{ fontSize: 40 }}>📋</div>
+        </div>
+      </div>
 
       {mevcutIlanlar.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
-          <div style={{ fontSize: 56, marginBottom: 20 }}>📋</div>
-          <div style={{ fontSize: 16, marginBottom: 8 }}>Henüz ilanınız yok</div>
-          <div style={{ fontSize: 13 }}>Yeni ilan vererek başlayın!</div>
+        <div className="card" style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
+          <div style={{ fontSize: 56, marginBottom: 20 }}>📭</div>
+          <div style={{ fontSize: 16, marginBottom: 8, color: "var(--text)", fontWeight: 600 }}>Henüz ilanın yok</div>
+          <div style={{ fontSize: 13, marginBottom: 24 }}>"İlan Ver" sekmesinden yeni ilan oluştur</div>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {mevcutIlanlar.map(ilan => (
-            <div key={ilan.id} className="card" style={{ marginBottom: 0, border: ilan.durum === "aktif" ? "2px solid rgba(251,191,36,0.3)" : "1px solid rgba(239,68,68,0.2)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                <div>
-                  <div className="display" style={{ fontSize: 18, color: "#fbbf24" }}>{ilan.yuk}</div>
-                  <div style={{ fontSize: 12, color: "var(--text3)", letterSpacing: 1.5 }}>{ilan.nereden} → {ilan.nereye}</div>
-                </div>
+          {mevcutIlanlar.map(ilan => {
+            const siliniyor = silinenId === ilan.id;
+            return (
+              <div key={ilan.id} className="card" style={{
+                marginBottom: 0,
+                padding: 16,
+                border: ilan.durum === "aktif"
+                  ? "1px solid rgba(251,191,36,0.3)"
+                  : "1px solid rgba(139,92,246,0.3)",
+                opacity: siliniyor ? 0.5 : 1,
+                transform: siliniyor ? "scale(0.95)" : "scale(1)",
+                transition: "all 0.3s ease",
+                position: "relative",
+                overflow: "hidden"
+              }}>
+                {/* Sol renk şeridi */}
                 <div style={{
-                  padding: "6px 12px",
-                  borderRadius: "20px",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  textTransform: "uppercase"
-                }}>
-                  {ilan.durum === "aktif" ? (
-                    <span style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)", color: "#10b981" }}>
-                      ✓ AKTİF
+                  position: "absolute", left: 0, top: 0, bottom: 0, width: 4,
+                  background: ilan.durum === "aktif"
+                    ? "linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%)"
+                    : "linear-gradient(180deg, #8b5cf6 0%, #6366f1 100%)"
+                }} />
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="display" style={{ fontSize: 18, color: "#fbbf24" }}>{ilan.yuk}</div>
+                    <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span>📍 {ilan.nereden}</span>
+                      <span style={{ color: "var(--text3)" }}>→</span>
+                      <span>🎯 {ilan.nereye}</span>
+                    </div>
+                  </div>
+                  <span style={{
+                    padding: "5px 12px",
+                    borderRadius: "20px",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                    whiteSpace: "nowrap",
+                    background: ilan.durum === "aktif"
+                      ? "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)"
+                      : "linear-gradient(135deg, rgba(139,92,246,0.2) 0%, rgba(139,92,246,0.1) 100%)",
+                    color: ilan.durum === "aktif" ? "#10b981" : "#a78bfa",
+                    border: `1px solid ${ilan.durum === "aktif" ? "rgba(16,185,129,0.3)" : "rgba(139,92,246,0.3)"}`
+                  }}>
+                    {ilan.durum === "aktif" ? "✓ Aktif" : "● Alındı"}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
+                    📅 {ilan.tarih || "Tarih yok"}
+                  </span>
+                  {ilan.ton && (
+                    <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
+                      ⚖️ {ilan.ton} ton
                     </span>
-                  ) : (
-                    <span style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.1) 100%)", color: "#ef4444" }}>
-                      ✗ PASİF
+                  )}
+                  {ilan.aracTip && (
+                    <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
+                      🚛 {ilan.aracTip}
                     </span>
                   )}
                 </div>
-              </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#fbbf24" }}>₺{ilan.ucret.toLocaleString()}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: "#fbbf24", fontFamily: "var(--font-d)" }}>
+                      ₺{Number(ilan.ucret || 0).toLocaleString("tr-TR")}
+                    </div>
+                    <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>
+                      {ilan.ucretTipi === "kdv" ? "+KDV" : "Sabit"}
+                    </div>
+                  </div>
 
-                <div style={{ display: "flex", gap: 8 }}>
-                  {ilan.durum === "aktif" && (
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {ilan.durum === "aktif" && (
+                      <button
+                        onClick={() => handleAl(ilan)}
+                        style={{
+                          padding: "10px 16px",
+                          background: "linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.08) 100%)",
+                          color: "#3b82f6",
+                          border: "1px solid rgba(59,130,246,0.3)",
+                          borderRadius: "10px",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: "pointer"
+                        }}
+                      >
+                        ✓ Alındı
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleAl(ilan)}
-                      className="btn btn-primary"
-                      style={{ padding: "10px 18px", fontSize: 12 }}
+                      onClick={() => handleSil(ilan)}
+                      disabled={siliniyor}
+                      style={{
+                        padding: "10px 16px",
+                        background: "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.08) 100%)",
+                        color: "#ef4444",
+                        border: "1px solid rgba(239,68,68,0.3)",
+                        borderRadius: "10px",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: siliniyor ? "not-allowed" : "pointer",
+                        opacity: siliniyor ? 0.6 : 1
+                      }}
                     >
-                      ✓ Alındı
+                      {siliniyor ? "Siliniyor..." : "🗑️ Sil"}
                     </button>
-                  )}
-                  <button
-                    onClick={() => handleSil(ilan.id)}
-                    className="btn btn-danger"
-                    style={{ padding: "10px 18px", fontSize: 12 }}
-                  >
-                    🗑️ Sil
-                  </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

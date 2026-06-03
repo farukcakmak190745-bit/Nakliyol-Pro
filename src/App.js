@@ -13,7 +13,8 @@ import {
   IlanVerSayfasi,
   TekliflerSayfasi,
   MesajlarSayfasi,
-  IssizProfilSayfasi
+  IssizProfilSayfasi,
+  IssizIlanlarSayfasi
 } from "./pages/issiz/IssizSayfalar";
 import { BildirimlerSayfasi } from "./pages/BildirimlerSayfasi";
 import { BildirimlerModal } from "./components/BildirimlerModal";
@@ -76,11 +77,11 @@ function MobilApp({ cikisYap }) {
     bildirimler: <BildirimlerSayfasi />,
   };
   const issizSayfalar = {
-    ilanver:   <IlanVerSayfasi />,
-    ilanlar:   <IlanlarSayfasi />,
-    teklifler: <TekliflerSayfasi />,
-    mesajlar:  <MesajlarSayfasi />,
-    profil:    <IssizProfilSayfasi />,
+    ilanver:    <IlanVerSayfasi />,
+    ilanlarim:  <IssizIlanlarSayfasi />,
+    teklifler:  <TekliflerSayfasi />,
+    mesajlar:   <MesajlarSayfasi />,
+    profil:     <IssizProfilSayfasi />,
   };
 
   let sayfa = oturum.role === "kamyoncu" ? kamyoncuSayfalar[sekme] : issizSayfalar[sekme];

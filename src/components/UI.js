@@ -53,7 +53,8 @@ export const BottomNav = ({ aktif, setAktif, rol }) => {
     ];
     const issizMenu = [
       { key: "ilanver",   icon: "➕",  label: "İlan Ver" },
-      { key: "teklifler", icon: "📋",  label: "Teklifler", badge: bekleyenSayisi },
+      { key: "ilanlarim", icon: "📋",  label: "İlanlarım" },
+      { key: "teklifler", icon: "🚚",  label: "Teklifler", badge: bekleyenSayisi },
       { key: "mesajlar",  icon: "💬",  label: "Mesajlar" },
       { key: "profil",    icon: "👤",  label: "Profil" },
     ];
