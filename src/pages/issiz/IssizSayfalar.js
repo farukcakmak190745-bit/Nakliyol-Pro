@@ -5,6 +5,7 @@ import { useApp } from "../../context/AppContext";
 import { useMesaj } from "../../context/MesajContext";
 import { EmptyState } from "../../components/UI";
 import ProfilKart from "../../components/ProfilKart";
+import IlIlceSecici from "../../components/IlIlceSecici";
 
 export function IlanVerSayfasi() {
   const { ilanEkle, ilanSil } = useApp();
@@ -87,11 +88,21 @@ export function IlanVerSayfasi() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div className="input-group">
             <Label zorunlu>Nereden</Label>
-            <input className={inputStyle} placeholder="Antalya" value={form.nereden} onChange={e => set("nereden", e.target.value)} />
+            <IlIlceSecici
+              value={form.nereden}
+              onChange={val => set("nereden", val)}
+              placeholder="İl seçin..."
+              inputStyle={inputStyle}
+            />
           </div>
           <div className="input-group">
             <Label zorunlu>Nereye</Label>
-            <input className={inputStyle} placeholder="İzmir" value={form.nereye} onChange={e => set("nereye", e.target.value)} />
+            <IlIlceSecici
+              value={form.nereye}
+              onChange={val => set("nereye", val)}
+              placeholder="İl seçin..."
+              inputStyle={inputStyle}
+            />
           </div>
         </div>
       </div>
