@@ -1,4 +1,5 @@
 import { useApp } from "../context/AppContext";
+import { useMesaj } from "../context/MesajContext";
 
 export const Header = ({ baslik, geri, sag, cikisYap: handleCikisYap }) => {
   const { oturum, cikisYap } = useApp();
@@ -42,20 +43,22 @@ export const Header = ({ baslik, geri, sag, cikisYap: handleCikisYap }) => {
 export const BottomNav = ({ aktif, setAktif, rol }) => {
   try {
     const { teklifler = [] } = useApp();
+    const { konusmalar = [] } = useMesaj() || {};
     const bekleyenSayisi = (teklifler || []).filter(t => t.durum === "bekliyor").length;
+    const okunmamisMesajSayisi = (konusmalar || []).reduce((top, k) => top + (k.okunmamis || 0), 0);
 
     const kamyoncuMenu = [
       { key: "ilanlar",  icon: "📢", label: "İlanlar" },
       { key: "seferler", icon: "🗺️", label: "Seferlerim" },
       { key: "bildirimler", icon: "🔔", label: "Bildirimler" },
-      { key: "mesajlar", icon: "💬", label: "Mesajlar" },
+      { key: "mesajlar", icon: "💬", label: "Mesajlar", badge: okunmamisMesajSayisi },
       { key: "profil",   icon: "👤", label: "Profil" },
     ];
     const issizMenu = [
       { key: "ilanver",   icon: "➕",  label: "İlan Ver" },
       { key: "ilanlarim", icon: "📋",  label: "İlanlarım" },
       { key: "teklifler", icon: "🚚",  label: "Teklifler", badge: bekleyenSayisi },
-      { key: "mesajlar",  icon: "💬",  label: "Mesajlar" },
+      { key: "mesajlar",  icon: "💬",  label: "Mesajlar", badge: okunmamisMesajSayisi },
       { key: "profil",    icon: "👤",  label: "Profil" },
     ];
     const menu = rol === "kamyoncu" ? kamyoncuMenu : issizMenu;
