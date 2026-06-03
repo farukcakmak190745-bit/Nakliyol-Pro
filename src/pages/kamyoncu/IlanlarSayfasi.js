@@ -352,49 +352,6 @@ export default function IlanlarSayfasi() {
                 <span style={{ color: "#fbbf24" }}>✓</span> Bu bilgiler işverene otomatik olarak gönderilecek
               </div>
 
-              <button
-                onClick={() => {
-                  if (!secilenBasvuru?.bilgiler?.ad || !secilenBasvuru?.bilgiler?.tel || !secilenBasvuru?.bilgiler?.cekiciPlaka || !secilenBasvuru?.bilgiler?.dorsePlaka || !secilenBasvuru?.bilgiler?.tc_kimlik) {
-                    alert("Lütfen tüm zorunlu alanları doldurun!");
-                    return;
-                  }
-                  başvuruGonder(secilenBasvuru.id, {
-                    ad: secilenBasvuru.bilgiler.ad,
-                    tel: secilenBasvuru.bilgiler.tel,
-                    cekiciPlaka: secilenBasvuru.bilgiler.cekiciPlaka,
-                    dorsePlaka: secilenBasvuru.bilgiler.dorsePlaka,
-                    tc_kimlik: secilenBasvuru.bilgiler.tc_kimlik,
-                  });
-                  setSecilenBasvuru(null);
-                  alert("Başvurunuz gönderildi! İşveren onay bekliyor.");
-                }}
-                style={{
-                  flex: 1,
-                  padding: "18px",
-                  background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-                  color: "#0a0a0a",
-                  border: "none",
-                  borderRadius: "16px",
-                  fontSize: 15,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  position: "relative",
-                  overflow: "hidden",
-                  boxShadow: "0 4px 20px rgba(251, 191, 36, 0.3)"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 8px 25px rgba(251, 191, 36, 0.5)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 4px 20px rgba(251, 191, 36, 0.3)";
-                }}
-              >
-                📝 Gönder
-              </button>
-
               <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
                 <button
                   onClick={() => setSecilenBasvuru(null)}
