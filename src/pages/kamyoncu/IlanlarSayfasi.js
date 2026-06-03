@@ -203,12 +203,14 @@ export default function IlanlarSayfasi() {
                     style={{
                       padding: "16px 14px 16px 50px",
                       background: "var(--bg2)",
+                      color: "var(--text)",
                       border: "1px solid var(--border2)",
                       borderRadius: "16px",
                       fontSize: 14,
                       outline: "none",
                       transition: "all 0.3s ease",
-                      boxShadow: "inset 0 2px 8px rgba(0,0,0,0.2)"
+                      boxShadow: "inset 0 2px 8px rgba(0,0,0,0.2)",
+                      WebkitTextFillColor: "var(--text)"
                     }}
                     onFocus={(e) => {
                       e.target.style.borderColor = "#fbbf24";
@@ -233,12 +235,14 @@ export default function IlanlarSayfasi() {
                     style={{
                       padding: "16px 14px 16px 50px",
                       background: "var(--bg2)",
+                      color: "var(--text)",
                       border: "1px solid var(--border2)",
                       borderRadius: "16px",
                       fontSize: 14,
                       outline: "none",
                       transition: "all 0.3s ease",
-                      boxShadow: "inset 0 2px 8px rgba(0,0,0,0.2)"
+                      boxShadow: "inset 0 2px 8px rgba(0,0,0,0.2)",
+                      WebkitTextFillColor: "var(--text)"
                     }}
                     onFocus={(e) => {
                       e.target.style.borderColor = "#fbbf24";
@@ -266,12 +270,14 @@ export default function IlanlarSayfasi() {
                     style={{
                       padding: "16px 14px 16px 50px",
                       background: "var(--bg2)",
+                      color: "var(--text)",
                       border: "1px solid var(--border2)",
                       borderRadius: "16px",
                       fontSize: 14,
                       outline: "none",
                       transition: "all 0.3s ease",
-                      boxShadow: "inset 0 2px 8px rgba(0,0,0,0.2)"
+                      boxShadow: "inset 0 2px 8px rgba(0,0,0,0.2)",
+                      WebkitTextFillColor: "var(--text)"
                     }}
                     onFocus={(e) => {
                       e.target.style.borderColor = "#fbbf24";
@@ -296,12 +302,14 @@ export default function IlanlarSayfasi() {
                     style={{
                       padding: "16px 14px 16px 50px",
                       background: "var(--bg2)",
+                      color: "var(--text)",
                       border: "1px solid var(--border2)",
                       borderRadius: "16px",
                       fontSize: 14,
                       outline: "none",
                       transition: "all 0.3s ease",
-                      boxShadow: "inset 0 2px 8px rgba(0,0,0,0.2)"
+                      boxShadow: "inset 0 2px 8px rgba(0,0,0,0.2)",
+                      WebkitTextFillColor: "var(--text)"
                     }}
                     onFocus={(e) => {
                       e.target.style.borderColor = "#fbbf24";
@@ -329,12 +337,14 @@ export default function IlanlarSayfasi() {
                     width: "100%",
                     padding: "16px 14px 16px 50px",
                     background: "var(--bg2)",
+                    color: "var(--text)",
                     border: "1px solid var(--border2)",
                     borderRadius: "16px",
                     fontSize: 14,
                     outline: "none",
                     transition: "all 0.3s ease",
-                    boxShadow: "inset 0 2px 8px rgba(0,0,0,0.2)"
+                    boxShadow: "inset 0 2px 8px rgba(0,0,0,0.2)",
+                    WebkitTextFillColor: "var(--text)"
                   }}
                   onFocus={(e) => {
                     e.target.style.borderColor = "#fbbf24";
