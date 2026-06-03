@@ -643,10 +643,28 @@ export const AppProvider = ({ children }) => {
   }, [oturum, supabase]);
 
   const ilanSil = useCallback(async (id) => {
+    // SOFT-DELETE: ilanlar tablosundan satırı silmiyoruz, sadece durum='silindi' yapıyoruz.
+    // Neden? Çünkü seferler.ilan_id ON DELETE CASCADE — eğer hard-delete yaparsak
+    // kamyoncunun o ilandan yaptığı sefer de DB seviyesinde silinir, geçmiş kaybolur.
+    // Soft-delete sayesinde:
+    //   - Kamyoncu seferini korur (CASCADE tetiklenmez)
+    //   - İşveren "Geçmiş İşler" bölümünden ilan/sefer geçmişine ulaşabilir
+    //   - RLS "Public can view active ilans" sayesinde diğer kamyoncular silinen ilanı göremez
     if (supabase) {
-      await supabase.from('ilanlar').delete().eq('id', id);
+      const { error } = await supabase
+        .from('ilanlar')
+        .update({ durum: 'silindi' })
+        .eq('id', id);
+      if (error) {
+        console.error('❌ İlan silinemedi (soft-delete):', error);
+        throw error;
+      }
     }
-    setIlanlar(prev => prev.filter(i => i.id !== id));
+    // Local state'ten de KALDIRMIYORUZ, sadece durumunu güncelliyoruz.
+    // Bu sayede IssizIlanlarSayfasi'nda "Geçmiş" bölümünde gösterebiliriz.
+    setIlanlar(prev => prev.map(i =>
+      i.id === id ? { ...i, durum: 'silindi' } : i
+    ));
   }, [supabase]);
 
   const ilanAl = useCallback(async (ilanId, kamyoncu) => {

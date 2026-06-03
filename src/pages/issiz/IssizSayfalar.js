@@ -599,12 +599,26 @@ export function IssizProfilSayfasi() {
 
 
 export function IssizIlanlarSayfasi() {
-  const { oturum, ilanlar, ilanSil } = useApp();
+  const { oturum, ilanlar, ilanSil, seferler } = useApp();
   const [silinenId, setSilinenId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [gosterGeçmiş, setGosterGeçmiş] = useState(false);
 
-  const mevcutIlanlar = ilanlar.filter(i => i.olusturan_id === oturum?.id);
+  // Sadece aktif ve alindi olanları ana listede göster; silindi olanı gizle.
+  // (Geçmiş bölümünde ayrıca gösterilecek.)
+  const mevcutIlanlar = ilanlar.filter(i =>
+    i.olusturan_id === oturum?.id && i.durum !== "silindi"
+  );
   const aktifSayi = mevcutIlanlar.filter(i => i.durum === "aktif").length;
+
+  // GEÇMİŞ İŞLER: Bu işverenin verdiği tüm işler (seferler tablosundan)
+  // - Kamyonçunun adı, plakası, telefonu, teslim durumu, ücret, teslim tarihi
+  const gecmisIsler = (seferler || [])
+    .filter(s => s.olusturan_id === oturum?.id)
+    .sort((a, b) => new Date(b.olusturma_zamani || b.tarih || 0) - new Date(a.olusturma_zamani || a.tarih || 0));
+
+  const tamamlananSayi = gecmisIsler.filter(s => s.durum === "tamamlandı").length;
+  const devamEdenSayi = gecmisIsler.filter(s => s.durum !== "tamamlandı").length;
 
   const gosterToast = (tur, metin) => {
     setToast({ tur, metin });
@@ -612,11 +626,11 @@ export function IssizIlanlarSayfasi() {
   };
 
   const handleSil = async (ilan) => {
-    if (!confirm(`"${ilan.yuk}" ilanını silmek istediğine emin misin?\n\nBu işlem geri alınamaz ve ilan tüm kamyonculardan kaldırılır.`)) return;
+    if (!confirm(`"${ilan.yuk}" ilanını silmek istediğine emin misin?\n\nİlan kamyoncuların listesinden kalkar ama devam eden seferler ve geçmiş işler korunur.`)) return;
     setSilinenId(ilan.id);
     try {
       await ilanSil(ilan.id);
-      gosterToast("ok", "✓ İlan silindi ve listeden kaldırıldı");
+      gosterToast("ok", "✓ İlan silindi (geçmiş işler korundu)");
     } catch (err) {
       gosterToast("hata", "✗ Silme hatası: " + err.message);
     } finally {
@@ -766,6 +780,135 @@ export function IssizIlanlarSayfasi() {
           })}
         </div>
       )}
+
+      {/* ============ GEÇMİŞ İŞLER BÖLÜMÜ ============ */}
+      {/* İşverenin daha önce kime iş verdiğini gösterir. Seferler tablosundan. */}
+      <div style={{ marginTop: 24 }}>
+        <button
+          onClick={() => setGosterGeçmiş(v => !v)}
+          style={{
+            width: "100%",
+            padding: "14px 16px",
+            background: gosterGeçmiş
+              ? "linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(99,102,241,0.08) 100%)"
+              : "var(--bg2)",
+            border: "1px solid rgba(139,92,246,0.3)",
+            borderRadius: 12,
+            color: "#a78bfa",
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            letterSpacing: 0.5
+          }}
+        >
+          <span>📚 GEÇMİŞ İŞLER ({gecmisIsler.length})</span>
+          <span style={{ fontSize: 11, color: "var(--text3)", fontWeight: 600 }}>
+            {tamamlananSayi} tamamlandı · {devamEdenSayi} devam ediyor
+          </span>
+        </button>
+
+        {gosterGeçmiş && (
+          <div style={{ marginTop: 12 }}>
+            {gecmisIsler.length === 0 ? (
+              <div className="card" style={{ textAlign: "center", padding: "40px 20px", color: "var(--text3)" }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+                <div style={{ fontSize: 14 }}>Henüz geçmiş iş yok</div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {gecmisIsler.map(sefer => {
+                  const tamamlandi = sefer.durum === "tamamlandı";
+                  return (
+                    <div key={sefer.id} className="card" style={{
+                      padding: 14,
+                      border: tamamlandi
+                        ? "1px solid rgba(16,185,129,0.25)"
+                        : "1px solid rgba(251,191,36,0.25)",
+                      position: "relative",
+                      overflow: "hidden"
+                    }}>
+                      <div style={{
+                        position: "absolute", left: 0, top: 0, bottom: 0, width: 4,
+                        background: tamamlandi
+                          ? "linear-gradient(180deg, #10b981 0%, #059669 100%)"
+                          : "linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%)"
+                      }} />
+
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: "#fbbf24" }}>{sefer.yuk}</div>
+                          <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 3 }}>
+                            📍 {sefer.nereden} → 🎯 {sefer.nereye}
+                          </div>
+                        </div>
+                        <span style={{
+                          padding: "4px 10px",
+                          borderRadius: 20,
+                          fontSize: 10,
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          whiteSpace: "nowrap",
+                          background: tamamlandi
+                            ? "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)"
+                            : "linear-gradient(135deg, rgba(251,191,36,0.2) 0%, rgba(251,191,36,0.1) 100%)",
+                          color: tamamlandi ? "#10b981" : "#fbbf24",
+                          border: tamamlandi
+                            ? "1px solid rgba(16,185,129,0.3)"
+                            : "1px solid rgba(251,191,36,0.3)"
+                        }}>
+                          {tamamlandi ? "✓ Tamamlandı" : "🚛 Devam Ediyor"}
+                        </span>
+                      </div>
+
+                      {/* Kamyoncu bilgileri - işverenin kime iş verdiğini gösterir */}
+                      <div style={{
+                        background: "var(--bg3)",
+                        borderRadius: 10,
+                        padding: 10,
+                        fontSize: 12,
+                        color: "var(--text2)",
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "6px 12px"
+                      }}>
+                        <div>🚛 <strong>{sefer.kamyoncu || "—"}</strong></div>
+                        <div>📌 {sefer.plaka || "—"}</div>
+                        {sefer.kamyoncu_tel && (
+                          <div style={{ gridColumn: "span 2" }}>
+                            📞 <a href={`tel:${sefer.kamyoncu_tel}`} style={{ color: "var(--text2)" }}>
+                              {sefer.kamyoncu_tel}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, fontSize: 12 }}>
+                        <div style={{ color: "var(--text3)" }}>
+                          {sefer.teslim_tarihi
+                            ? `Teslim: ${new Date(sefer.teslim_tarihi).toLocaleDateString("tr-TR")}`
+                            : `Tarih: ${sefer.tarih || "—"}`}
+                        </div>
+                        <div style={{ fontWeight: 700, color: "#fbbf24", fontSize: 14 }}>
+                          ₺{Number(sefer.ucret || 0).toLocaleString("tr-TR")}
+                        </div>
+                      </div>
+
+                      {sefer.odeme_durumu === "odendi" && (
+                        <div style={{ marginTop: 8, fontSize: 11, color: "#10b981" }}>
+                          💰 Ödeme yapıldı{sefer.odeme_tarihi ? ` (${new Date(sefer.odeme_tarihi).toLocaleDateString("tr-TR")})` : ""}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
