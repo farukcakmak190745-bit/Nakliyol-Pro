@@ -63,7 +63,7 @@ const IlanKart = ({ ilan, onClick }) => {
           {aracIkon[ilan.aracTip] || "🚛"} {ilan.aracTip}
         </div>
         <div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
-          📅 {ilan.odemeGun === 0 ? "💰 Peşin" : `${ilan.odemeGun} Gün Ödeme`}
+          📅 {!ilan.odemeGun || ilan.odemeGun === 0 ? "💰 Peşin" : `${ilan.odemeGun} Gün Ödeme`}
         </div>
       </div>
 
@@ -147,7 +147,7 @@ export default function IlanlarSayfasi() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
                 {[
                   { k: "Tonaj", v: secilen?.ton > 0 ? `${secilen.ton} Ton` : "🔥 Serbest" },
-                  { k: "Ödeme Planı", v: secilen?.odemeGun === 0 ? "💰 Peşin" : `${secilen.odemeGun} Gün Sonra` },
+                  { k: "Ödeme Planı", v: !secilen?.odemeGun || secilen.odemeGun === 0 ? "💰 Peşin" : `${secilen.odemeGun} Gün Sonra` },
                   { k: "Ücret", v: `₺${secilen?.ucret?.toLocaleString() || 0}` },
                   { k: "Araç Tipi", v: secilen?.aracTip || "-" },
                 ].map(({ k, v }, idx) => (

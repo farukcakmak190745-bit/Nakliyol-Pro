@@ -161,35 +161,42 @@ export function IlanVerSayfasi() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10 }}>
           {[
-            { tur: "pesin", gun: 0, label: "Peşin", desc: "Hemen tam ödeme", color: "#10b981" },
-            { tur: "7-gun", gun: 7, label: "7 Gün", desc: "Teslimden 7 gün sonra", color: "#ef4444" },
-            { tur: "15-gun", gun: 15, label: "15 Gün", desc: "Teslimden 15 gün sonra", color: "#fbbf24" },
-            { tur: "30-gun", gun: 30, label: "30 Gün", desc: "Teslimden 30 gün sonra", color: "#3b82f6" },
-          ].map(opt => (
-            <button
-              key={opt.tur}
-              onClick={() => set("odemeTuru", opt.tur)}
-              style={{
-                padding: "14px 8px",
-                borderRadius: "12px",
-                border: `2px solid rgba(251,191,36,0.2)`,
-                background: form.odemeTuru === opt.tur ? opt.color : "transparent",
-                color: form.odemeTuru === opt.tur ? "#fff" : "var(--text2)",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 6,
-                transition: "all 0.2s"
-              }}
-            >
-              <div style={{ fontSize: 22 }}>{opt.color === "#10b981" ? "💰" : opt.color === "#ef4444" ? "⚡" : opt.color === "#fbbf24" ? "⏰" : "📅"}</div>
-              <div style={{ color: form.odemeTuru === opt.tur ? "#fff" : opt.color }}>{opt.label}</div>
-              <div style={{ fontSize: 10, color: "var(--text3)" }}>{opt.desc}</div>
-            </button>
-          ))}
+            { tur: "pesin", gun: 0, label: "Peşin", desc: "Hemen tam ödeme", color: "#10b981", ikon: "💰" },
+            { tur: "vadeli", gun: 7, label: "7 Gün", desc: "Teslimden 7 gün sonra", color: "#ef4444", ikon: "⚡" },
+            { tur: "vadeli", gun: 15, label: "15 Gün", desc: "Teslimden 15 gün sonra", color: "#fbbf24", ikon: "⏰" },
+            { tur: "vadeli", gun: 30, label: "30 Gün", desc: "Teslimden 30 gün sonra", color: "#3b82f6", ikon: "📅" },
+          ].map((opt, idx) => {
+            // Seçim karşılaştırması: tur + gun birlikte (çünkü tur "vadeli" 3 seçeneğe ait)
+            const secili = form.odemeTuru === opt.tur && Number(form.odemeGun) === opt.gun;
+            return (
+              <button
+                key={`${opt.tur}-${opt.gun}-${idx}`}
+                onClick={() => {
+                  set("odemeTuru", opt.tur);
+                  set("odemeGun", opt.gun);
+                }}
+                style={{
+                  padding: "14px 8px",
+                  borderRadius: "12px",
+                  border: `2px solid rgba(251,191,36,0.2)`,
+                  background: secili ? opt.color : "transparent",
+                  color: secili ? "#fff" : "var(--text2)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 6,
+                  transition: "all 0.2s"
+                }}
+              >
+                <div style={{ fontSize: 22 }}>{opt.ikon}</div>
+                <div style={{ color: secili ? "#fff" : opt.color }}>{opt.label}</div>
+                <div style={{ fontSize: 10, color: "var(--text3)" }}>{opt.desc}</div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -486,7 +493,7 @@ export function TekliflerSayfasi() {
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Ücret</div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24" }}>₺{s.toplamUcret?.toLocaleString() || s.ucret.toLocaleString()}</div>
-                  <div style={{ fontSize: 9, color: "#3b82f6", marginTop: 2 }}>{s.odemeTuru === "pesin" ? "💰 Peşin" : `${s.odemeGun} Gün`}</div>
+                  <div style={{ fontSize: 9, color: "#3b82f6", marginTop: 2 }}>{!s.odemeGun || s.odemeGun === 0 || s.odemeTuru === "pesin" ? "💰 Peşin" : `${s.odemeGun} Gün`}</div>
                   {s.kdvOrani > 0 && <div style={{ fontSize: 9, color: "#10b981", marginTop: 1 }}>+KDV</div>}
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
