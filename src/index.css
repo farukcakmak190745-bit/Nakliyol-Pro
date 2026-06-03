@@ -24,7 +24,9 @@ html { scroll-behavior: smooth; }
 body { font-family: var(--font-b); background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 a { text-decoration: none; color: inherit; }
 button { cursor: pointer; font-family: var(--font-b); border: none; background: none; }
-input, textarea, select { font-family: var(--font-b); outline: none; outline-color: var(--sari); }
+input, textarea, select { font-family: var(--font-b); outline: none; outline-color: var(--sari); color: var(--text); }
+input::placeholder, textarea::placeholder { color: var(--text3); opacity: 1; }
+input:-webkit-autofill, textarea:-webkit-autofill, select:-webkit-autofill { -webkit-text-fill-color: var(--text); -webkit-box-shadow: 0 0 0 1000px var(--bg2) inset; transition: background-color 5000s ease-in-out 0s; }
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg1); }
 ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
@@ -34,7 +36,9 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--text);min-height
 body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at top, rgba(251, 191, 36, 0.03) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.02) 0%, transparent 50%);pointer-events:none;z-index:1;}
 a{text-decoration:none;color:inherit;}
 button{cursor:pointer;font-family:var(--font-b);border:none;background:none;}
-input,textarea,select{font-family:var(--font-b);outline:none;outline-color:var(--sari);}
+input,textarea,select{font-family:var(--font-b);outline:none;outline-color:var(--sari);color:var(--text);}
+input::placeholder,textarea::placeholder{color:var(--text3);opacity:1;}
+input:-webkit-autofill,textarea:-webkit-autofill,select:-webkit-autofill{-webkit-text-fill-color:var(--text);-webkit-box-shadow:0 0 0 1000px var(--bg2) inset;transition:background-color 5000s ease-in-out 0s;}
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:var(--bg1);}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
