@@ -599,7 +599,7 @@ export function IssizProfilSayfasi() {
 
 
 export function IssizIlanlarSayfasi() {
-  const { oturum, ilanlar, ilanSil, ilanAl } = useApp();
+  const { oturum, ilanlar, ilanSil } = useApp();
   const [silinenId, setSilinenId] = useState(null);
   const [toast, setToast] = useState(null);
 
@@ -622,11 +622,6 @@ export function IssizIlanlarSayfasi() {
     } finally {
       setTimeout(() => setSilinenId(null), 600);
     }
-  };
-
-  const handleAl = async (ilan) => {
-    ilanAl(ilan.id, oturum);
-    gosterToast("ok", "✓ İlan alındı olarak işaretlendi");
   };
 
   return (
@@ -748,42 +743,23 @@ export function IssizIlanlarSayfasi() {
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {ilan.durum === "aktif" && (
-                      <button
-                        onClick={() => handleAl(ilan)}
-                        style={{
-                          padding: "10px 16px",
-                          background: "linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.08) 100%)",
-                          color: "#3b82f6",
-                          border: "1px solid rgba(59,130,246,0.3)",
-                          borderRadius: "10px",
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: "pointer"
-                        }}
-                      >
-                        ✓ Alındı
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleSil(ilan)}
-                      disabled={siliniyor}
-                      style={{
-                        padding: "10px 16px",
-                        background: "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.08) 100%)",
-                        color: "#ef4444",
-                        border: "1px solid rgba(239,68,68,0.3)",
-                        borderRadius: "10px",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        cursor: siliniyor ? "not-allowed" : "pointer",
-                        opacity: siliniyor ? 0.6 : 1
-                      }}
-                    >
-                      {siliniyor ? "Siliniyor..." : "🗑️ Sil"}
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => handleSil(ilan)}
+                    disabled={siliniyor}
+                    style={{
+                      padding: "10px 18px",
+                      background: "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.08) 100%)",
+                      color: "#ef4444",
+                      border: "1px solid rgba(239,68,68,0.3)",
+                      borderRadius: "10px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: siliniyor ? "not-allowed" : "pointer",
+                      opacity: siliniyor ? 0.6 : 1
+                    }}
+                  >
+                    {siliniyor ? "Siliniyor..." : "🗑️ Sil"}
+                  </button>
                 </div>
               </div>
             );
