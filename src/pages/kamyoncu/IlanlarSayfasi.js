@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useApp } from "../../context/AppContext";
-import { EmptyState } from "../../components/UI";
+import { EmptyState, formatTarih } from "../../components/UI";
 
 const IlanKart = ({ ilan, onClick }) => {
   const getIkon = (yuk) => {
@@ -57,7 +57,7 @@ const IlanKart = ({ ilan, onClick }) => {
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
         <div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
-          📅 {ilan.tarih}
+          📅 {formatTarih(ilan.tarih)}
         </div>
         <div style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.08) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, color: "#3b82f6", border: "1px solid rgba(59,130,246,0.2)" }}>
           {aracIkon[ilan.aracTip] || "🚛"} {ilan.aracTip}
@@ -133,7 +133,7 @@ export default function IlanlarSayfasi() {
             <div style={{ maxWidth: 440, margin: "0 auto", padding: 24, paddingTop: 60 }}>
               <div className="display" style={{ fontSize: 28, color: "#fbbf24", marginBottom: 8 }}>{secilen?.yuk || "İlan Detay"}</div>
               <div style={{ display: "inline-block", background: "var(--guldum-gradient)", color: "#0a0a0a", padding: "6px 16px", borderRadius: "20px", fontSize: 11, fontWeight: 700, marginBottom: 12 }}>
-                ₺{secilen?.ucret?.toLocaleString() || 0} - {secilen?.tarih || "-"}
+                ₺{secilen?.ucret?.toLocaleString() || 0} - {formatTarih(secilen?.tarih)}
               </div>
               <div className="rota" style={{ marginBottom: 16 }}>
                 <span className="rota-city">{secilen?.nereden || "-"}</span>
@@ -149,7 +149,8 @@ export default function IlanlarSayfasi() {
                   { k: "Tonaj", v: secilen?.ton > 0 ? `${secilen.ton} Ton` : "🔥 Serbest" },
                   { k: "Ödeme Planı", v: !secilen?.odemeGun || secilen.odemeGun === 0 ? "💰 Peşin" : `${secilen.odemeGun} Gün Sonra` },
                   { k: "Ücret", v: `₺${secilen?.ucret?.toLocaleString() || 0}` },
-                  { k: "Araç Tipi", v: secilen?.aracTip || "-" },
+                  { k: "Araç Tipi", v: secilen?.aracTip || "Belirtilmedi" },
+                  { k: "Tarih", v: formatTarih(secilen?.tarih) },
                 ].map(({ k, v }, idx) => (
                   <div key={k} style={{ background: "var(--bg2)", borderRadius: "12px", padding: "14px 12px", border: "1px solid rgba(251,191,36,0.1)" }}>
                     <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 6, letterSpacing: 1.5, textTransform: "uppercase" }}>{k}</div>

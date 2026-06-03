@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../../context/AppContext";
 import { useMesaj } from "../../context/MesajContext";
-import { EmptyState } from "../../components/UI";
+import { EmptyState, formatTarih } from "../../components/UI";
 import ChatSayfasi from "../../components/ChatSayfasi";
 import TeslimEdildiModal from "../../components/TeslimEdildiModal";
 import { BildirimlerSayfasi } from "../../pages/BildirimlerSayfasi";
@@ -140,7 +140,7 @@ export function SeferlerSayfasi() {
               )}
               {sefer.odemeDurumu === "odendi" && (
                 <div style={{ marginTop: 8, fontSize: 11, color: "#10b981", display: "flex", alignItems: "center", gap: 6 }}>
-                  💰 Ödeme tamamlandı - {sefer.odemeTarihi}
+                  💰 Ödeme tamamlandı - {formatTarih(sefer.odemeTarihi)}
                 </div>
               )}
             </div>

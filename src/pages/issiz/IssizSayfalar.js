@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import ChatSayfasi from "../../components/ChatSayfasi";
 import { useApp } from "../../context/AppContext";
 import { useMesaj } from "../../context/MesajContext";
-import { EmptyState } from "../../components/UI";
+import { EmptyState, formatTarih } from "../../components/UI";
 import ProfilKart from "../../components/ProfilKart";
 import IlIlceSecici from "../../components/IlIlceSecici";
 
@@ -523,7 +523,7 @@ export function TekliflerSayfasi() {
                 <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#fff", flexShrink: 0 }}>✓</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, fontSize: 15, color: "#fbbf24" }}>{s.kamyoncu}</div>
-                  <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>₺{s.ucret.toLocaleString()} • {s.tarih}</div>
+                  <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>₺{s.ucret.toLocaleString()} • {formatTarih(s.tarih)}</div>
                 </div>
                 <button
                   onClick={() => {
@@ -751,19 +751,46 @@ export function IssizIlanlarSayfasi() {
 
                 <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
-                    📅 {ilan.tarih || "Tarih yok"}
+                    📅 {formatTarih(ilan.tarih)}
                   </span>
-                  {ilan.ton && (
+                  {ilan.ton ? (
                     <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
                       ⚖️ {ilan.ton} ton
                     </span>
-                  )}
-                  {ilan.aracTip && (
+                  ) : null}
+                  <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
+                    🚛 {ilan.aracTip || "Belirtilmedi"}
+                  </span>
+                  {!ilan.odemeGun || ilan.odemeGun === 0 ? (
+                    <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "#10b981" }}>
+                      💰 Peşin
+                    </span>
+                  ) : (
                     <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
-                      🚛 {ilan.aracTip}
+                      ⏰ {ilan.odemeGun} Gün Vadeli
                     </span>
                   )}
                 </div>
+
+                {/* Açıklama — yanlışlıkla boş kaydedilenler için fallback */}
+                {ilan.aciklama && (
+                  <div style={{
+                    fontSize: 12,
+                    color: "var(--text2)",
+                    lineHeight: 1.5,
+                    background: "var(--bg3)",
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    marginBottom: 12,
+                    border: "1px solid var(--border)",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden"
+                  }}>
+                    📝 {ilan.aciklama}
+                  </div>
+                )}
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "1px solid var(--border)" }}>
                   <div>
@@ -906,8 +933,8 @@ export function IssizIlanlarSayfasi() {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, fontSize: 12 }}>
                         <div style={{ color: "var(--text3)" }}>
                           {sefer.teslim_tarihi
-                            ? `Teslim: ${new Date(sefer.teslim_tarihi).toLocaleDateString("tr-TR")}`
-                            : `Tarih: ${sefer.tarih || "—"}`}
+                            ? `Teslim: ${formatTarih(sefer.teslim_tarihi)}`
+                            : `Tarih: ${formatTarih(sefer.tarih)}`}
                         </div>
                         <div style={{ fontWeight: 700, color: "#fbbf24", fontSize: 14 }}>
                           ₺{Number(sefer.ucret || 0).toLocaleString("tr-TR")}
@@ -916,7 +943,7 @@ export function IssizIlanlarSayfasi() {
 
                       {sefer.odeme_durumu === "odendi" && (
                         <div style={{ marginTop: 8, fontSize: 11, color: "#10b981" }}>
-                          💰 Ödeme yapıldı{sefer.odeme_tarihi ? ` (${new Date(sefer.odeme_tarihi).toLocaleDateString("tr-TR")})` : ""}
+                          💰 Ödeme yapıldı{sefer.odeme_tarihi ? ` (${formatTarih(sefer.odeme_tarihi)})` : ""}
                         </div>
                       )}
                     </div>

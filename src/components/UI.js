@@ -131,3 +131,26 @@ export const EmptyState = ({ icon, text }) => (
     <div style={{ fontSize: 14 }}>{text}</div>
   </div>
 );
+
+/**
+ * Tarih formatlama: YYYY-MM-DD, ISO string, Date objesi ya da
+ * "DD.MM.YYYY" formatındaki string -> "DD.MM.YYYY" çıktısı.
+ *
+ * Kullanım:  formatTarih("2026-06-04")          -> "04.06.2026"
+ *            formatTarih(new Date())            -> "04.06.2026"
+ *            formatTarih("04.06.2026")          -> "04.06.2026"  (passthrough)
+ *            formatTarih(null)                  -> "—"
+ */
+export const formatTarih = (tarih) => {
+  if (!tarih) return "—";
+  // Zaten DD.MM.YYYY formatında mı?
+  if (typeof tarih === "string" && /^\d{2}\.\d{2}\.\d{4}$/.test(tarih)) {
+    return tarih;
+  }
+  const d = new Date(tarih);
+  if (isNaN(d.getTime())) return String(tarih);
+  const gg = String(d.getDate()).padStart(2, "0");
+  const ay = String(d.getMonth() + 1).padStart(2, "0");
+  const yil = d.getFullYear();
+  return `${gg}.${ay}.${yil}`;
+};
