@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ChatSayfasi from "../../components/ChatSayfasi";
 import { useApp } from "../../context/AppContext";
+import { useMesaj } from "../../context/MesajContext";
 import { EmptyState } from "../../components/UI";
 
 export function IlanVerSayfasi() {
@@ -541,8 +542,17 @@ export function TekliflerSayfasi() {
 }
 
 export function MesajlarSayfasi({ onGeri }) {
-  const { konusmalar, oturum } = useApp();
+  const { oturum } = useApp();
+  const { konusmalar, loadConversations } = useMesaj();
   const [secili, setSecili] = useState(null);
+
+  // Oturum değişince konuşmaları yeniden yükle (auth listener fallback)
+  useEffect(() => {
+    if (oturum?.id) {
+      console.log('📨 İşveren MesajlarSayfasi: manual load for', oturum.id);
+      loadConversations?.(oturum.id);
+    }
+  }, [oturum?.id, loadConversations]);
 
   if (secili) {
     const konusma = konusmalar.find(k => k.id === secili);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "../../context/AppContext";
 import { useMesaj } from "../../context/MesajContext";
 import { EmptyState } from "../../components/UI";
@@ -244,8 +244,17 @@ export function IlanlarSayfasi() {
 
 export function MesajlarSayfasi({ onGeri }) {
   const { oturum } = useApp();
-  const { konusmalar } = useMesaj();
+  const { konusmalar, loadConversations } = useMesaj();
   const [secili, setSecili] = useState(null);
+
+  // Oturum değişince veya sayfa açılınca konuşmaları yeniden yükle
+  // (MesajContext'in auth listener'ın kaçırdığı durumlar için fallback)
+  useEffect(() => {
+    if (oturum?.id) {
+      console.log('📨 MesajlarSayfasi: manual load for', oturum.id);
+      loadConversations?.(oturum.id);
+    }
+  }, [oturum?.id, loadConversations]);
 
   if (secili) {
     const konusma = konusmalar?.find(k => k.id === secili);
