@@ -152,7 +152,7 @@ export default function ProfilKart({ rol }) {
       <div style={{
         position: "relative",
         margin: "0 -16px 0 -16px",
-        padding: "32px 20px 110px",
+        padding: "24px 20px 24px",
         background: `radial-gradient(ellipse at top, ${isKamyoncu ? "rgba(251,191,36,0.25)" : "rgba(59,130,246,0.25)"} 0%, transparent 70%), linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%)`,
         borderBottom: `1px solid ${isKamyoncu ? "rgba(251,191,36,0.2)" : "rgba(59,130,246,0.2)"}`,
         overflow: "hidden"
@@ -191,24 +191,21 @@ export default function ProfilKart({ rol }) {
       </div>
 
       {/* ============ AVATAR + BİLGİ KARTI ============ */}
-      <div style={{ marginTop: -75, position: "relative", zIndex: 3 }}>
+      <div style={{ marginTop: 14, position: "relative" }}>
         <div className="card" style={{
           textAlign: "center",
-          padding: "78px 20px 24px",
+          padding: "24px 20px 24px",
           marginBottom: 14,
           background: "linear-gradient(180deg, var(--bg2) 0%, var(--bg1) 100%)",
           border: `1px solid ${isKamyoncu ? "rgba(251,191,36,0.25)" : "rgba(59,130,246,0.25)"}`,
           position: "relative",
           overflow: "hidden"
         }}>
-          {/* Avatar */}
+          {/* Avatar - normal flow, overlap yok */}
           <div style={{
-            position: "absolute",
-            top: -55,
-            left: "50%",
-            transform: "translateX(-50%)",
             width: 100,
             height: 100,
+            margin: "0 auto 16px",
             borderRadius: "50%",
             background: tema.gradient,
             display: "flex",
