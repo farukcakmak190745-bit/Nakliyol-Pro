@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
+import { supabase } from "../lib/supabase";
 
 /**
  * Premium Profil Kartı - hem işveren (issiz) hem kamyoncu için ortak
@@ -7,7 +8,7 @@ import { useApp } from "../context/AppContext";
  *   - rol: "issiz" | "kamyoncu"
  */
 export default function ProfilKart({ rol }) {
-  const { oturum, cikisYap, ibanGuncelle, profilGuncelle } = useApp();
+  const { oturum, cikisYap, profilGuncelle } = useApp();
 
   const isKamyoncu = rol === "kamyoncu";
 
@@ -22,11 +23,6 @@ export default function ProfilKart({ rol }) {
     sehir: "",
   });
   const [kayitMesaj, setKayitMesaj] = useState(null);
-
-  // IBAN state
-  const [localIbanSahibi, setLocalIbanSahibi] = useState("");
-  const [localIban, setLocalIban] = useState("");
-  const [ibanKaydedildi, setIbanKaydedildi] = useState(false);
 
   // Avatar / bio (local-only, premium cosmetic)
   const [avatarEmoji] = useState(isKamyoncu ? "🚛" : "🏢");
@@ -92,7 +88,7 @@ export default function ProfilKart({ rol }) {
   };
 
   // Belgeler (rol bazlı)
-  const belgeler = isKamyoncu
+  const belgeTanimlari = isKamyoncu
     ? [
         { id: 1, ad: "Ehliyet (E Sınıfı)", ok: true },
         { id: 2, ad: "Araç Ruhsatı", ok: !!oturum?.plaka },
@@ -107,8 +103,10 @@ export default function ProfilKart({ rol }) {
         { id: 4, ad: "Ticari Sicil", ok: false },
       ];
 
-  const tamamlananBelge = belgeler.filter(b => b.ok).length;
-  const belgeYuzdesi = Math.round((tamamlananBelge / belgeler.length) * 100);
+  // Kullanıcının yüklediği belgeleri bul
+  const kullanicininBelgeleri = belgelerim.filter(b => belgeTanimlari.some(bt => bt.ad === b.dosya_adi));
+  const tamamlananBelge = kullanicininBelgeleri.filter(b => b.onaylandi).length;
+  const belgeYuzdesi = Math.round((tamamlananBelge / belgeTanimlari.length) * 100);
 
   // Statler
   const statler = isKamyoncu
@@ -127,13 +125,85 @@ export default function ProfilKart({ rol }) {
 
   const dosyaInputRef = useRef();
   const [belgeEklendi, setBelgeEklendi] = useState(false);
+  const [belgeYukleniyor, setBelgeYukleniyor] = useState(null);
+  const [belgelerim, setBelgelerim] = useState([]);
+
+  // Belgeleri yükle
+  useEffect(() => {
+    fetchBelgeler();
+  }, [oturum?.id]);
+
+  const fetchBelgeler = async () => {
+    if (!oturum?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('belgeler')
+        .select('*')
+        .eq('kullanici_id', oturum.id)
+        .eq('rol', isKamyoncu ? 'kamyoncu' : 'issiz');
+
+      if (error) throw error;
+      setBelgelerim(data || []);
+    } catch (err) {
+      console.error('Belgeler yüklenemedi:', err);
+    }
+  };
+
   const belgeEkleTikla = () => {
     if (dosyaInputRef.current) dosyaInputRef.current.click();
   };
-  const belgeSecildi = (e) => {
-    if (e.target.files?.[0]) {
+
+  const belgeSecildi = async (e) => {
+    const dosya = e.target.files?.[0];
+    if (!dosya) return;
+
+    setBelgeYukleniyor(dosya.name);
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('belgeler')
+        .upload(`${oturum.id}/${isKamyoncu ? 'kamyoncu' : 'issiz'}/${Date.now()}_${dosya.name}`, dosya);
+
+      if (error) throw error;
+
+      // Varsa mevcut belgeleri çek
+      await fetchBelgeler();
+
+      // Storage'daki dosya URL'sini kaydet
+      const { data: { publicUrl } } = supabase.storage
+        .from('belgeler')
+        .getPublicUrl(data.path);
+
+      // Veritabanına kaydet
+      await supabase.from('belgeler').insert([{
+        kullanici_id: oturum.id,
+        rol: isKamyoncu ? 'kamyoncu' : 'issiz',
+        dosya_adi: dosya.name,
+        dosya_yolu: data.path,
+        url: publicUrl,
+        onaylandi: false,
+        olusturulma_tarihi: new Date().toISOString()
+      }]);
+
       setBelgeEklendi(true);
-      setTimeout(() => setBelgeEklendi(false), 2200);
+      setTimeout(() => setBelgeEklendi(false), 3000);
+    } catch (err) {
+      console.error('Belge yüklenemedi:', err);
+      alert('Belge yüklenemedi. Lütfen tekrar deneyin.');
+    } finally {
+      setBelgeYukleniyor(null);
+      if (dosyaInputRef.current) dosyaInputRef.current.value = '';
+    }
+  };
+
+  const belgeSil = async (belgeId) => {
+    if (!confirm('Bu belgeyi silmek istediğine emin misin?')) return;
+
+    try {
+      await supabase.from('belgeler').delete().eq('id', belgeId);
+      await fetchBelgeler();
+    } catch (err) {
+      console.error('Belge silinemedi:', err);
     }
   };
 
@@ -432,112 +502,6 @@ export default function ProfilKart({ rol }) {
           </div>
         </div>
 
-        {/* ============ IBAN KARTI ============ */}
-        <div className="card" style={{
-          marginBottom: 14,
-          padding: 20,
-          background: "linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.04) 100%)",
-          border: "1px solid rgba(59,130,246,0.3)",
-          position: "relative",
-          overflow: "hidden"
-        }}>
-          <div style={{ position: "absolute", top: -30, right: -30, width: 120, height: 120, borderRadius: "50%", background: "rgba(59,130,246,0.1)", filter: "blur(20px)" }} />
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, position: "relative" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "10px", background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>💳</div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#3b82f6" }}>BANKA BİLGİLERİ</div>
-                <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>Ödemeleriniz bu IBAN'a yatırılır</div>
-              </div>
-            </div>
-            {ibanKaydedildi && (
-              <span style={{ fontSize: 11, color: "#10b981", fontWeight: 700, animation: "fadeIn 0.3s" }}>✓ Kaydedildi</span>
-            )}
-          </div>
-
-          <div style={{ position: "relative" }}>
-            <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 6, letterSpacing: 1, textTransform: "uppercase" }}>👤 Hesap Sahibi</div>
-            <input
-              type="text"
-              placeholder="Ad Soyad"
-              value={localIbanSahibi}
-              onChange={e => setLocalIbanSahibi(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "12px 14px",
-                background: "var(--bg2)",
-                color: "var(--text)",
-                border: "1px solid rgba(59,130,246,0.3)",
-                borderRadius: "12px",
-                fontSize: 14,
-                fontWeight: 600,
-                outline: "none",
-                marginBottom: 12,
-                WebkitTextFillColor: "var(--text)"
-              }}
-              onFocus={e => { e.target.style.borderColor = "#3b82f6"; e.target.style.boxShadow = "0 0 0 3px rgba(59,130,246,0.2)"; }}
-              onBlur={e => { e.target.style.borderColor = "rgba(59,130,246,0.3)"; e.target.style.boxShadow = "none"; }}
-            />
-
-            <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 6, letterSpacing: 1, textTransform: "uppercase" }}>🧾 IBAN Numarası</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <div style={{
-                flex: 1,
-                padding: "12px 14px",
-                background: "var(--bg2)",
-                border: "1px solid rgba(59,130,246,0.3)",
-                borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                gap: 8
-              }}>
-                <span style={{ color: "#3b82f6", fontWeight: 800, fontFamily: "monospace", fontSize: 14 }}>TR</span>
-                <input
-                  type="text"
-                  value={localIban.replace(/^TR\s*/i, "")}
-                  onChange={e => setLocalIban("TR " + e.target.value.replace(/[^0-9 ]/g, ""))}
-                  placeholder="0000 0000 0000 0000 0000 00"
-                  onFocus={e => e.target.select()}
-                  style={{
-                    flex: 1,
-                    border: "none",
-                    outline: "none",
-                    background: "transparent",
-                    color: "var(--text)",
-                    fontSize: 13,
-                    fontFamily: "monospace",
-                    letterSpacing: 1,
-                    fontWeight: 700,
-                    WebkitTextFillColor: "var(--text)",
-                    minWidth: 0
-                  }}
-                />
-              </div>
-              <button
-                onClick={handleIbanKaydet}
-                style={{
-                  padding: "12px 18px",
-                  background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "12px",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  boxShadow: "0 4px 12px rgba(59,130,246,0.3)",
-                  transition: "all 0.2s"
-                }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 16px rgba(59,130,246,0.5)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(59,130,246,0.3)"; }}
-              >
-                💾 Kaydet
-              </button>
-            </div>
-          </div>
-        </div>
-
         {/* ============ PRO ÜYELİK ============ */}
         <div className="card" style={{
           marginBottom: 14,
@@ -593,7 +557,7 @@ export default function ProfilKart({ rol }) {
               <div style={{ width: 32, height: 32, borderRadius: "10px", background: tema.iconBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📁</div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>BELGELERİM</div>
-                <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>{tamamlananBelge}/{belgeler.length} yüklendi</div>
+                <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>{kullanicininBelgeleri.length}/{belgeTanimlari.length} belge • {belgeYuzdesi}% tamamlandı</div>
               </div>
             </div>
             <div style={{ position: "relative" }}>
@@ -604,57 +568,116 @@ export default function ProfilKart({ rol }) {
             </div>
           </div>
 
-          {belgeler.map((b, i) => (
-            <div key={b.id} style={{
-              background: "var(--bg2)",
-              borderRadius: "12px",
-              padding: "12px 14px",
-              marginBottom: i === belgeler.length - 1 ? 0 : 8,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              border: `1px solid ${b.ok ? "rgba(16,185,129,0.2)" : "rgba(251,191,36,0.1)"}`,
-              transition: "all 0.2s"
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = b.ok ? "rgba(16,185,129,0.4)" : tema.birincil; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = b.ok ? "rgba(16,185,129,0.2)" : "rgba(251,191,36,0.1)"; }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "8px",
-                  background: b.ok ? "rgba(16,185,129,0.15)" : "var(--bg3)",
+          {/* Belge listesi */}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {/* Yüklü belgeler */}
+            {kullanicininBelgeleri.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                {kullanicininBelgeleri.map((b) => (
+                  <div key={b.id} style={{
+                    background: "var(--bg2)",
+                    borderRadius: "12px",
+                    padding: "12px 14px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    border: "1px solid rgba(16,185,129,0.2)",
+                    transition: "all 0.2s"
+                  }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "8px",
+                        background: "rgba(16,185,129,0.15)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 14
+                      }}>
+                        ✓
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{b.dosya_adi}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ fontSize: 10, color: b.onaylandi ? "#10b981" : "var(--text3)", fontWeight: 600 }}>
+                        {b.onaylandi ? "✓ Onaylandı" : "⏳ Onay Bekliyor"}
+                      </span>
+                      <button onClick={() => belgeSil(b.id)} style={{
+                        padding: "4px 8px",
+                        background: "rgba(239,68,68,0.1)",
+                        border: "1px solid rgba(239,68,68,0.3)",
+                        color: "#ef4444",
+                        borderRadius: "6px",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}>
+                        Sil
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Belge tanımları */}
+            {belgeTanimlari.map((b) => {
+              const kullanimda = kullanicininBelgeleri.some(kb => kb.dosya_adi === b.ad);
+              return (
+                <div key={b.id} style={{
+                  background: "var(--bg2)",
+                  borderRadius: "12px",
+                  padding: "12px 14px",
+                  marginBottom: kullanicininBelgeleri.length > 0 && b.id === belgeTanimlari.length ? 0 : 8,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14
-                }}>
-                  {b.ok ? "✓" : "○"}
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{b.ad}</div>
-                  <div style={{ fontSize: 10, color: b.ok ? "#10b981" : "var(--text3)", marginTop: 2, fontWeight: 600 }}>
-                    {b.ok ? "✓ Onaylandı" : "Bekliyor"}
+                  justifyContent: "space-between",
+                  border: `1px solid ${kullanimda ? "rgba(16,185,129,0.2)" : "rgba(251,191,36,0.1)"}`,
+                  transition: "all 0.2s"
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = kullanimda ? "rgba(16,185,129,0.4)" : tema.birincil; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = kullanimda ? "rgba(16,185,129,0.2)" : "rgba(251,191,36,0.1)"; }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "8px",
+                      background: kullanimda ? "rgba(16,185,129,0.15)" : "var(--bg3)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 14
+                    }}>
+                      {kullanimda ? "✓" : "○"}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{b.ad}</div>
+                      <div style={{ fontSize: 10, color: kullanimda ? "#10b981" : "var(--text3)", marginTop: 2, fontWeight: 600 }}>
+                        {kullanimda ? "✓ Yüklendi" : "Bekliyor"}
+                      </div>
+                    </div>
                   </div>
+                  {!kullanimda && (
+                    <button onClick={belgeEkleTikla} style={{
+                      padding: "6px 12px",
+                      background: "var(--bg3)",
+                      border: `1px solid ${tema.birincil}`,
+                      color: tema.birincil,
+                      borderRadius: "8px",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: "pointer"
+                    }}>
+                      + Yükle
+                    </button>
+                  )}
                 </div>
-              </div>
-              {!b.ok && (
-                <button onClick={belgeEkleTikla} style={{
-                  padding: "6px 12px",
-                  background: "var(--bg3)",
-                  border: `1px solid ${tema.birincil}`,
-                  color: tema.birincil,
-                  borderRadius: "8px",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  cursor: "pointer"
-                }}>
-                  + Yükle
-                </button>
-              )}
-            </div>
-          ))}
+              );
+            })}
+          </div>
 
           <input
             ref={dosyaInputRef}
@@ -676,7 +699,23 @@ export default function ProfilKart({ rol }) {
               fontWeight: 600,
               textAlign: "center"
             }}>
-              ✅ Belge yüklendi! İnceleniyor...
+              ✅ Belge başarıyla yüklendi! Onaylanmak üzere bekliyor.
+            </div>
+          )}
+
+          {belgeYukleniyor && (
+            <div style={{
+              marginTop: 10,
+              padding: "10px 14px",
+              background: "rgba(251,191,36,0.1)",
+              border: "1px solid rgba(251,191,36,0.3)",
+              borderRadius: "10px",
+              fontSize: 12,
+              color: "#fbbf24",
+              fontWeight: 600,
+              textAlign: "center"
+            }}>
+              ⏳ {belgeYukleniyor} yükleniyor...
             </div>
           )}
         </div>
@@ -684,11 +723,25 @@ export default function ProfilKart({ rol }) {
         {/* ============ AYARLAR MENÜSÜ ============ */}
         <div className="card" style={{ marginBottom: 14, padding: 6 }}>
           {[
-            { icon: "❓", text: "Yardım & Destek", color: "var(--text2)", action: () => alert("Yardım merkezi yakında!") },
-            { icon: "📜", text: "İş Geçmişim", color: "#3b82f6", action: () => alert("İş geçmişi sayfasına yönlendiriliyorsunuz...") },
-            { icon: "⭐", text: "Aldığım Yorumlar", color: "#fbbf24", action: () => alert("Yorumlar yakında!") },
-            { icon: "🔒", text: "Gizlilik Politikası", color: "var(--text2)", action: () => alert("Gizlilik politikası metni") },
-            { icon: "⚙️", text: "Ayarlar", color: "var(--text2)", action: () => alert("Ayarlar yakında!") },
+            { icon: "❓", text: "Yardım & Destek", color: "var(--text2)", action: () => {
+              window.location.href = "/bildirimler";
+            }},
+            { icon: "📜", text: "İş Geçmişim", color: "#3b82f6", action: () => {
+              if (isKamyoncu) {
+                window.location.href = "/kamyoncu/ilanlar";
+              } else {
+                window.location.href = "/issiz/ilanlar";
+              }
+            }},
+            { icon: "⭐", text: "Aldığım Yorumlar", color: "#fbbf24", action: () => {
+              alert("Yorumlar yakında! Bugün yayınlanacak.");
+            }},
+            { icon: "🔒", text: "Gizlilik Politikası", color: "var(--text2)", action: () => {
+              alert("Gizlilik politikası:\n\n- Verileriniz güvende\n- Kişisel bilgileriniz işverenlerle paylaşılır\n- Kullanım verileriyle analiz yapılır");
+            }},
+            { icon: "⚙️", text: "Ayarlar", color: "var(--text2)", action: () => {
+              window.location.href = "/ayarlar";
+            }},
           ].map((item, i, arr) => (
             <div
               key={i}
