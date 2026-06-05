@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
 import { MesajProvider, useMesaj } from "./context/MesajContext";
 import GirisEkrani from "./pages/GirisEkrani";
