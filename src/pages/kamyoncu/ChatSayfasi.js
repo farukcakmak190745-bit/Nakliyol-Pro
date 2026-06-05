@@ -53,6 +53,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
 
     setYukleniyor(true);
     try {
+      // Call parent's dosyaYukle from useMesaj
       const yukluDosya = await dosyaYukle(dosya);
       await mesajGonder(konusmaId, "", yukluDosya.veriTipi, yukluDosya);
       setMesaj("");
@@ -72,6 +73,24 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
     await mesajGonder(konusmaId, mesaj, "metin", null);
     setMesaj("");
     setDosya(null);
+  };
+
+  const handleDosyaYukle = async (e) => {
+    const dosya = e.target.files[0];
+    if (!dosya) return;
+
+    setYukleniyor(true);
+    try {
+      const yukluDosya = await dosyaYukle(dosya);
+      await mesajGonder(konusmaId, "", yukluDosya.veriTipi, yukluDosya);
+      setMesaj("");
+      setDosya(null);
+    } catch (err) {
+      console.error("Dosya yükleme hatası:", err);
+      alert("Dosya yüklenemedi: " + err.message);
+    } finally {
+      setYukleniyor(false);
+    }
   };
 
   const ilkMesajiOkundu = konusma?.mesajlar?.length > 0 && konusma.mesajlar[0]?.gonderen === "konusmaci";
