@@ -31,6 +31,26 @@ function MobilApp({ cikisYap }) {
   const [sekme, setSekme] = useState("ilanlar");
   const [seciliKonusma, setSeciliKonusma] = useState(null);
 
+  // Use useMemo to avoid hoisting issues with state variables
+  const sayfa = React.useMemo(() => {
+    if (!oturum) return null;
+    const kamyoncuSayfalar = {
+      ilanlar:     <IlanlarSayfasi />,
+      seferler:    <SeferlerSayfasi />,
+      mesajlar:    <KamyoncuMesajlarSayfasi />,
+      profil:      <KamyoncuProfil />,
+      bildirimler: <BildirimlerSayfasi />,
+    };
+    const issizSayfalar = {
+      ilanver:    <IlanVerSayfasi />,
+      ilanlarim:  <IssizIlanlarSayfasi />,
+      teklifler:  <TekliflerSayfasi />,
+      mesajlar:   <MesajlarSayfasi />,
+      profil:     <IssizProfilSayfasi />,
+    };
+    return oturum.role === "kamyoncu" ? kamyoncuSayfalar[sekme] : issizSayfalar[sekme];
+  }, [sekme, oturum]);
+
   console.log("🚀 MobilApp render edildi - oturum:", oturum);
 
   // Bildirimleri göster
@@ -70,23 +90,7 @@ function MobilApp({ cikisYap }) {
     return <ChatSayfasi konusmaId={seciliKonusma} onGeri={() => setSeciliKonusma(null)} isKamyoncu={oturum.role === "kamyoncu"} />;
   }
 
-  const kamyoncuSayfalar = {
-    ilanlar:     <IlanlarSayfasi />,
-    seferler:    <SeferlerSayfasi />,
-    mesajlar:    <KamyoncuMesajlarSayfasi />,
-    profil:      <KamyoncuProfil />,
-    bildirimler: <BildirimlerSayfasi />,
-  };
-  const issizSayfalar = {
-    ilanver:    <IlanVerSayfasi />,
-    ilanlarim:  <IssizIlanlarSayfasi />,
-    teklifler:  <TekliflerSayfasi />,
-    mesajlar:   <MesajlarSayfasi />,
-    profil:     <IssizProfilSayfasi />,
-  };
-
-  let sayfa = oturum.role === "kamyoncu" ? kamyoncuSayfalar[sekme] : issizSayfalar[sekme];
-
+  // Sayfa bulunamazsa hata göster
   if (!sayfa) {
     console.log("Sayfa bulunamadı:", sekme);
     return <div>Sayfa bulunamadı: {sekme}</div>;
