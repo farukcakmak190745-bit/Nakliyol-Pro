@@ -8,7 +8,7 @@ import { supabase } from "../lib/supabase";
  *   - rol: "issiz" | "kamyoncu"
  */
 export default function ProfilKart({ rol }) {
-  const { oturum, cikisYap, profilGuncelle } = useApp();
+  const { oturum, cikisYap, profilGuncelle, kullaniciBelgesiYukle } = useApp();
 
   const isKamyoncu = rol === "kamyoncu";
 
@@ -160,30 +160,11 @@ export default function ProfilKart({ rol }) {
     setBelgeYukleniyor(dosya.name);
 
     try {
-      const { data, error } = await supabase.storage
-        .from('belgeler')
-        .upload(`${oturum.id}/${isKamyoncu ? 'kamyoncu' : 'issiz'}/${Date.now()}_${dosya.name}`, dosya);
-
-      if (error) throw error;
+      // AppContext'ten gelen fonksiyonu kullan
+      const result = await kullaniciBelgesiYukle(dosya);
 
       // Varsa mevcut belgeleri çek
       await fetchBelgeler();
-
-      // Storage'daki dosya URL'sini kaydet
-      const { data: { publicUrl } } = supabase.storage
-        .from('belgeler')
-        .getPublicUrl(data.path);
-
-      // Veritabanına kaydet
-      await supabase.from('belgeler').insert([{
-        kullanici_id: oturum.id,
-        rol: isKamyoncu ? 'kamyoncu' : 'issiz',
-        dosya_adi: dosya.name,
-        dosya_yolu: data.path,
-        url: publicUrl,
-        onaylandi: false,
-        olusturulma_tarihi: new Date().toISOString()
-      }]);
 
       setBelgeEklendi(true);
       setTimeout(() => setBelgeEklendi(false), 3000);
@@ -728,16 +709,16 @@ export default function ProfilKart({ rol }) {
             }},
             { icon: "📜", text: "İş Geçmişim", color: "#3b82f6", action: () => {
               if (isKamyoncu) {
-                window.location.href = "/kamyoncu/ilanlar";
+                window.location.href = "/app?sekme=ilanlar";
               } else {
-                window.location.href = "/issiz/ilanlar";
+                window.location.href = "/app?sekme=ilanlarim";
               }
             }},
             { icon: "⭐", text: "Aldığım Yorumlar", color: "#fbbf24", action: () => {
               alert("Yorumlar yakında! Bugün yayınlanacak.");
             }},
             { icon: "🔒", text: "Gizlilik Politikası", color: "var(--text2)", action: () => {
-              alert("Gizlilik politikası:\n\n- Verileriniz güvende\n- Kişisel bilgileriniz işverenlerle paylaşılır\n- Kullanım verileriyle analiz yapılır");
+              alert("Gizlilik Politikası:\n\n✅ Verileriniz güvende\n✅ Kişisel bilgileriniz işverenlerle paylaşılır\n✅ Kullanım verileriyle analiz yapılır\n✅ Supabase ile çalışıyor\n✅ GDPR uyumlu");
             }},
             { icon: "⚙️", text: "Ayarlar", color: "var(--text2)", action: () => {
               window.location.href = "/ayarlar";

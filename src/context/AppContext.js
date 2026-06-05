@@ -168,6 +168,8 @@ export const AppProvider = ({ children }) => {
     sefer: true
   });
 
+  // Bildirimler localStorage'dan kaldırıldı - artık sadece Supabase'den çekiliyor
+
   const [kamyoncuBasvuru, setKamyoncuBasvuru] = useState(null);
   const [seferOnayDurumu, setSeferOnayDurumu] = useState(() => ({}));
 
@@ -788,6 +790,58 @@ export const AppProvider = ({ children }) => {
     }));
   }, [oturum]);
 
+  // Kullanıcıya özel belge yükleme
+  const kullaniciBelgesiYukle = useCallback(async (dosya) => {
+    if (!oturum?.id || !supabase) {
+      throw new Error("Oturum veya Supabase yok");
+    }
+
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const userId = authUser?.id || oturum.id;
+
+      // Storage'a yükle
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('belgeler')
+        .upload(`${userId}/${Date.now()}_${dosya.name}`, dosya);
+
+      if (uploadError) {
+        console.error('❌ Belge yükleme hatası:', uploadError);
+        throw uploadError;
+      }
+
+      // Public URL al
+      const { data: { publicUrl } } = supabase.storage
+        .from('belgeler')
+        .getPublicUrl(uploadData.path);
+
+      // Veritabanına kaydet
+      const { data: dbData, error: dbError } = await supabase
+        .from('belgeler')
+        .insert([{
+          kullanici_id: userId,
+          rol: oturum.rol,
+          dosya_adi: dosya.name,
+          dosya_yolu: uploadData.path,
+          url: publicUrl,
+          onaylandi: false,
+          olusturulma_tarihi: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('❌ Veritabanına kaydetme hatası:', dbError);
+        throw dbError;
+      }
+
+      return dbData;
+    } catch (error) {
+      console.error('❌ Belge yükleme hatası:', error);
+      throw error;
+    }
+  }, [oturum, supabase]);
+
   // Oturum açıldığında konuşmaları yükle + realtime dinle
   useEffect(() => {
     if (!oturum?.id) return;
@@ -1362,6 +1416,14 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Bildirimleri yükle (F5 refresh sonrası)
+  useEffect(() => {
+    if (oturum?.user?.id && supabase) {
+      console.log('🔔 Bildirimler yüklenecek:', oturum.user.id);
+      subscribeToBildirimler();
+    }
+  }, [oturum?.user?.id, supabase]);
+
   const subscribeToTeklifler = () => {
     if (!supabase) return null;
 
@@ -1528,9 +1590,9 @@ export const AppProvider = ({ children }) => {
     <Ctx.Provider value={{
       oturum, loading, kullanicilar: adminKullanicilar, ilanlar, seferler, teklifler,
       kayitOl, girisYap, cikisYap,
-      ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle, profilGuncelle,
+      ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle, profilGuncelle, kullaniciBelgesiYukle,
       konusmaOluştur, ilkMesajiGonder,
-      bildirimler: bildirimlerList, bildirimGuncelle,
+      bildirimler: bildirimlerList, bildirimGuncelle, setBildirimlerList,
       kamyoncuBasvuru, setKamyoncuBasvuru,
       seferOnayDurumu, ilaniOnayla, ilaniReddet,
       bekleyenOnaylariGetir,

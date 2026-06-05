@@ -1,7 +1,7 @@
 import { useApp } from "../context/AppContext";
 
 export function BildirimlerModal() {
-  const { gosterenBildirim, setGosterenBildirim } = useApp();
+  const { gosterenBildirim, setGosterenBildirim, bildirimler: bildirimlerList, setBildirimlerList } = useApp();
 
   if (!gosterenBildirim) return null;
 
@@ -9,7 +9,13 @@ export function BildirimlerModal() {
     <div className="sheet-overlay" onClick={() => setGosterenBildirim(null)}>
       <div className="sheet" onClick={e => e.stopPropagation()}>
         <button
-          onClick={() => setGosterenBildirim(null)}
+          onClick={() => {
+            // Modalı kapat + bildirim listesinden de en baştaki bildirimi temizle
+            if (bildirimlerList && bildirimlerList.length > 0) {
+              setBildirimlerList(prev => prev.slice(1));
+            }
+            setGosterenBildirim(null);
+          }}
           style={{
             position: 'fixed',
             top: 20,

@@ -20,6 +20,7 @@ import { BildirimlerSayfasi } from "./pages/BildirimlerSayfasi";
 import { BildirimlerModal } from "./components/BildirimlerModal";
 import ChatSayfasi from "./components/ChatSayfasi";
 import { Header, BottomNav } from "./components/UI";
+import AyarlarSayfasi from "./pages/AyarlarSayfasi";
 import "./index.css";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -140,6 +141,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<GirisEkrani />} />
               <Route path="/app" element={<AppIceriki />} />
+              <Route path="/ayarlar" element={<AyarlarSayfasi />} />
             </Routes>
           </AppProvider>
         </MesajProvider>

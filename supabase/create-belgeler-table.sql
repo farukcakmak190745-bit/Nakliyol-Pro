@@ -1,7 +1,7 @@
 -- Belgeler tablosu oluştur
 CREATE TABLE IF NOT EXISTS belgeler (
   id BIGSERIAL PRIMARY KEY,
-  kullanici_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+  kullanici_id UUID REFERENCES users(id) ON DELETE CASCADE,
   rol TEXT NOT NULL CHECK (rol IN ('kamyoncu', 'issiz')),
   dosya_adi TEXT NOT NULL,
   dosya_yolu TEXT NOT NULL,
@@ -34,12 +34,12 @@ ON CONFLICT (id) DO NOTHING;
 -- Storage policy'leri
 CREATE POLICY "Kullanıcı belgelerini yükler"
   ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'belgeler' AND auth.uid()::text = (SELECT id FROM users WHERE id = auth.uid()));
+  WITH CHECK (bucket_id = 'belgeler' AND auth.uid()::text = (SELECT id FROM users WHERE id::text = auth.uid()::text));
 
 CREATE POLICY "Kullanıcı belgelerini görür"
   ON storage.objects FOR SELECT
-  USING (bucket_id = 'belgeler' AND auth.uid()::text = (SELECT id FROM users WHERE id = auth.uid()));
+  USING (bucket_id = 'belgeler' AND auth.uid()::text = (SELECT id FROM users WHERE id::text = auth.uid()::text));
 
 CREATE POLICY "Kullanıcı belgelerini siler"
   ON storage.objects FOR DELETE
-  USING (bucket_id = 'belgeler' AND auth.uid()::text = (SELECT id FROM users WHERE id = auth.uid()));
+  USING (bucket_id = 'belgeler' AND auth.uid()::text = (SELECT id FROM users WHERE id::text = auth.uid()::text));
