@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+// Force rebuild - fixing hoisting issues
 import { AppProvider, useApp } from "./context/AppContext";
 import { MesajProvider, useMesaj } from "./context/MesajContext";
 import GirisEkrani from "./pages/GirisEkrani";

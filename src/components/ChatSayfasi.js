@@ -89,7 +89,6 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   );
 
   const dosyaYukle = async (e) => {
-    if (!dosyaYukle) return; // dosyaYukle fonksiyonu tanımlı mı?
     const dosya = e.target.files[0];
     if (!dosya) return;
 
