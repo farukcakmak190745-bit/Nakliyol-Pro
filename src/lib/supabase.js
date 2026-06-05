@@ -45,4 +45,6 @@ if (supabase && supabase.auth) {
   });
 }
 
+// Export both default and named exports
 export default supabase;
+export { supabase };
