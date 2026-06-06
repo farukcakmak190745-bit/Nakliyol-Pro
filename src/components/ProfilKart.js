@@ -103,12 +103,7 @@ export default function ProfilKart({ rol }) {
         { id: 4, ad: "Ticari Sicil", ok: false },
       ];
 
-  // Kullanıcının yüklediği belgeleri bul
-  const kullanicininBelgeleri = belgelerim.filter(b => belgeTanimlari.some(bt => bt.ad === b.dosya_adi));
-  const tamamlananBelge = kullanicininBelgeleri.filter(b => b.onaylandi).length;
-  const belgeYuzdesi = Math.round((tamamlananBelge / belgeTanimlari.length) * 100);
-
-  // Statler
+  // Statler (belgeTanimlari'den önce tanımlanmalı)
   const statler = isKamyoncu
     ? [
         { val: "127", lbl: "Sefer", icon: "🚚" },
@@ -122,6 +117,11 @@ export default function ProfilKart({ rol }) {
         { val: "4.8", lbl: "Puan", icon: "⭐" },
         { val: "3 Yıl", lbl: "Deneyim", icon: "⏱️" },
       ];
+
+  // Kullanıcının yüklediği belgeleri bul
+  const kullanicininBelgeleri = belgelerim.filter(b => belgeTanimlari.some(bt => bt.ad === b.dosya_adi));
+  const tamamlananBelge = kullanicininBelgeleri.filter(b => b.onaylandi).length;
+  const belgeYuzdesi = Math.round((tamamlananBelge / belgeTanimlari.length) * 100);
 
   const dosyaInputRef = useRef();
   const [belgeEklendi, setBelgeEklendi] = useState(false);
