@@ -16,9 +16,8 @@ initSupabase();
 const Ctx = createContext();
 
 export const AppProvider = ({ children }) => {
-  const mesajContext = useMesaj();
   const [loading, setLoading] = useState(true);
-  const konusmalar = Array.isArray(mesajContext?.konusmalar) ? mesajContext.konusmalar : [];
+  const konusmalar = [];
   console.log('🔍 AppContext - konusmalar loaded:', konusmalar?.length || 0);
 
   // Load initial data from Supabase on mount
