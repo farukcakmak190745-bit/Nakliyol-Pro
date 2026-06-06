@@ -130,6 +130,9 @@ export default function ProfilKart({ rol }) {
         { val: "3 Yıl", lbl: "Deneyim", icon: "⏱️" },
       ];
 
+  // Belgelerim state - kullanicininBelgeleri kullanmadan önce tanımlanmalı
+  const [belgelerim, setBelgelerim] = useState([]);
+
   // Kullanıcının yüklediği belgeleri bul
   const kullanicininBelgeleri = belgelerim.filter(b => belgeTanimlari.some(bt => bt.ad === b.dosya_adi));
   const tamamlananBelge = kullanicininBelgeleri.filter(b => b.onaylandi).length;
@@ -138,7 +141,6 @@ export default function ProfilKart({ rol }) {
   const dosyaInputRef = useRef();
   const [belgeEklendi, setBelgeEklendi] = useState(false);
   const [belgeYukleniyor, setBelgeYukleniyor] = useState(null);
-  const [belgelerim, setBelgelerim] = useState([]);
 
   // Renk paleti (tema) - render başlamadan önce tanımlanmalı
   const tema = isKamyoncu
