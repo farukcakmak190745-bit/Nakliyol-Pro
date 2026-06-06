@@ -27,6 +27,11 @@ export default function ProfilKart({ rol }) {
   // Avatar / bio (local-only, premium cosmetic)
   const [avatarEmoji] = useState(isKamyoncu ? "🚛" : "🏢");
 
+  // IBAN related state
+  const [localIban, setLocalIban] = useState("");
+  const [localIbanSahibi, setLocalIbanSahibi] = useState("");
+  const [ibanKaydedildi, setIbanKaydedildi] = useState(false);
+
   useEffect(() => {
     if (oturum) {
       setForm({
@@ -45,6 +50,13 @@ export default function ProfilKart({ rol }) {
   const gosterMesaj = (tur, metin) => {
     setKayitMesaj({ tur, metin });
     setTimeout(() => setKayitMesaj(null), 2500);
+  };
+
+  const ibanGuncelle = (alan, deger) => {
+    setOturum(prev => {
+      if (!prev) return prev;
+      return { ...prev, [alan]: deger };
+    });
   };
 
   const handleProfilKaydet = async () => {
