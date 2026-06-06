@@ -128,6 +128,11 @@ export default function ProfilKart({ rol }) {
   const [belgeYukleniyor, setBelgeYukleniyor] = useState(null);
   const [belgelerim, setBelgelerim] = useState([]);
 
+  // Renk paleti (tema) - render başlamadan önce tanımlanmalı
+  const tema = isKamyoncu
+    ? { birincil: "#fbbf24", ikincil: "#f59e0b", gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)", iconBg: "rgba(251,191,36,0.15)" }
+    : { birincil: "#3b82f6", ikincil: "#2563eb", gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", iconBg: "rgba(59,130,246,0.15)" };
+
   // Belgeleri yükle
   useEffect(() => {
     fetchBelgeler();
@@ -187,11 +192,6 @@ export default function ProfilKart({ rol }) {
       console.error('Belge silinemedi:', err);
     }
   };
-
-  // Renk paleti
-  const tema = isKamyoncu
-    ? { birincil: "#fbbf24", ikincil: "#f59e0b", gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)", iconBg: "rgba(251,191,36,0.15)" }
-    : { birincil: "#3b82f6", ikincil: "#2563eb", gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", iconBg: "rgba(59,130,246,0.15)" };
 
   return (
     <div className="scroll-content" style={{ paddingBottom: 100 }}>
