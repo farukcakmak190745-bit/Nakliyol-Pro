@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { useMesaj } from "./MesajContext";
+import { useApp as useAppContext } from "./AppContext";
 
 let supabaseInitialized = false;
 const initSupabase = () => {
@@ -16,8 +17,9 @@ initSupabase();
 const Ctx = createContext();
 
 export const AppProvider = ({ children }) => {
+  const { konusmaAc, mesajGonder, loadConversations, subscribeRealtime } = useMesaj();
   const [loading, setLoading] = useState(true);
-  const konusmalar = [];
+  const [konusmalar, setKonusmalar] = useState([]);
   console.log('🔍 AppContext - konusmalar loaded:', konusmalar?.length || 0);
 
   // Load initial data from Supabase on mount
@@ -725,7 +727,7 @@ export const AppProvider = ({ children }) => {
     const partnerAd = ilan.olusturan;
     const baslik = `${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}`;
 
-    mesajContext.konusmaAc({
+    konusmaAc({
       partnerId: ilanId,
       partnerAd,
       partnerRol: "issiz",
@@ -735,7 +737,7 @@ export const AppProvider = ({ children }) => {
       resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + partnerAd.substring(0, 2).toUpperCase(),
       bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
     });
-  }, [ilanlar, mesajContext, supabase]);
+  }, [ilanlar, supabase, konusmaAc]);
 
   const teklifEkle = useCallback(async (ilanId, teklifVerisi) => {
     if (!supabase) {
@@ -847,12 +849,12 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     if (!oturum?.id) return;
     console.log('💬 Oturum değişti, konuşmalar yükleniyor:', oturum.id);
-    mesajContext.loadConversations(oturum.id);
-    const unsubscribe = mesajContext.subscribeRealtime(oturum.id);
+    loadConversations(oturum.id);
+    const unsubscribe = subscribeRealtime(oturum.id);
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
-  }, [oturum?.id]);
+  }, [oturum?.id, loadConversations, subscribeRealtime]);
 
   const odemeYap = useCallback(async (seferId) => {
     const sefer = seferler.find(s => s.id === seferId);
@@ -963,30 +965,28 @@ export const AppProvider = ({ children }) => {
 
   const konusmaOluştur = useCallback((params) => {
     try {
-      // Check if messageContext exists
-      if (!mesajContext || typeof mesajContext.konusmaAc !== 'function') {
-        console.error('MesajContext not initialized properly');
+      if (!konusmaAc || typeof konusmaAc !== 'function') {
+        console.error('KonusmaAc function not available');
         return null;
       }
-      return mesajContext.konusmaAc(params);
+      return konusmaAc(params);
     } catch (error) {
       console.error('Konuşma oluşturma hatası:', error);
       return null;
     }
-  }, [mesajContext]);
+  }, [konusmaAc]);
 
   const ilkMesajiGonder = useCallback((konusmaId, metin) => {
     try {
-      // Check if messageContext exists
-      if (!mesajContext || typeof mesajContext.mesajGonder !== 'function') {
-        console.error('MesajContext not initialized properly');
+      if (!mesajGonder || typeof mesajGonder !== 'function') {
+        console.error('MesajGonder function not available');
         return;
       }
-      mesajContext.mesajGonder(konusmaId, metin);
+      mesajGonder(konusmaId, metin);
     } catch (error) {
       console.error('İlk mesaj gönderme hatası:', error);
     }
-  }, [mesajContext]);
+  }, [mesajGonder]);
 
   const bildirimGuncelle = useCallback((tur, deger) => {
     setBildirimler(prev => ({ ...prev, [tur]: deger }));
@@ -1197,7 +1197,7 @@ export const AppProvider = ({ children }) => {
     let yeniKonusma = null;
     if (supabase && ilan.olusturan_id && kamyoncuUserId) {
       try {
-        yeniKonusma = await mesajContext.konusmaAc({
+        yeniKonusma = await konusmaAc({
           userId: ilan.olusturan_id,
           partnerId: kamyoncuUserId,
           partnerAd: kamyoncuAd,
@@ -1231,9 +1231,9 @@ export const AppProvider = ({ children }) => {
     // Bilgi mesajını konuşmaya gönder
     if (yeniKonusma) {
       const bilgiMesaji = `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${kamyoncuAd}\n📞 Tel: ${kamyoncuTel}\n🚚 Çekici Plaka: ${plaka}\n🚐 Dorse Plaka: ${dorsePlaka}\n🆔 TC Kimlik: ${tc}\n\nŞimdi convo üzerinden konuşabiliriz.`;
-      await mesajContext.mesajGonder(yeniKonusma, bilgiMesaji);
+      await mesajGonder(yeniKonusma, bilgiMesaji);
     }
-  }, [ilanlar, seferler, mesajContext, supabase, oturum]);
+  }, [ilanlar, seferler, konusmaAc, mesajGonder, supabase, oturum]);
 
   const ilaniReddet = useCallback(async (ilanId) => {
     setSeferOnayDurumu(prev => ({ ...prev, [ilanId]: "reddedildi" }));
