@@ -574,7 +574,7 @@ export function MesajlarSayfasi({ onGeri }) {
   }, [oturum?.id, loadConversations]);
 
   if (secili) {
-    const konusma = konusmalar.find(k => k.id === secili);
+    const konusma = konusmalar?.find(k => k.id === secili);
     if (!konusma) {
       setSecili(null);
       return null;

@@ -19,7 +19,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   const messagesEndRef = useRef(null);
   const messageContainerRef = useRef(null);
 
-  const konusma = konusmalar.find(k => k.id === konusmaId);
+  const konusma = konusmalar?.find(k => k.id === konusmaId);
   const isBenKamyoncu = oturum?.rol === "kamyoncu";
   const partnerAd = konusma?.partnerAd || "";
   const partnerRol = konusma?.partnerRol || "";
