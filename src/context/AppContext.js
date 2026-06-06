@@ -18,6 +18,7 @@ const Ctx = createContext();
 export const AppProvider = ({ children }) => {
   const mesajContext = useMesaj();
   const [loading, setLoading] = useState(true);
+  const konusmalar = mesajContext?.konusmalar || [];
 
   // Load initial data from Supabase on mount
   useEffect(() => {
@@ -1588,7 +1589,7 @@ export const AppProvider = ({ children }) => {
 
   return (
     <Ctx.Provider value={{
-      oturum, loading, kullanicilar: adminKullanicilar, ilanlar, seferler, teklifler,
+      oturum, loading, kullanicilar: adminKullanicilar, ilanlar, seferler, teklifler, konusmalar,
       kayitOl, girisYap, cikisYap,
       ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle, profilGuncelle, kullaniciBelgesiYukle,
       konusmaOluştur, ilkMesajiGonder,
