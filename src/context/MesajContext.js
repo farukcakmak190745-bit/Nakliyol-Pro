@@ -56,6 +56,22 @@ export const MesajProvider = ({ children }) => {
       const convMsgs = msgsByConv[c.id] || [];
       // okunmamış sayısı: gonderen !== userId olan ve okundu_zamani null olan
       const okunmamis = convMsgs.filter(m => m.gonderen !== userId && !m.okundu_zamani).length;
+
+      // Eğer okunmamıs mesaj varsa, tümünü okundu olarak işaretle
+      if (okunmamis > 0 && supabase) {
+        (async () => {
+          try {
+            await supabase
+              .from('messages')
+              .update({ okundu_zamani: new Date().toISOString() })
+              .eq('conversation_id', c.id)
+              .is('okundu_zamani', null);
+          } catch (err) {
+            console.error('❌ Mesajları okundu olarak işaretleme hatası:', err);
+          }
+        })();
+      }
+
       return {
         id: c.id,
         conversationId: c.id,

@@ -32,11 +32,12 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
     }
   }, [konusma?.mesajlar]);
 
+  // Her seferinde okunmamıs mesajları 0 yap
   useEffect(() => {
     if (okunmamis > 0) {
       tumMesajlariOkundu(konusmaId);
     }
-  }, [okunmamis, konusmaId, tumMesajlariOkundu]);
+  }, [konusmaId, tumMesajlariOkundu]);
 
   if (!konusma) return (
     <div className="scroll-content" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400 }}>
