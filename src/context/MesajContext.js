@@ -55,36 +55,25 @@ export const MesajProvider = ({ children }) => {
     const enriched = convs.map(c => {
       const convMsgs = msgsByConv[c.id] || [];
 
-      // Local state'te okunmamıs sayısını 0 yap (kullanıcı önce hepsini okumış gibi davranır)
-      let okunmamis = 0;
+      // En son gelen 50 mesajı kontrol et
+      const sonMesajlar = convMsgs.slice(-50);
 
-      // Asenkron olarak gerçek okunmamıs sayısını hesapla ve güncelle
-      if (supabase && convMsgs.length > 0) {
-        (async () => {
-          try {
-            // En son gelen 50 mesajı kontrol et
-            const sonMesajlar = convMsgs.slice(-50);
+      // Gönderen kim ise ve okundu_zamani null ise okunmamıs sayısını hesapla
+      const okunmamis = sonMesajlar.filter(m => m.gonderen !== userId && !m.okundu_zamani).length;
 
-            // Gönderen kim ise ve okundu_zamani null ise okunmamıs sayısını hesapla
-            const reallyUnread = sonMesajlar.filter(m => m.gonderen !== userId && !m.okundu_zamani).length;
-
-            // Local state'i güncelle (kullanıcıya anında sonuç göster)
-            setKonusmalar(prev => prev.map(k =>
-              k.id === c.id ? { ...k, okunmamis: reallyUnread } : k
-            ));
-
-            // Eğer gerçekten okunmamıs varsa Supabase'e güncelle
-            if (reallyUnread > 0) {
-              await supabase
-                .from('messages')
-                .update({ okundu_zamani: new Date().toISOString() })
-                .eq('conversation_id', c.id)
-                .is('okundu_zamani', null);
-            }
-          } catch (err) {
-            console.error('❌ Okunmamıs sayısı hesaplama hatası:', err);
-          }
-        })();
+      // Eğer gerçekten okunmamıs varsa Supabase'e güncelle (async, sonuç göstermez)
+      if (okunmamis > 0 && supabase) {
+        supabase
+          .from('messages')
+          .update({ okundu_zamani: new Date().toISOString() })
+          .eq('conversation_id', c.id)
+          .is('okundu_zamani', null)
+          .then(() => {
+            console.log(`✅ ${okunmamis} mesaj okundu olarak işaretlendi: ${c.id}`);
+          })
+          .catch(err => {
+            console.error('❌ Mesajları okundu olarak işaretleme hatası:', err);
+          });
       }
 
       return {
