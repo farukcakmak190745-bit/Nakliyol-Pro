@@ -54,20 +54,35 @@ export const MesajProvider = ({ children }) => {
 
     const enriched = convs.map(c => {
       const convMsgs = msgsByConv[c.id] || [];
-      // okunmamış sayısı: gonderen !== userId olan ve okundu_zamani null olan
-      const okunmamis = convMsgs.filter(m => m.gonderen !== userId && !m.okundu_zamani).length;
 
-      // Eğer okunmamıs mesaj varsa, tümünü okundu olarak işaretle
-      if (okunmamis > 0 && supabase) {
+      // Local state'te okunmamıs sayısını 0 yap (kullanıcı önce hepsini okumış gibi davranır)
+      let okunmamis = 0;
+
+      // Asenkron olarak gerçek okunmamıs sayısını hesapla ve güncelle
+      if (supabase && convMsgs.length > 0) {
         (async () => {
           try {
-            await supabase
-              .from('messages')
-              .update({ okundu_zamani: new Date().toISOString() })
-              .eq('conversation_id', c.id)
-              .is('okundu_zamani', null);
+            // En son gelen 50 mesajı kontrol et
+            const sonMesajlar = convMsgs.slice(-50);
+
+            // Gönderen kim ise ve okundu_zamani null ise okunmamıs sayısını hesapla
+            const reallyUnread = sonMesajlar.filter(m => m.gonderen !== userId && !m.okundu_zamani).length;
+
+            // Local state'i güncelle (kullanıcıya anında sonuç göster)
+            setKonusmalar(prev => prev.map(k =>
+              k.id === c.id ? { ...k, okunmamis: reallyUnread } : k
+            ));
+
+            // Eğer gerçekten okunmamıs varsa Supabase'e güncelle
+            if (reallyUnread > 0) {
+              await supabase
+                .from('messages')
+                .update({ okundu_zamani: new Date().toISOString() })
+                .eq('conversation_id', c.id)
+                .is('okundu_zamani', null);
+            }
           } catch (err) {
-            console.error('❌ Mesajları okundu olarak işaretleme hatası:', err);
+            console.error('❌ Okunmamıs sayısı hesaplama hatası:', err);
           }
         })();
       }
