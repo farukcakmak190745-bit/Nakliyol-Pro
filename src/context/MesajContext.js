@@ -61,8 +61,35 @@ export const MesajProvider = ({ children }) => {
       // Gönderen kim ise ve okundu_zamani null ise okunmamıs sayısını hesapla
       const okunmamis = sonMesajlar.filter(m => m.gonderen !== userId && !m.okundu_zamani).length;
 
-      // Eğer gerçekten okunmamıs varsa Supabase'e güncelle (async, sonuç göstermez)
+      // Okunmamıs mesajları state'e kaydet (duyarsız güncelleme)
+      const messagesData = convMsgs.map(m => ({
+        id: m.id,
+        metin: m.metin,
+        veriTipi: m.veri_tipi || 'metin',
+        veri: m.veri,
+        gonderen: m.gonderen === userId ? 'ben' : 'konusmaci',
+        gonderen_id: m.gonderen,
+        zaman: m.zaman,
+        okundu: !!m.okundu_zamani,
+        okunduZamani: m.okundu_zamani
+      }));
+
+      // Eğer gerçekten okunmamıs varsa state'i güncelle (duyarsız) ve Supabase'e güncelle
       if (okunmamis > 0 && supabase) {
+        // State'i güncelle
+        setKonusmalar(prev => prev.map(k => {
+          if (k.id !== c.id) return k;
+          return {
+            ...k,
+            mesajlar: k.mesajlar.map(msg => {
+              const freshMsg = messagesData.find(m => m.id === msg.id);
+              return freshMsg || msg;
+            }),
+            okunmamis: 0 // Tüm okunmamıs mesajlar artık okundu olarak işaretlendi
+          };
+        }));
+
+        // Supabase'e de güncelle (duyarsız - sonuç önemli değil)
         supabase
           .from('messages')
           .update({ okundu_zamani: new Date().toISOString() })
@@ -86,17 +113,7 @@ export const MesajProvider = ({ children }) => {
         baslik: c.baslik || `${c.partner_adi}`,
         ilan_id: c.ilan_id,
         durum: 'aktif',
-        mesajlar: convMsgs.map(m => ({
-          id: m.id,
-          metin: m.metin,
-          veriTipi: m.veri_tipi || 'metin',
-          veri: m.veri,
-          gonderen: m.gonderen === userId ? 'ben' : 'konusmaci',
-          gonderen_id: m.gonderen,
-          zaman: m.zaman,
-          okundu: !!m.okundu_zamani,
-          okunduZamani: m.okundu_zamani
-        })),
+        mesajlar: messagesData,
         okunmamis,
         sonOkuma: c.son_okuma,
         sonGuncelleme: c.son_guncelleme,
@@ -367,22 +384,36 @@ export const MesajProvider = ({ children }) => {
   // OKUNDU İŞARETLE
   // =============================================
   const tumMesajlariOkundu = useCallback(async (konusmaId) => {
+    if (!konusmaId) return;
+
+    // 1. Önce state'i güncelle (React durumunu korumak için)
     setKonusmalar(prev => prev.map(k => {
       if (k.id !== konusmaId) return k;
-      return { ...k, mesajlar: k.mesajlar.map(m => ({ ...m, okundu: true })), okunmamis: 0 };
+      return {
+        ...k,
+        mesajlar: k.mesajlar.map(m => ({ ...m, okundu: true })),
+        okunmamis: 0
+      };
     }));
 
+    // 2. Sonra Supabase'e güncelle (duyarsız, sonuç önemli değil)
     if (supabase) {
-      await supabase
-        .from('messages')
-        .update({ okundu_zamani: new Date().toISOString() })
-        .eq('conversation_id', konusmaId)
-        .is('okundu_zamani', null);
+      try {
+        await supabase
+          .from('messages')
+          .update({ okundu_zamani: new Date().toISOString() })
+          .eq('conversation_id', konusmaId)
+          .is('okundu_zamani', null);
 
-      await supabase
-        .from('conversations')
-        .update({ son_okuma: new Date().toISOString() })
-        .eq('id', konusmaId);
+        await supabase
+          .from('conversations')
+          .update({ son_okuma: new Date().toISOString() })
+          .eq('id', konusmaId);
+
+        console.log(`✅ Tüm mesajlar okundu olarak işaretlendi: ${konusmaId}`);
+      } catch (error) {
+        console.error('❌ Mesajları okundu olarak işaretleme hatası:', error);
+      }
     }
   }, []);
 
