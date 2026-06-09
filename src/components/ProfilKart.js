@@ -6,11 +6,28 @@ import { supabase } from "../lib/supabase";
  * Premium Profil Kartı - hem işveren (issiz) hem kamyoncu için ortak
  * Props:
  *   - rol: "issiz" | "kamyoncu"
+ *   - userId: İsteğe bağlı - belirtilirse o kullanıcının profilini gösterir
  */
-export default function ProfilKart({ rol }) {
-  const { oturum, cikisYap, profilGuncelle, kullaniciBelgesiYukle } = useApp();
+export default function ProfilKart({ rol, userId }) {
+  const { oturum, cikisYap, profilGuncelle, kullaniciBelgesiYukle, kullaniciBilgileri } = useApp();
 
   const isKamyoncu = rol === "kamyoncu";
+  const [seciliKullanici, setSeciliKullanici] = useState(null);
+
+  useEffect(() => {
+    if (userId) {
+      // Veritabanından belirli bir kullanıcının bilgilerini çek
+      if (kullaniciBilgileri && kullaniciBilgileri.length > 0) {
+        const user = kullaniciBilgileri.find(u => u.id === userId);
+        setSeciliKullanici(user);
+      } else {
+        // Kullanıcı bilgileri yüklenmediyse oturum kullan
+        setSeciliKullanici(oturum);
+      }
+    } else {
+      setSeciliKullanici(oturum);
+    }
+  }, [userId, oturum, kullaniciBilgileri]);
 
   // Local edit state
   const [duzenle, setDuzenle] = useState(false);
@@ -33,19 +50,19 @@ export default function ProfilKart({ rol }) {
   const [ibanKaydedildi, setIbanKaydedildi] = useState(false);
 
   useEffect(() => {
-    if (oturum) {
+    if (seciliKullanici) {
       setForm({
-        ad: oturum.ad || "",
-        telefon: oturum.telefon || "",
-        tc_kimlik: oturum.tc_kimlik || "",
-        plaka: oturum.plaka || "",
-        dorse_plaka: oturum.dorse_plaka || "",
-        sehir: oturum.sehir || "",
+        ad: seciliKullanici.ad || "",
+        telefon: seciliKullanici.telefon || "",
+        tc_kimlik: seciliKullanici.tc_kimlik || "",
+        plaka: seciliKullanici.plaka || "",
+        dorse_plaka: seciliKullanici.dorse_plaka || "",
+        sehir: seciliKullanici.sehir || "",
       });
-      setLocalIbanSahibi(oturum.ibanSahibi || oturum.ad || "");
-      setLocalIban(oturum.iban || "");
+      setLocalIbanSahibi(seciliKullanici.ibanSahibi || seciliKullanici.ad || "");
+      setLocalIban(seciliKullanici.iban || "");
     }
-  }, [oturum]);
+  }, [seciliKullanici]);
 
   const gosterMesaj = (tur, metin) => {
     setKayitMesaj({ tur, metin });
@@ -150,15 +167,15 @@ export default function ProfilKart({ rol }) {
   // Belgeleri yükle
   useEffect(() => {
     fetchBelgeler();
-  }, [oturum?.id]);
+  }, [seciliKullanici?.id]);
 
   const fetchBelgeler = async () => {
-    if (!oturum?.id) return;
+    if (!seciliKullanici?.id) return;
     try {
       const { data, error } = await supabase
         .from('belgeler')
         .select('*')
-        .eq('kullanici_id', oturum.id)
+        .eq('kullanici_id', seciliKullanici.id)
         .eq('rol', isKamyoncu ? 'kamyoncu' : 'issiz');
 
       if (error) throw error;

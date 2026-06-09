@@ -68,7 +68,7 @@ const IlanKart = ({ ilan, onClick }) => {
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "1px solid rgba(251,191,36,0.15)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", flex: 1 }} onClick={() => window.location.href = `/profil/${ilan.olusturan_id}`}>
           <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, #fbbf24, #f59e0b)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: "bold", color: "#0a0a0a" }}>
             {ilan.olusturan?.charAt(0).toUpperCase() || "?"}
           </div>
@@ -149,7 +149,7 @@ export default function IlanlarSayfasi() {
 
               {/* OLUSTURAN BILGILERI */}
               <div style={{ marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, cursor: "pointer" }} onClick={() => window.location.href = `/profil/${secilen?.olusturan_id}`}>
                   <div style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg, #fbbf24, #f59e0b)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: "bold", color: "#0a0a0a" }}>
                     {secilen?.olusturan?.charAt(0).toUpperCase() || "?"}
                   </div>
