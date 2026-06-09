@@ -90,7 +90,20 @@ export const AppProvider = ({ children }) => {
         }
 
         // Set the fetched data
-        if (ilanlarData) setIlanlar(ilanlarData);
+        if (ilanlarData) {
+          // Her ilana olusturanın kullanıcı bilgilerini ekle (firma adi, puan)
+          const ilanlarWithUsers = ilanlarData.map(ilan => {
+            const olusturanUser = usersData?.find(u => u.id === ilan.olusturan_id || u.email === ilan.olusturan);
+            return {
+              ...ilan,
+              firmaAdi: olusturanUser?.firma_adi || null,
+              profilFoto: olusturanUser?.fotograf || null,
+              telefon: olusturanUser?.telefon || null,
+              olusturanPuan: olusturanUser?.puan || ilan.olusturanPuan || 5.0
+            };
+          });
+          setIlanlar(ilanlarWithUsers);
+        }
         if (seferlerData) setSeferler(seferlerData);
         if (tekliflerData) setTeklifler(tekliflerData);
         if (usersData) setKullanicilar(usersData);

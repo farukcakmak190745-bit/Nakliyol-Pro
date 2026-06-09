@@ -55,13 +55,7 @@ export const MesajProvider = ({ children }) => {
     const enriched = convs.map(c => {
       const convMsgs = msgsByConv[c.id] || [];
 
-      // En son gelen 50 mesajı kontrol et
-      const sonMesajlar = convMsgs.slice(-50);
-
-      // Gönderen kim ise ve okundu_zamani null ise okunmamıs sayısını hesapla
-      const okunmamis = sonMesajlar.filter(m => m.gonderen !== userId && !m.okundu_zamani).length;
-
-      // Okunmamıs mesajları state'e kaydet (duyarsız güncelleme)
+      // Mesajları map et (okundu statusunu tut)
       const messagesData = convMsgs.map(m => ({
         id: m.id,
         metin: m.metin,
@@ -74,22 +68,34 @@ export const MesajProvider = ({ children }) => {
         okunduZamani: m.okundu_zamani
       }));
 
-      // Eğer gerçekten okunmamıs varsa state'i güncelle (duyarsız) ve Supabase'e güncelle
+      // Gönderen kim ise ve okundu_zamani null ise okunmamıs sayısını hesapla
+      let okunmamis = messagesData.filter(m => m.gonderen === 'konusmaci' && !m.okundu).length;
+
+      // Eğer gerçekten okunmamıs varsa state'i güncelle ve Supabase'e güncelle
       if (okunmamis > 0 && supabase) {
-        // State'i güncelle
+        console.log(`🔍 ${okunmamis} okunmamıs mesaj bulundu: ${c.id}, işaretleniyor...`);
+
+        // 1. Mesajları okundu olarak güncelle (state güncellemesi için)
+        messagesData.forEach(msg => {
+          if (msg.gonderen === 'konusmaci' && !msg.okundu) {
+            msg.okundu = true;
+            msg.okunduZamani = new Date().toISOString();
+          }
+        });
+
+        // 2. State'i güncelle
         setKonusmalar(prev => prev.map(k => {
-          if (k.id !== c.id) return k;
-          return {
-            ...k,
-            mesajlar: k.mesajlar.map(msg => {
-              const freshMsg = messagesData.find(m => m.id === msg.id);
-              return freshMsg || msg;
-            }),
-            okunmamis: 0 // Tüm okunmamıs mesajlar artık okundu olarak işaretlendi
-          };
+          if (k.id === c.id) {
+            return {
+              ...k,
+              mesajlar: messagesData,
+              okunmamis: 0
+            };
+          }
+          return k;
         }));
 
-        // Supabase'e de güncelle (duyarsız - sonuç önemli değil)
+        // 3. Supabase'e de güncelle (duyarsız)
         supabase
           .from('messages')
           .update({ okundu_zamani: new Date().toISOString() })

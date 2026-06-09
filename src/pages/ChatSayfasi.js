@@ -20,6 +20,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   const messagesEndRef = useRef(null);
   const messageContainerRef = useRef(null);
   const scrollTimeoutRef = useRef(null);
+  const okunduIkaz = useRef(false);
 
   const konusma = konusmalar?.find(k => k.id === konusmaId);
   const isBenKamyoncu = oturum?.rol === "kamyoncu";
@@ -35,8 +36,10 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   }, [konusma?.mesajlar]);
 
   useEffect(() => {
-    if (okunmamis > 0) {
+    if (okunmamis > 0 && !okunduIkaz.current && konusmaId) {
+      console.log(`🔍 ${okunmamis} okunmamıs mesaj var, işaretleniyor: ${konusmaId}`);
       tumMesajlariOkundu(konusmaId);
+      okunduIkaz.current = true;
     }
   }, [okunmamis, konusmaId, tumMesajlariOkundu]);
 

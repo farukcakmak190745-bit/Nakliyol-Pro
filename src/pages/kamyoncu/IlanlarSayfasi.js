@@ -68,18 +68,21 @@ const IlanKart = ({ ilan, onClick }) => {
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "1px solid rgba(251,191,36,0.15)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
-            {ilan.olusturanPuan >= 4.5 ? "⭐" : ilan.olusturanPuan >= 4 ? "✦" : "•"}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", flex: 1 }}>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, #fbbf24, #f59e0b)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: "bold", color: "#0a0a0a" }}>
+            {ilan.olusturan?.charAt(0).toUpperCase() || "?"}
           </div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{ilan.olusturan}</div>
-            <div style={{ fontSize: 10, color: "var(--text3)" }}>{ilan.olusturanPuan?.toFixed(1)} puan</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{ilan.olusturan}</span>
+              {ilan.firmaAdi && <span style={{ fontSize: 11, fontWeight: 500, color: "var(--text3)" }}>• {ilan.firmaAdi}</span>}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
+              {ilan.olusturanPuan >= 4.5 ? "⭐" : ilan.olusturanPuan >= 4 ? "✦" : "•"}
+              <span style={{ fontSize: 11, fontWeight: 600, color: "#fbbf24" }}>{ilan.olusturanPuan?.toFixed(1)}</span>
+              <span style={{ fontSize: 10, color: "var(--text3)" }}>puan • {ilan.istekSayisi} istek</span>
+            </div>
           </div>
-        </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <span style={{ fontSize: 11, color: "var(--text3)" }}>İstek:</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#3b82f6" }}>{ilan.istekSayisi}</span>
         </div>
       </div>
     </div>
@@ -142,6 +145,24 @@ export default function IlanlarSayfasi() {
               </div>
               <div style={{ color: "var(--text2)", fontSize: 13, lineHeight: 1.8, marginBottom: 24, background: "rgba(22,22,22,0.5)", padding: 14, borderRadius: "12px", border: "1px solid rgba(251,191,36,0.1)" }}>
                 {secilen?.aciklama || "Açıklama yok"}
+              </div>
+
+              {/* OLUSTURAN BILGILERI */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg, #fbbf24, #f59e0b)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: "bold", color: "#0a0a0a" }}>
+                    {secilen?.olusturan?.charAt(0).toUpperCase() || "?"}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>{secilen?.olusturan}</div>
+                    {secilen?.firmaAdi && <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text3)" }}>{secilen?.firmaAdi}</div>}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, flexWrap: "wrap" }}>
+                      {secilen?.olusturanPuan >= 4.5 ? "⭐" : secilen?.olusturanPuan >= 4 ? "✦" : "•"}
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#fbbf24" }}>{secilen?.olusturanPuan?.toFixed(1)}</span>
+                      <span style={{ fontSize: 11, color: "var(--text3)" }}>puan • {secilen?.istekSayisi} istek</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
