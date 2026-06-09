@@ -33,11 +33,6 @@ export const AppProvider = ({ children }) => {
       }
 
       try {
-        let ilanlarData = null;
-        let seferlerData = null;
-        let tekliflerData = null;
-        let usersData = null;
-
         // Fetch ilanlar
         const { data: ilanlarRes, error: ilanlarError } = await supabase
           .from('ilanlar')

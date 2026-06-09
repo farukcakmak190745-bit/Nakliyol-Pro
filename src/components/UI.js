@@ -74,7 +74,10 @@ export const BottomNav = ({ aktif, setAktif, rol }) => {
             style={{ position: "relative", cursor: "pointer", border: "none", outline: "none", background: "none", padding: 0 }}
           >
             <span className="nav-icon">
-            <IconMap[m.icon] size={22} className="icon-primary" />
+            {(() => {
+              const Icon = IconMap[m.icon] || IconMap.truck;
+              return <Icon size={22} className="icon-primary" />;
+            })()}
           </span>
             <span className="nav-label">{m.label}</span>
             {m.badge > 0 && <span className="badge-count">{m.badge}</span>}

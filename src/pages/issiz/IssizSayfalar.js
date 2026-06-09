@@ -32,7 +32,7 @@ export function IlanVerSayfasi() {
     const kdvTutari = ucret * kdvOrani;
     const toplamUcret = ucret + kdvTutari;
 
-    console.log(<>{IconMap.upload} Yeni ilan gönderiliyor:", { ...form, ton: 0, ucret: ucret, kdvOrani: kdvOrani, kdvTutari: kdvTutari, toplamUcret: toplamUcret, odemeTuru: form.odemeTuru, odemeGun: Number(form.odemeGun) }</>);
+    console.log(`📤 Yeni ilan gönderiliyor:`, { ...form, ton: 0, ucret: ucret, kdvOrani: kdvOrani, kdvTutari: kdvTutari, toplamUcret: toplamUcret, odemeTuru: form.odemeTuru, odemeGun: Number(form.odemeGun) });
 
     ilanEkle({
       ...form,

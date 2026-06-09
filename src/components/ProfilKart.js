@@ -294,7 +294,10 @@ export default function ProfilKart({ rol, userId }) {
             boxShadow: `0 8px 24px ${isKamyoncu ? "rgba(251,191,36,0.4)" : "rgba(59,130,246,0.4)"}`,
             border: "4px solid var(--bg1)"
           }}>
-            <IconMap[avatarEmoji] size={48} className="icon-primary" />
+            {(() => {
+              const Icon = IconMap[avatarEmoji] || IconMap.truck;
+              return <Icon size={48} className="icon-primary" />;
+            })()}
           </div>
 
           {/* Ad / Düzenle */}

@@ -56,7 +56,7 @@ export const IconMap = {
   dorse: CarFront,
   dorseArac: CarFront,
   kamyonet: CarFront,
-  50nc: CarFront,
+  "50nc": CarFront,
 
   // 📄 Belgeler
   filecheck: FileCheck,

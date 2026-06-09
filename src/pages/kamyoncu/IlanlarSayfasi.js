@@ -33,7 +33,10 @@ const IlanKart = ({ ilan, onClick }) => {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ fontSize: 32 }}>
-            <IconMap[getYukIcon(ilan.yuk)] size={32} className="icon-primary" />
+            {(() => {
+              const Icon = IconMap[getYukIcon(ilan.yuk)] || IconMap.truck;
+              return <Icon size={32} className="icon-primary" />;
+            })()}
           </div>
           <div>
             <div className="display" style={{ fontSize: 18, color: "#fbbf24", letterSpacing: 0.5 }}>{ilan.yuk}</div>
