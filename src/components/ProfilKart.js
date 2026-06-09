@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { supabase } from "../lib/supabase";
+import { IconMap } from "./Icons";
 
 /**
  * Premium Profil Kartı - hem işveren (issiz) hem kamyoncu için ortak
@@ -42,7 +43,7 @@ export default function ProfilKart({ rol, userId }) {
   const [kayitMesaj, setKayitMesaj] = useState(null);
 
   // Avatar / bio (local-only, premium cosmetic)
-  const [avatarEmoji] = useState(isKamyoncu ? "🚛" : "🏢");
+  const [avatarEmoji] = useState(isKamyoncu ? "truck" : "building2");
 
   // IBAN related state
   const [localIban, setLocalIban] = useState("");
@@ -263,7 +264,7 @@ export default function ProfilKart({ rol, userId }) {
               transition: "all 0.3s"
             }}
           >
-            {duzenle ? "✕ İptal" : "✏️ Düzenle"}
+            {duzenle ? <><IconMap.x size={14} /> İptal</> : <><IconMap.settings size={14} /> Düzenle</>}
           </button>
         </div>
       </div>
@@ -293,7 +294,7 @@ export default function ProfilKart({ rol, userId }) {
             boxShadow: `0 8px 24px ${isKamyoncu ? "rgba(251,191,36,0.4)" : "rgba(59,130,246,0.4)"}`,
             border: "4px solid var(--bg1)"
           }}>
-            {avatarEmoji}
+            <IconMap[avatarEmoji] size={48} className="icon-primary" />
           </div>
 
           {/* Ad / Düzenle */}
@@ -711,7 +712,7 @@ export default function ProfilKart({ rol, userId }) {
               fontWeight: 600,
               textAlign: "center"
             }}>
-              ✅ Belge başarıyla yüklendi! Onaylanmak üzere bekliyor.
+              <><IconMap.check size={12} /> Belge başarıyla yüklendi! Onaylanmak üzere bekliyor.</>
             </div>
           )}
 
@@ -727,7 +728,7 @@ export default function ProfilKart({ rol, userId }) {
               fontWeight: 600,
               textAlign: "center"
             }}>
-              ⏳ {belgeYukleniyor} yükleniyor...
+              <><IconMap.loading size={12} /> {belgeYukleniyor} yükleniyor...</>
             </div>
           )}
         </div>
@@ -735,23 +736,23 @@ export default function ProfilKart({ rol, userId }) {
         {/* ============ AYARLAR MENÜSÜ ============ */}
         <div className="card" style={{ marginBottom: 14, padding: 6 }}>
           {[
-            { icon: "❓", text: "Yardım & Destek", color: "var(--text2)", action: () => {
+            { icon: "help", text: "Yardım & Destek", color: "var(--text2)", action: () => {
               window.location.href = "/bildirimler";
             }},
-            { icon: "📜", text: "İş Geçmişim", color: "#3b82f6", action: () => {
+            { icon: "file", text: "İş Geçmişim", color: "#3b82f6", action: () => {
               if (isKamyoncu) {
                 window.location.href = "/app?sekme=ilanlar";
               } else {
                 window.location.href = "/app?sekme=ilanlarim";
               }
             }},
-            { icon: "⭐", text: "Aldığım Yorumlar", color: "#fbbf24", action: () => {
+            { icon: "star", text: "Aldığım Yorumlar", color: "#fbbf24", action: () => {
               alert("Yorumlar yakında! Bugün yayınlanacak.");
             }},
-            { icon: "🔒", text: "Gizlilik Politikası", color: "var(--text2)", action: () => {
+            { icon: "lock", text: "Gizlilik Politikası", color: "var(--text2)", action: () => {
               alert("Gizlilik Politikası:\n\n✅ Verileriniz güvende\n✅ Kişisel bilgileriniz işverenlerle paylaşılır\n✅ Kullanım verileriyle analiz yapılır\n✅ Supabase ile çalışıyor\n✅ GDPR uyumlu");
             }},
-            { icon: "⚙️", text: "Ayarlar", color: "var(--text2)", action: () => {
+            { icon: "settings", text: "Ayarlar", color: "var(--text2)", action: () => {
               window.location.href = "/ayarlar";
             }},
           ].map((item, i, arr) => (
@@ -780,7 +781,9 @@ export default function ProfilKart({ rol, userId }) {
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 18
-              }}>{item.icon}</div>
+              }}>
+                <IconMap[item.icon] size={20} className="icon-primary" />
+              </div>
               <span style={{ fontSize: 14, flex: 1, fontWeight: 500, color: "var(--text)" }}>{item.text}</span>
               <span style={{ color: "var(--text3)", fontSize: 18 }}>›</span>
             </div>

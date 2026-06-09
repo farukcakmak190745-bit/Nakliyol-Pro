@@ -1,4 +1,5 @@
 import { useApp } from "../context/AppContext";
+import { IconMap } from "../components/Icons";
 
 export function BildirimlerSayfasi() {
   const { bildirimler, setGosterenBildirim, setBildirimlerList } = useApp();
@@ -9,7 +10,7 @@ export function BildirimlerSayfasi() {
 
       {(!bildirimler || bildirimler.length === 0) ? (
         <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
-          <div style={{ fontSize: 56, marginBottom: 20 }}>🔔</div>
+          <div style={{ fontSize: 56, marginBottom: 20 }}><IconMap.bell size={56} className="icon-primary" /></div>
           <div style={{ fontSize: 16, marginBottom: 8 }}>Henüz bildiriniz yok</div>
         </div>
       ) : (

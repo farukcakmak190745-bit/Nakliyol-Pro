@@ -1,37 +1,40 @@
 import { useState } from "react";
 import { useApp } from "../../context/AppContext";
 import { EmptyState, formatTarih } from "../../components/UI";
+import { IconMap } from "../../components/Icons";
 
 const IlanKart = ({ ilan, onClick }) => {
-  const getIkon = (yuk) => {
-    if (yuk.includes("kömür")) return "🔥";
-    if (yuk.includes("çelik") || yuk.includes("boru")) return "🔩";
-    if (yuk.includes("soğutma") || yuk.includes("gıda")) return "❄️";
-    if (yuk.includes("meyve") || yuk.includes("sebze")) return "🍊";
-    if (yuk.includes("inşaat") || yuk.includes("damper")) return "🏗️";
-    if (yuk.includes("elektronik") || yuk.includes("bilgisayar")) return "💻";
-    if (yuk.includes("teknoloji")) return "📡";
-    if (yuk.includes("ambalaj")) return "📦";
-    if (yuk.includes("bebek") || yuk.includes("giyim")) return "👶";
-    if (yuk.includes("madde")) return "⚗️";
-    return "🚚";
+  const getYukIcon = (yuk) => {
+    if (yuk.includes("kömür")) return "fire";
+    if (yuk.includes("çelik") || yuk.includes("boru")) return "wrench";
+    if (yuk.includes("soğutma") || yuk.includes("gıda")) return "snowflake";
+    if (yuk.includes("meyve") || yuk.includes("sebze")) return "package";
+    if (yuk.includes("inşaat") || yuk.includes("damper")) return "hammer";
+    if (yuk.includes("elektronik") || yuk.includes("bilgisayar")) return "monitor";
+    if (yuk.includes("teknoloji")) return "radio";
+    if (yuk.includes("ambalaj")) return "box";
+    if (yuk.includes("bebek") || yuk.includes("giyim")) return "baby";
+    if (yuk.includes("madde")) return "flask";
+    return "truck";
   };
 
   const aracIkon = {
-    "TIR": "🚛",
-    "10 Teker Açık": "🚚",
-    "10 Teker Tenteli": "⛺",
-    "Kırkayak Açık": "🚚",
-    "Kamyonet": "🚐",
-    "50 NC Kamyon": "🚐",
-    "Diğer": "📦",
+    "TIR": "tr",
+    "10 Teker Açık": "tr",
+    "10 Teker Tenteli": "tr",
+    "Kırkayak Açık": "tr",
+    "Kamyonet": "arac",
+    "50 NC Kamyon": "arac",
+    "Diğer": "box",
   };
 
   return (
     <div className="card" style={{ marginBottom: 14 }} onClick={onClick}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ fontSize: 32 }}>{getIkon(ilan.yuk)}</div>
+          <div style={{ fontSize: 32 }}>
+            <IconMap[getYukIcon(ilan.yuk)] size={32} className="icon-primary" />
+          </div>
           <div>
             <div className="display" style={{ fontSize: 18, color: "#fbbf24", letterSpacing: 0.5 }}>{ilan.yuk}</div>
             <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2, letterSpacing: 1.5, textTransform: "uppercase" }}>Yük Tipi</div>
@@ -40,7 +43,7 @@ const IlanKart = ({ ilan, onClick }) => {
         <div style={{ textAlign: "right" }}>
           <div className="price">₺{ilan.toplamUcret?.toLocaleString() || ilan.ucret.toLocaleString()}</div>
           <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>
-            {ilan.kdvOrani > 0 ? "💵 +KDV" : "💵 Sabit"}
+            {ilan.kdvOrani > 0 ? "💰 +KDV" : "💵 Sabit"}
           </div>
         </div>
       </div>
@@ -57,13 +60,13 @@ const IlanKart = ({ ilan, onClick }) => {
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
         <div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
-          📅 {formatTarih(ilan.tarih)}
+          <IconMap.calendar size={12} className="icon-primary" /> {formatTarih(ilan.tarih)}
         </div>
         <div style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.08) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, color: "#3b82f6", border: "1px solid rgba(59,130,246,0.2)" }}>
-          {aracIkon[ilan.aracTip] || "🚛"} {ilan.aracTip}
+          <IconMap[aracIkon[ilan.aracTip] || "truck"] size={14} className="icon-primary" /> {ilan.aracTip}
         </div>
         <div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
-          📅 {!ilan.odemeGun || ilan.odemeGun === 0 ? "💰 Peşin" : `${ilan.odemeGun} Gün Ödeme`}
+          <IconMap.creditcard size={12} className="icon-primary" /> {!ilan.odemeGun || ilan.odemeGun === 0 ? "💰 Peşin" : `${ilan.odemeGun} Gün Ödeme`}
         </div>
       </div>
 
@@ -171,7 +174,7 @@ export default function IlanlarSayfasi() {
                   { k: "Ödeme Planı", v: !secilen?.odemeGun || secilen.odemeGun === 0 ? "💰 Peşin" : `${secilen.odemeGun} Gün Sonra` },
                   { k: "Ücret", v: `₺${secilen?.ucret?.toLocaleString() || 0}` },
                   { k: "Araç Tipi", v: secilen?.aracTip || "Belirtilmedi" },
-                  { k: "Tarih", v: formatTarih(secilen?.tarih) },
+                  { k: "Tarih", v: <><IconMap.calendar size={14} className="icon-primary" /> {formatTarih(secilen?.tarih)}</> },
                 ].map(({ k, v }, idx) => (
                   <div key={k} style={{ background: "var(--bg2)", borderRadius: "12px", padding: "14px 12px", border: "1px solid rgba(251,191,36,0.1)" }}>
                     <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 6, letterSpacing: 1.5, textTransform: "uppercase" }}>{k}</div>

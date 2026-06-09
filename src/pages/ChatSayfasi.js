@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { useMesaj } from "../context/MesajContext";
 import { Pill } from "../components/UI";
+import { IconMap } from "../components/Icons";
 
 export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   const { oturum } = useApp();
@@ -37,7 +38,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
 
   useEffect(() => {
     if (okunmamis > 0 && !okunduIkaz.current && konusmaId) {
-      console.log(`🔍 ${okunmamis} okunmamıs mesaj var, işaretleniyor: ${konusmaId}`);
+      console.log(<>{IconMap.search} {okunmamis} okunmamıs mesaj var, işaretleniyor: {konusmaId}</>);
       tumMesajlariOkundu(konusmaId);
       okunduIkaz.current = true;
     }
@@ -91,7 +92,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
             <img src={konusma.resim} alt="Profil" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
           ) : (
             <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--bg3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
-              {partnerRol === "kamyoncu" ? "🚛" : "🏢"}
+              {partnerRol === "kamyoncu" ? <IconMap.truck size={20} /> : <IconMap.building size={20} />}
             </div>
           )}
           <div style={{ flex: 1 }}>
@@ -138,7 +139,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
       <div ref={messageContainerRef} style={{ flex: 1, overflowY: "auto", padding: 16, background: "var(--bg0)" }}>
         {konusma?.mesajlar?.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text3)" }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
+            <div style={{ fontSize: 40, marginBottom: 12 }}><IconMap.message size={40} className="icon-primary" /></div>
             <div>İlk mesajınızı gönderin</div>
           </div>
         ) : (

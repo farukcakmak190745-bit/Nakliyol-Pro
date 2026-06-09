@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useApp } from "../../context/AppContext";
+import { IconMap } from "../../components/Icons";
 
 const menu = [
-  { key: "ozet", icon: "📊", label: "Özet" },
-  { key: "ilanlar", icon: "📢", label: "İlanlar" },
-  { key: "seferler", icon: "✈️", label: "Seferler" },
-  { key: "kullanicilar", icon: "👥", label: "Kullanıcılar" },
-  { key: "gelir", icon: "💰", label: "Gelir" },
-  { key: "ayarlar", icon: "⚙️", label: "Ayarlar" },
+  { key: "ozet", icon: "activity", label: "Özet" },
+  { key: "ilanlar", icon: "file", label: "İlanlar" },
+  { key: "seferler", icon: "map", label: "Seferler" },
+  { key: "kullanicilar", icon: "users", label: "Kullanıcılar" },
+  { key: "gelir", icon: "creditcard", label: "Gelir" },
+  { key: "ayarlar", icon: "settings", label: "Ayarlar" },
 ];
 
 export default function AdminPanel() {
@@ -30,10 +31,10 @@ export default function AdminPanel() {
         <div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12, marginBottom: 24 }}>
             {[
-              { val: ilanlarList.filter(i=>i.durum==="aktif").length, lbl: "Aktif İlan", renk: "#10b981", icon: "📢" },
-              { val: seferlerList.filter(s=>s.durum==="yolda"||s.durum==="teslima_bekleniyor").length, lbl: "Aktif Sefer", renk: "#3b82f6", icon: "✈️" },
-              { val: kullanicilarList.length, lbl: "Toplam Kullanıcı", renk: "#3b82f6", icon: "👥" },
-              { val: "₺142K", lbl: "Bu Ay Ciro", renk: "#fbbf24", icon: "💰" },
+              { val: ilanlarList.filter(i=>i.durum==="aktif").length, lbl: "Aktif İlan", renk: "#10b981", icon: "file" },
+              { val: seferlerList.filter(s=>s.durum==="yolda"||s.durum==="teslima_bekleniyor").length, lbl: "Aktif Sefer", renk: "#3b82f6", icon: "map" },
+              { val: kullanicilarList.length, lbl: "Toplam Kullanıcı", renk: "#3b82f6", icon: "users" },
+              { val: "₺142K", lbl: "Bu Ay Ciro", renk: "#fbbf24", icon: "creditcard" },
             ].map(s => (
               <div key={s.lbl} style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "16px", padding: 18 }}>
                 <div style={{ fontSize: 24, marginBottom: 6 }}>{s.icon}</div>
@@ -128,7 +129,7 @@ export default function AdminPanel() {
               <tr key={k.id}>
                 <td style={tdStyle}>{k.ad}</td>
                 <td style={tdStyle}><div style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.08) 100%)", color: "#3b82f6", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{k.rol}</div></td>
-                <td style={{...tdStyle,color:"#fbbf24",fontWeight:700}}>⭐ {k.puan}</td>
+                <td style={{...tdStyle,color:"#fbbf24",fontWeight:700}}><IconMap.star size={16} /> {k.puan}</td>
                 <td style={tdStyle}>{aktifSeferler.length}</td>
                 <td style={tdStyle}><div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.08) 100%)", color: "#10b981", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{k.durum}</div></td>
                 <td style={tdStyle}>
@@ -188,7 +189,7 @@ export default function AdminPanel() {
           ].map(grup => (
             <div key={grup.baslik} style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "16px", padding: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                <span style={{ fontSize: 18 }}>⚙️</span>
+                <span style={{ fontSize: 18 }}><IconMap.settings size={18} className="icon-primary" /></span>
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#fbbf24" }}>{grup.baslik}</span>
               </div>
               {grup.alanlar.map(a => (
@@ -204,7 +205,7 @@ export default function AdminPanel() {
           ))}
           <div style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "16px", padding: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-              <span style={{ fontSize: 18 }}>✨</span>
+              <span style={{ fontSize: 18 }}><IconMap.star size={18} className="icon-primary" /></span>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#fbbf24" }}>ÖZELLİKLER</span>
             </div>
             {[["SMS Bildirimleri","on"],["E-posta Bildirimleri","on"],["Belge Zorunluluğu","off"],["Bakım Modu","off"]].map(([lbl,d])=>{
@@ -257,7 +258,7 @@ export default function AdminPanel() {
           <div style={{ fontFamily: "var(--font-d)", fontSize: 18, letterSpacing: 1, color: "#fbbf24" }}>{menu.find(m=>m.key===aktif)?.label?.toUpperCase()}</div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", color: "#fbbf24", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, border: "1px solid rgba(251,191,36,0.2)" }}>{seferlerList.filter(s=>s.durum==="teslima_bekleniyor").length} teslim bekliyor</div>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>⚙️</div>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}><IconMap.settings size={16} className="icon-primary" /></div>
           </div>
         </div>
         <div style={{ padding: 20 }}><Sekme /></div>

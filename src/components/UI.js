@@ -1,5 +1,6 @@
 import { useApp } from "../context/AppContext";
 import { useMesaj } from "../context/MesajContext";
+import { IconMap } from "./Icons";
 
 export const Header = ({ baslik, geri, sag, cikisYap: handleCikisYap }) => {
   const { oturum, cikisYap } = useApp();
@@ -26,8 +27,8 @@ export const Header = ({ baslik, geri, sag, cikisYap: handleCikisYap }) => {
               >
                 Çıkış
               </button>
-              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--bg3)", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
-                {oturum.role === "kamyoncu" ? "🚛" : "🏢"}
+              <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--bg3)", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <IconMap.kamyon size={16} className="icon-primary" />
               </div>
             </>
           )}
@@ -48,18 +49,18 @@ export const BottomNav = ({ aktif, setAktif, rol }) => {
     const okunmamisMesajSayisi = (konusmalar || []).reduce((top, k) => top + (k.okunmamis || 0), 0);
 
     const kamyoncuMenu = [
-      { key: "ilanlar",  icon: "📢", label: "İlanlar" },
-      { key: "seferler", icon: "🗺️", label: "Seferlerim" },
-      { key: "bildirimler", icon: "🔔", label: "Bildirimler" },
-      { key: "mesajlar", icon: "💬", label: "Mesajlar", badge: okunmamisMesajSayisi },
-      { key: "profil",   icon: "👤", label: "Profil" },
+      { key: "ilanlar",  icon: "ilan", label: "İlanlar" },
+      { key: "seferler", icon: "list", label: "Seferlerim" },
+      { key: "bildirimler", icon: "bell", label: "Bildirimler", badge: okunmamisMesajSayisi },
+      { key: "mesajlar", icon: "mesaj", label: "Mesajlar", badge: okunmamisMesajSayisi },
+      { key: "profil",   icon: "profil", label: "Profil" },
     ];
     const issizMenu = [
-      { key: "ilanver",   icon: "➕",  label: "İlan Ver" },
-      { key: "ilanlarim", icon: "📋",  label: "İlanlarım" },
-      { key: "teklifler", icon: "🚚",  label: "Teklifler", badge: bekleyenSayisi },
-      { key: "mesajlar",  icon: "💬",  label: "Mesajlar", badge: okunmamisMesajSayisi },
-      { key: "profil",    icon: "👤",  label: "Profil" },
+      { key: "ilanver",   icon: "plus",  label: "İlan Ver" },
+      { key: "ilanlarim", icon: "file",  label: "İlanlarım" },
+      { key: "teklifler", icon: "truck",  label: "Teklifler", badge: bekleyenSayisi },
+      { key: "mesajlar",  icon: "mesaj", label: "Mesajlar", badge: okunmamisMesajSayisi },
+      { key: "profil",    icon: "profil", label: "Profil" },
     ];
     const menu = rol === "kamyoncu" ? kamyoncuMenu : issizMenu;
 
@@ -72,7 +73,9 @@ export const BottomNav = ({ aktif, setAktif, rol }) => {
             onClick={() => setAktif(m.key)}
             style={{ position: "relative", cursor: "pointer", border: "none", outline: "none", background: "none", padding: 0 }}
           >
-            <span className="nav-icon">{m.icon}</span>
+            <span className="nav-icon">
+            <IconMap[m.icon] size={22} className="icon-primary" />
+          </span>
             <span className="nav-label">{m.label}</span>
             {m.badge > 0 && <span className="badge-count">{m.badge}</span>}
           </button>

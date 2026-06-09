@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
+import { IconMap } from "../components/Icons";
 
 export default function AyarlarSayfasi() {
   const { oturum, bildirimler, bildirimGuncelle, profilGuncelle, cikisYap } = useApp();
@@ -11,15 +12,15 @@ export default function AyarlarSayfasi() {
   const bildirimlerList = isKamyoncu
     ? [
         { icon: "📢", tur: "ilan", label: "Yeni İlan Bildirimi", desc: "Yeni ilan yayınlandığında bildir" },
-        { icon: "📋", tur: "teklif", label: "Teklif Bildirimi", desc: "İlanlara teklif verdiğinde bildir" },
-        { icon: "💬", tur: "mesaj", label: "Mesaj Bildirimi", desc: "Yeni mesaj gelince bildir" },
+        { icon: "file", tur: "teklif", label: "Teklif Bildirimi", desc: "İlanlara teklif verdiğinde bildir" },
+        { icon: "mesaj", tur: "mesaj", label: "Mesaj Bildirimi", desc: "Yeni mesaj gelince bildir" },
         { icon: "🗺️", tur: "sefer", label: "Sefer Bildirimi", desc: "Sefer durumu değişince bildir" },
         { icon: "🔔", tur: "bildirim", label: "Bildirim Kuru", desc: "Bildirimleri toplu olarak gör" },
       ]
     : [
         { icon: "📢", tur: "ilan", label: "Yeni İlan Bildirimi", desc: "Yeni ilan yayınlandığında bildir" },
         { icon: "📋", tur: "teklif", label: "Teklif Bildirimi", desc: "Kamyoncu teklif verdiğinde bildir" },
-        { icon: "💬", tur: "mesaj", label: "Mesaj Bildirimi", desc: "Yeni mesaj gelince bildir" },
+        { icon: "mesaj", tur: "mesaj", label: "Mesaj Bildirimi", desc: "Yeni mesaj gelince bildir" },
         { icon: "🔔", tur: "bildirim", label: "Bildirim Kuru", desc: "Bildirimleri toplu olarak gör" },
       ];
 

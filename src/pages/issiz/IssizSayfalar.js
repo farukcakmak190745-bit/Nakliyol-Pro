@@ -6,6 +6,7 @@ import { useMesaj } from "../../context/MesajContext";
 import { EmptyState, formatTarih } from "../../components/UI";
 import ProfilKart from "../../components/ProfilKart";
 import IlIlceSecici from "../../components/IlIlceSecici";
+import { IconMap } from "../../components/Icons";
 
 export function IlanVerSayfasi() {
   const { ilanEkle, ilanSil } = useApp();
@@ -31,7 +32,7 @@ export function IlanVerSayfasi() {
     const kdvTutari = ucret * kdvOrani;
     const toplamUcret = ucret + kdvTutari;
 
-    console.log("📤 Yeni ilan gönderiliyor:", { ...form, ton: 0, ucret: ucret, kdvOrani: kdvOrani, kdvTutari: kdvTutari, toplamUcret: toplamUcret, odemeTuru: form.odemeTuru, odemeGun: Number(form.odemeGun) });
+    console.log(<>{IconMap.upload} Yeni ilan gönderiliyor:", { ...form, ton: 0, ucret: ucret, kdvOrani: kdvOrani, kdvTutari: kdvTutari, toplamUcret: toplamUcret, odemeTuru: form.odemeTuru, odemeGun: Number(form.odemeGun) }</>);
 
     ilanEkle({
       ...form,
@@ -82,7 +83,7 @@ export function IlanVerSayfasi() {
 
       <div className="card" style={{ marginBottom: 14 }}>
         <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 20 }}>🗺️</span>
+          <span style={{ fontSize: 20 }}><IconMap.map size={20} className="icon-primary" /></span>
           <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: 1.5, color: "#fbbf24" }}>GÜZERGAH</span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -230,7 +231,7 @@ export function IlanlarSayfasi() {
 
       {mevcutIlanlar.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
-          <div style={{ fontSize: 56, marginBottom: 20 }}>📋</div>
+          <div style={{ fontSize: 56, marginBottom: 20 }}><IconMap.file size={56} className="icon-primary" /></div>
           <div style={{ fontSize: 16, marginBottom: 8 }}>Henüz ilanınız yok</div>
           <div style={{ fontSize: 13 }}>Yeni ilan vererek başlayın!</div>
         </div>
@@ -280,7 +281,7 @@ export function IlanlarSayfasi() {
                     className="btn btn-danger"
                     style={{ padding: "10px 18px", fontSize: 12 }}
                   >
-                    🗑️ Sil
+                    <><IconMap.trash size={16} /> Sil</>
                   </button>
                 </div>
               </div>
@@ -551,7 +552,7 @@ export function TekliflerSayfasi() {
 
       {yeniBekleyenler.length === 0 && aktifSeferler.length === 0 && (
         <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
-          <div style={{ fontSize: 56, marginBottom: 20 }}>📋</div>
+          <div style={{ fontSize: 56, marginBottom: 20 }}><IconMap.file size={56} className="icon-primary" /></div>
           <div style={{ fontSize: 16, marginBottom: 8 }}>Henüz teklif veya aktif iş yok</div>
           <div style={{ fontSize: 13 }}>İlanlar sekmesinden yük vererek başlayın!</div>
         </div>

@@ -1,4 +1,5 @@
 import { useApp } from "../../context/AppContext";
+import { IconMap } from "../../components/Icons";
 
 export default function BildirimAyarlariSayfasi() {
   const { bildirimler, bildirimGuncelle, oturum } = useApp();
@@ -11,12 +12,12 @@ export default function BildirimAyarlariSayfasi() {
   const bildirimlerList = oturum?.rol === "issiz"
     ? [
         { icon: "📢", tur: "ilan", label: "Yeni İlan Bildirimi", desc: "Yeni ilan yayınlandığında bildir" },
-        { icon: "📋", tur: "teklif", label: "Teklif Bildirimi", desc: "Kamyoncu teklif verdiğinde bildir" },
+        { icon: "file", tur: "teklif", label: "Teklif Bildirimi", desc: "Kamyoncu teklif verdiğinde bildir" },
       ]
     : [
         { icon: "📢", tur: "ilan", label: "Yeni İlan Bildirimi", desc: "Yeni ilan yayınlandığında bildir" },
-        { icon: "📋", tur: "teklif", label: "Teklif Bildirimi", desc: "Kamyoncu teklif verdiğinde bildir" },
-        { icon: "💬", tur: "mesaj", label: "Mesaj Bildirimi", desc: "Yeni mesaj gelince bildir" },
+        { icon: "file", tur: "teklif", label: "Teklif Bildirimi", desc: "Kamyoncu teklif verdiğinde bildir" },
+        { icon: "mesaj", tur: "mesaj", label: "Mesaj Bildirimi", desc: "Yeni mesaj gelince bildir" },
         { icon: "🗺️", tur: "sefer", label: "Sefer Bildirimi", desc: "Sefer durumu değişince bildir" },
       ];
 
@@ -78,7 +79,7 @@ export default function BildirimAyarlariSayfasi() {
 
         {[
           { icon: "📱", label: "Push Bildirimi", desc: "Telefonda bildirim gönder" },
-          { icon: "✉️", label: "E-posta", desc: "Günlük özet e-posta" },
+          { icon: "mail", label: "E-posta", desc: "Günlük özet e-posta" },
           { icon: "🔔", label: "Sesli Bildirim", desc: "Bildirim geldiğinde ses" },
         ].map((item, i) => (
           <div key={item.label} style={{
@@ -127,7 +128,7 @@ export default function BildirimAyarlariSayfasi() {
 
       <div className="card" style={{ marginBottom: 14, background: "linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(251,191,36,0.04) 100%)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 24 }}>🔔</span>
+          <span style={{ fontSize: 24 }}><IconMap.bell size={24} className="icon-primary" /></span>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>Tümünü Aç</div>
             <div style={{ fontSize: 12, color: "var(--text3)" }}>Tüm bildirimleri etkinleştir</div>
