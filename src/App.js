@@ -37,7 +37,7 @@ function MobilApp({ cikisYap }) {
     if (!oturum) return null;
     const kamyoncuSayfalar = {
       ilanlar:     <IlanlarSayfasi />,
-      seferler:    <SeferlerSayfasi />,
+      seferler:    <SeferlerSayfasi onChatAc={onChatAc} />,
       mesajlar:    <KamyoncuMesajlarSayfasi />,
       profil:      <KamyoncuProfil />,
       bildirimler: <BildirimlerSayfasi />,
@@ -51,6 +51,12 @@ function MobilApp({ cikisYap }) {
     };
     return oturum.role === "kamyoncu" ? kamyoncuSayfalar[sekme] : issizSayfalar[sekme];
   }, [sekme, oturum]);
+
+  // ChatSayfasi açma handler
+  const onChatAc = (konusmaId, seferBilgileri) => {
+    console.log('💬 ChatSayfasi açılıyor:', konusmaId, seferBilgileri);
+    setSeciliKonusma(konusmaId);
+  };
 
   console.log("🚀 MobilApp render edildi - oturum:", oturum);
 
@@ -89,12 +95,6 @@ function MobilApp({ cikisYap }) {
       return null;
     }
     return <ChatSayfasi konusmaId={seciliKonusma} onGeri={() => setSeciliKonusma(null)} isKamyoncu={oturum.role === "kamyoncu"} />;
-  }
-
-  // Sayfa bulunamazsa hata göster
-  if (!sayfa) {
-    console.log("Sayfa bulunamadı:", sekme);
-    return <div>Sayfa bulunamadı: {sekme}</div>;
   }
 
   return (
