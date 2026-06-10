@@ -7,7 +7,7 @@ import { IconMap } from "../components/Icons";
 let supabaseInitialized = false;
 const initSupabase = () => {
   if (!supabaseInitialized && supabase) {
-    console.log(`${IconMap.fire} Supabase Backend Connected`);
+    console.log(<>{IconMap.fire} Supabase Backend Connected</>);
     supabaseInitialized = true;
   }
 };
@@ -16,11 +16,6 @@ const initSupabase = () => {
 initSupabase();
 
 const Ctx = createContext();
-
-let ilanlarData = null;
-let seferlerData = null;
-let tekliflerData = null;
-let usersData = null;
 
 export const AppProvider = ({ children }) => {
   const { konusmaAc, mesajGonder, loadConversations, subscribeRealtime } = useMesaj();
@@ -154,7 +149,7 @@ export const AppProvider = ({ children }) => {
             console.error('❌ Error fetching user after session load:', err);
           }
         } else {
-          console.log(`${IconMap.warning} Session yok`);
+          console.log(<>{IconMap.warning} Session yok</>);
         }
 
         setLoading(false);
@@ -163,7 +158,7 @@ export const AppProvider = ({ children }) => {
         setLoading(false);
       });
     } else {
-      console.warn(`${IconMap.warning} Supabase client yok, Demo modu`);
+      console.warn(<>{IconMap.warning} Supabase client yok, Demo modu</>);
       setLoading(false);
     }
   }, [supabase]);
@@ -957,7 +952,7 @@ export const AppProvider = ({ children }) => {
         .eq('id', oturum.id);
 
       if (error) {
-        console.warn(`${IconMap.warning} Profil güncelleme hatası:`, error.message);
+        console.warn(<>{IconMap.warning} Profil güncelleme hatası:", error.message</>);
         // Local state yine de güncelle (offline demo modu)
         setOturum(prev => prev ? { ...prev, ...updateData } : prev);
         return { ok: false, error: error.message };
@@ -966,7 +961,7 @@ export const AppProvider = ({ children }) => {
       setOturum(prev => prev ? { ...prev, ...updateData } : prev);
       return { ok: true };
     } catch (err) {
-      console.warn(`${IconMap.warning} Profil güncelleme exception:`, err);
+      console.warn(<>{IconMap.warning} Profil güncelleme exception:", err</>);
       setOturum(prev => prev ? { ...prev, ...guncellemeler } : prev);
       return { ok: false, error: String(err) };
     }

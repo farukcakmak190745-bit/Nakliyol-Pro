@@ -785,7 +785,10 @@ export default function ProfilKart({ rol, userId }) {
                 justifyContent: "center",
                 fontSize: 18
               }}>
-                <IconMap[item.icon] size={20} className="icon-primary" />
+                {(() => {
+                  const Icon = IconMap[item.icon] || IconMap.truck;
+                  return <Icon size={20} className="icon-primary" />;
+                })()}
               </div>
               <span style={{ fontSize: 14, flex: 1, fontWeight: 500, color: "var(--text)" }}>{item.text}</span>
               <span style={{ color: "var(--text3)", fontSize: 18 }}>›</span>

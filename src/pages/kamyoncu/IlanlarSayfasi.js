@@ -66,7 +66,10 @@ const IlanKart = ({ ilan, onClick }) => {
           <IconMap.calendar size={12} className="icon-primary" /> {formatTarih(ilan.tarih)}
         </div>
         <div style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.08) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, color: "#3b82f6", border: "1px solid rgba(59,130,246,0.2)" }}>
-          <IconMap[aracIkon[ilan.aracTip] || "truck"] size={14} className="icon-primary" /> {ilan.aracTip}
+          {(() => {
+            const AracIcon = IconMap[aracIkon[ilan.aracTip] || "truck"];
+            return AracIcon ? <AracIcon size={14} className="icon-primary" /> : <IconMap.truck size={14} className="icon-primary" />;
+          })()} {ilan.aracTip}
         </div>
         <div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
           <IconMap.creditcard size={12} className="icon-primary" /> {!ilan.odemeGun || ilan.odemeGun === 0 ? "💰 Peşin" : `${ilan.odemeGun} Gün Ödeme`}

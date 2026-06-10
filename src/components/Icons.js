@@ -235,6 +235,10 @@ export const IconMap = {
 
   // 🗺️ Harita
   map2: Map,
+
+  // 🔥 Icons used in AppContext
+  fire: Truck,
+  warning: Shield,
 };
 
 /**
@@ -250,27 +254,7 @@ export const getIcon = (emoji) => {
 /**
  * Emoji → Component dönüşümü
  */
-export const getIconComponent = (emoji) => {
+export const getIconComponent = (emoji, props = {}) => {
   const Icon = getIcon(emoji);
-  return <Icon size={size} strokeWidth={strokeWidth} className={className} />;
-};
-
-// Icon boyutlandırma için context veya global değişkenler
-let size = 20;
-let strokeWidth = 2;
-let className = "";
-
-export const IconSize = {
-  set: (s) => { size = s; },
-  get: () => size,
-};
-
-export const IconStroke = {
-  set: (s) => { strokeWidth = s; },
-  get: () => strokeWidth,
-};
-
-export const IconClass = {
-  set: (c) => { className = c; },
-  get: () => className,
+  return Icon ? <Icon {...props} /> : null;
 };
