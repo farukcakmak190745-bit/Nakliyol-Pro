@@ -5,12 +5,14 @@ import { EmptyState, formatTarih } from "../../components/UI";
 import ChatSayfasi from "../../components/ChatSayfasi";
 import TeslimEdildiModal from "../../components/TeslimEdildiModal";
 import { BildirimlerSayfasi } from "../../pages/BildirimlerSayfasi";
+import { MessageSquare } from "lucide-react";
 
-export function SeferlerSayfasi() {
+export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
   const { seferler, konusmaOluştur, oturum, islemiTeslimEt } = useApp();
   const [seciliSefer, setSeciliSefer] = useState(null);
   const [konusmaIdMap, setKonusmaIdMap] = useState({});
   const [teslimEdildiModal, setTeslimEdildiModal] = useState(null);
+  const [seciliKonusma, setSeciliKonusma] = useState(null);
 
   // Kamyoncu sadece KENDİ (giriş yaptığı hesabın) seferlerini görmeli.
   // Filtre: kamyoncu_user_id === oturum.id (giriş yapan kullanıcının id'si)
@@ -37,7 +39,22 @@ export function SeferlerSayfasi() {
       resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + sefer.olusturan.substring(0, 2).toUpperCase()
     });
     setKonusmaIdMap(prev => ({ ...prev, [sefer.id]: newConversationId }));
-    return newConversationId;
+
+    // ChatSayfasi bileşenini aç
+    if (onChatAc) {
+      onChatAc(newConversationId, {
+        partnerAd: sefer.olusturan,
+        yuk: sefer.yuk,
+        nereden: sefer.nereden,
+        nereye: sefer.nereye
+      });
+    } else {
+      // Fallback: sekme olarak mesajlar'a geç
+      if (onMesajGoster) {
+        onMesajGoster();
+      }
+      setSeciliKonusma(newConversationId);
+    }
   };
 
   if (aktifSeferler.length === 0 && bitmisSeferler.length === 0) {
@@ -152,6 +169,15 @@ export function SeferlerSayfasi() {
         <TeslimEdildiModal
           sefer={teslimEdildiModal}
           onClose={() => setTeslimEdildiModal(null)}
+        />
+      )}
+
+      {/* ChatSayfasi bileşenini göster */}
+      {seciliKonusma && (
+        <ChatSayfasi
+          konusmaId={seciliKonusma}
+          onGeri={() => setSeciliKonusma(null)}
+          isKamyoncu={oturum?.rol === "kamyoncu"}
         />
       )}
     </div>
