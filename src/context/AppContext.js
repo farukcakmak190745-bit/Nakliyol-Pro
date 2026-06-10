@@ -32,7 +32,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     const loadInitialData = async () => {
       if (!supabase) {
-        console.warn(<>{IconMap.warning} Supabase yok! Lütfen Supabase URL ve key ayarlayın.');
+        console.warn(`${IconMap.warning} Supabase yok! Lütfen Supabase URL ve key ayarlayın.`);
         setLoading(false);
         return;
       }
