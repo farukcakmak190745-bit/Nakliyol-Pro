@@ -40,7 +40,7 @@ function MobilApp({ cikisYap }) {
 
   // Use useMemo to avoid hoisting issues with state variables
   const sayfa = React.useMemo(() => {
-    if (!oturum) return null;
+    if (!oturum || !oturum.role) return null;
     const kamyoncuSayfalar = {
       ilanlar:     <IlanlarSayfasi />,
       seferler:    <SeferlerSayfasi onChatAc={onChatAc} />,
