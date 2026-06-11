@@ -100,7 +100,7 @@ function MobilApp({ cikisYap }) {
   return (
     <div className="app-shell">
       <Header cikisYap={cikisYap} />
-      <div>{sayfa}</div>
+      {sayfa !== undefined && sayfa !== null ? sayfa : null}
       <BottomNav aktif={sekme} setAktif={setSekme} rol={oturum.role} />
       <BildirimlerModal />
     </div>

@@ -75,13 +75,15 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
       {aktifSeferler.length > 0 && (
         <>
           <div className="section-title">AKTİF SEFERLER ({aktifSeferler.length})</div>
-          {aktifSeferler.map(sefer => (
+          {aktifSeferler.map(sefer => {
+            if (!sefer || !sefer.id) return null;
+            return (
             <div key={sefer.id} className="card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ fontSize: 32 }}>🚚</div>
                   <div>
-                    <div className="display" style={{ fontSize: 18, color: "#fbbf24" }}>{sefer.yuk}</div>
+                    <div className="display" style={{ fontSize: 18, color: "#fbbf24" }}>{sefer.yuk || "-"}</div>
                     <div style={{ fontSize: 10, color: "var(--text3)", letterSpacing: 1.5 }}>Yük Tipi</div>
                   </div>
                 </div>
@@ -90,9 +92,9 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                <span style={{ fontSize: 14, fontWeight: 600 }}>{sefer.nereden}</span>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{sefer.nereden || "-"}</span>
                 <span style={{ color: "#fbbf24", fontSize: 18 }}>→</span>
-                <span style={{ fontSize: 14, fontWeight: 600 }}>{sefer.nereye}</span>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{sefer.nereye || "-"}</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
@@ -128,7 +130,8 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
                 </>
               )}
             </div>
-          ))}
+            );
+          })}
         </>
       )}
 
@@ -136,14 +139,16 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
         <>
           {aktifSeferler.length > 0 && <div style={{ height: 20 }}></div>}
           <div className="section-title">GEÇMİŞ SEFERLER ({bitmisSeferler.length})</div>
-          {bitmisSeferler.map(sefer => (
+          {bitmisSeferler.map(sefer => {
+            if (!sefer || !sefer.id) return null;
+            return (
             <div key={sefer.id} className="card" style={{ marginBottom: 14, border: "1px solid rgba(16,185,129,0.2)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 15, color: "#fbbf24" }}>{sefer.yuk}</div>
-                  <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>{sefer.nereden} → {sefer.nereye}</div>
-                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>🏢 {sefer.olusturan}</div>
-                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 1 }}>🚛 {sefer.kamyoncu} • 📌 {sefer.plaka}</div>
+                  <div style={{ fontWeight: 600, fontSize: 15, color: "#fbbf24" }}>{sefer.yuk || "-"}</div>
+                  <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>{sefer.nereden || "-"} → {sefer.nereye || "-"}</div>
+                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>🏢 {sefer.olusturan || "-"}</div>
+                  <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 1 }}>🚛 {sefer.kamyoncu || "-"} • 📌 {sefer.plaka || "-"}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ color: "#fbbf24", fontWeight: 700, fontSize: 16 }}>₺{sefer.ucret.toLocaleString()}</div>
@@ -165,7 +170,8 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </>
       )}
 
