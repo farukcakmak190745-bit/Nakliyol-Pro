@@ -31,6 +31,10 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
   const bitmisSeferler = seferlerList.filter(s => s.durum === "tamamlandı");
 
   const konusmaAc = (sefer) => {
+    if (!sefer || !sefer.olusturan || !sefer.yuk || !sefer.nereden || !sefer.nereye) {
+      console.error('Sefer verisi eksik:', sefer);
+      return;
+    }
     const newConversationId = konusmaOluştur({
       partnerId: sefer.olusturan,
       partnerAd: sefer.olusturan,

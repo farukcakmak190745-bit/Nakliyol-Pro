@@ -62,7 +62,7 @@ export const BottomNav = ({ aktif, setAktif, rol }) => {
       { key: "mesajlar",  icon: "mesaj", label: "Mesajlar", badge: okunmamisMesajSayisi },
       { key: "profil",    icon: "profil", label: "Profil" },
     ];
-    const menu = rol === "kamyoncu" ? kamyoncuMenu : issizMenu;
+    const menu = (rol && rol === "kamyoncu") ? kamyoncuMenu : (rol && rol === "issiz" ? issizMenu : []);
 
     return (
       <div className="bottom-nav">
