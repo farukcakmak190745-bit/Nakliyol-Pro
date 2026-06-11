@@ -72,11 +72,14 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
 
   return (
     <div className="scroll-content">
-      {aktifSeferler.length > 0 && (
+      {aktifSeferler && aktifSeferler.length > 0 && (
         <>
           <div className="section-title">AKTİF SEFERLER ({aktifSeferler.length})</div>
-          {aktifSeferler.map(sefer => {
-            if (!sefer || !sefer.id) return null;
+          {aktifSeferler.map((sefer, index) => {
+            if (!sefer || !sefer.id) {
+              console.error('Hata: undefined sefer found at index:', index, 'sefer:', sefer);
+              return null;
+            }
             return (
             <div key={sefer.id} className="card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
