@@ -76,7 +76,7 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
         <>
           <div className="section-title">AKTİF SEFERLER ({aktifSeferler.length})</div>
           {aktifSeferler.map((sefer, index) => {
-            if (!sefer || !sefer.id) {
+            if (!sefer || !sefer.id || !sefer.durum) {
               console.error('Hata: undefined sefer found at index:', index, 'sefer:', sefer);
               return null;
             }
@@ -138,12 +138,15 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
         </>
       )}
 
-      {bitmisSeferler.length > 0 && (
+      {bitmisSeferler && bitmisSeferler.length > 0 && (
         <>
-          {aktifSeferler.length > 0 && <div style={{ height: 20 }}></div>}
+          {aktifSeferler && aktifSeferler.length > 0 && <div style={{ height: 20 }}></div>}
           <div className="section-title">GEÇMİŞ SEFERLER ({bitmisSeferler.length})</div>
-          {bitmisSeferler.map(sefer => {
-            if (!sefer || !sefer.id) return null;
+          {bitmisSeferler.map((sefer, index) => {
+            if (!sefer || !sefer.id || !sefer.durum) {
+              console.error('Hata: undefined bitmis sefer found at index:', index, 'sefer:', sefer);
+              return null;
+            }
             return (
             <div key={sefer.id} className="card" style={{ marginBottom: 14, border: "1px solid rgba(16,185,129,0.2)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
