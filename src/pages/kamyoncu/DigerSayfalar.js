@@ -163,11 +163,14 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
               </div>
               {sefer.belgeler && sefer.belgeler.length > 0 && (
                 <div style={{ marginTop: 12, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {sefer.belgeler.map((b, i) => (
-                    <div key={i} style={{ background: "var(--bg2)", borderRadius: "8px", padding: "6px 10px", fontSize: 11, display: "flex", alignItems: "center", gap: 6, border: "1px solid rgba(251,191,36,0.1)" }}>
-                      {b && b.tip === "img" ? "🖼️" : "📄"} {b && b.ad || "-"}
+                  {sefer.belgeler.map((b, i) => {
+                    if (!b) return null;
+                    return (
+                    <div key={b.id || `doc-${i}`} style={{ background: "var(--bg2)", borderRadius: "8px", padding: "6px 10px", fontSize: 11, display: "flex", alignItems: "center", gap: 6, border: "1px solid rgba(251,191,36,0.1)" }}>
+                      {b.tip === "img" ? "🖼️" : "📄"} {b.ad || "-"}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
               {sefer.odemeDurumu === "odendi" && sefer.odemeTarihi && (

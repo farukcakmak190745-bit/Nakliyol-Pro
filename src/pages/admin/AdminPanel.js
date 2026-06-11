@@ -167,7 +167,7 @@ export default function AdminPanel() {
                   { tarih:"01 May", islem:"Antalya→İzmir", kom:"₺410", ab:"—", d:"bekliyor" },
                   { tarih:"30 Nis", islem:"Pro Üyelik - Ali K.", kom:"—", ab:"₺299", d:"onaylandı" },
                 ].map((r,i)=>(
-                  <tr key={i}>
+                  <tr key={`history-${i}`}>
                     <td style={tdStyle}>{r.tarih}</td>
                     <td style={tdStyle}>{r.islem}</td>
                     <td style={{...tdStyle,color:"#10b981",fontWeight:600}}>{r.kom}</td>
@@ -235,7 +235,7 @@ export default function AdminPanel() {
         </div>
         <div style={{ flex: 1, padding: "8px 0" }}>
           {menu.map(m => (
-            <button key={m.key} onClick={() => setAktif(m.key)} style={{
+            <button key={m.key || `menu-${m.label}`} onClick={() => setAktif(m.key)} style={{
               width: "100%", display: "flex", alignItems: "center", gap: 10,
               padding: "12px 16px", background: "none", border: "none",
               color: aktif === m.key ? "#fbbf24" : "var(--text3)",

@@ -145,9 +145,10 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {konusma.mesajlar.map((m, i) => {
+              if (!m) return null;
               const isBen = m.gonderen === "ben";
               return (
-                <div key={m.id} style={{
+                <div key={m.id || `msg-${i}`} style={{
                   maxWidth: "80%",
                   padding: "10px 14px",
                   borderRadius: "var(--r)",
@@ -184,7 +185,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                   {m.metin && (
                     <div>
                       {m.metin.split("\n").map((line, idx) => (
-                        <div key={idx}>{line || <br />}</div>
+                        <div key={`line-${idx}`}>{line || <br />}</div>
                       ))}
                     </div>
                   )}
