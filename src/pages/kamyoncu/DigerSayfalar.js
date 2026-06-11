@@ -99,11 +99,11 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Plaka</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#3b82f6" }}>{sefer.plaka}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#3b82f6" }}>{sefer.plaka || "-"}</div>
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Ücret</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24" }}>₺{sefer.ucret.toLocaleString()}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24" }}>₺{sefer.ucret ? sefer.ucret.toLocaleString() : "0"}</div>
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Tonaj</div>
@@ -151,20 +151,20 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
                   <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 1 }}>🚛 {sefer.kamyoncu || "-"} • 📌 {sefer.plaka || "-"}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ color: "#fbbf24", fontWeight: 700, fontSize: 16 }}>₺{sefer.ucret.toLocaleString()}</div>
+                  <div style={{ color: "#fbbf24", fontWeight: 700, fontSize: 16 }}>₺{sefer.ucret ? sefer.ucret.toLocaleString() : "0"}</div>
                   <div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)", color: "#10b981", padding: "4px 10px", borderRadius: "20px", fontSize: 10, fontWeight: 600, marginTop: 4 }}>✓ Tamamlandı</div>
                 </div>
               </div>
-              {sefer.belgeler.length > 0 && (
+              {sefer.belgeler && sefer.belgeler.length > 0 && (
                 <div style={{ marginTop: 12, display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {sefer.belgeler.map((b, i) => (
                     <div key={i} style={{ background: "var(--bg2)", borderRadius: "8px", padding: "6px 10px", fontSize: 11, display: "flex", alignItems: "center", gap: 6, border: "1px solid rgba(251,191,36,0.1)" }}>
-                      {b.tip === "img" ? "🖼️" : "📄"} {b.ad}
+                      {b && b.tip === "img" ? "🖼️" : "📄"} {b && b.ad || "-"}
                     </div>
                   ))}
                 </div>
               )}
-              {sefer.odemeDurumu === "odendi" && (
+              {sefer.odemeDurumu === "odendi" && sefer.odemeTarihi && (
                 <div style={{ marginTop: 8, fontSize: 11, color: "#10b981", display: "flex", alignItems: "center", gap: 6 }}>
                   💰 Ödeme tamamlandı - {formatTarih(sefer.odemeTarihi)}
                 </div>
