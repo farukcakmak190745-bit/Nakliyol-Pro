@@ -40,7 +40,7 @@ export function BildirimlerSayfasi() {
                     {b.icerik.substring(0, 80)}...
                   </div>
                   <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4 }}>
-                    {new Date(b.olusturma_zamani).toLocaleString('tr-TR')}
+                    {new Date(b.olusturma_zamani).toLocaleString('tr-TR')};
                   </div>
                 </div>
               </div>
