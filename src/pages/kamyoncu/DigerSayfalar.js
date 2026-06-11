@@ -72,12 +72,12 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
 
   return (
     <div className="scroll-content">
-      {aktifSeferler && aktifSeferler.length > 0 && (
+      {aktifSeferler && Array.isArray(aktifSeferler) && aktifSeferler.length > 0 && (
         <>
           <div className="section-title">AKTİF SEFERLER ({aktifSeferler.length})</div>
           {aktifSeferler.map((sefer, index) => {
             if (!sefer || !sefer.id || !sefer.durum) {
-              console.error('Hata: undefined sefer found at index:', index, 'sefer:', sefer);
+              console.error('Hata: undefined aktif sefer at index:', index, 'sefer:', sefer);
               return null;
             }
             return (
@@ -138,13 +138,13 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
         </>
       )}
 
-      {bitmisSeferler && bitmisSeferler.length > 0 && (
+      {bitmisSeferler && Array.isArray(bitmisSeferler) && bitmisSeferler.length > 0 && (
         <>
-          {aktifSeferler && aktifSeferler.length > 0 && <div style={{ height: 20 }}></div>}
+          {aktifSeferler && Array.isArray(aktifSeferler) && aktifSeferler.length > 0 && <div style={{ height: 20 }}></div>}
           <div className="section-title">GEÇMİŞ SEFERLER ({bitmisSeferler.length})</div>
           {bitmisSeferler.map((sefer, index) => {
             if (!sefer || !sefer.id || !sefer.durum) {
-              console.error('Hata: undefined bitmis sefer found at index:', index, 'sefer:', sefer);
+              console.error('Hata: undefined bitmis sefer at index:', index, 'sefer:', sefer);
               return null;
             }
             return (
