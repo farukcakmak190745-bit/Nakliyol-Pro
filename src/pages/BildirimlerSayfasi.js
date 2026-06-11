@@ -15,9 +15,11 @@ export function BildirimlerSayfasi() {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {bildirimler.map((b, index) => (
+          {bildirimler.map((b, index) => {
+            if (!b) return null;
+            return (
             <div
-              key={b.id}
+              key={b.id || `notification-${index}`}
               className="card"
               style={{ marginBottom: 0, border: "2px solid rgba(251,191,36,0.3)", cursor: "pointer", transition: "transform 0.2s" }}
               onClick={() => {

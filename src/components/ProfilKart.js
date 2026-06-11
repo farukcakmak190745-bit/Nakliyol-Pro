@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../supabaseClient";
 import { IconMap } from "./Icons";
 
 /**
@@ -498,8 +498,8 @@ export default function ProfilKart({ rol, userId }) {
             📊 İSTATİSTİKLER
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-            {statler.map((s, i) => (
-              <div key={i} style={{
+            {statler.map((s) => (
+              <div key={s.val} style={{
                 textAlign: "center",
                 padding: "12px 4px",
                 background: "var(--bg2)",
@@ -538,8 +538,8 @@ export default function ProfilKart({ rol, userId }) {
                 {isKamyoncu ? "Sınırsız teklif • Öncelikli liste" : "Sınırsız ilan • Öncelikli görünüm"}
               </div>
               <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-                {["✓ Aktif", "💎 Premium", "🚀 Hızlı"].map((t, i) => (
-                  <span key={i} style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", background: "rgba(251,191,36,0.15)", color: "#fbbf24", borderRadius: "8px", border: "1px solid rgba(251,191,36,0.3)" }}>{t}</span>
+                {["✓ Aktif", "💎 Premium", "🚀 Hızlı"].map((t) => (
+                  <span key={t} style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", background: "rgba(251,191,36,0.15)", color: "#fbbf24", borderRadius: "8px", border: "1px solid rgba(251,191,36,0.3)" }}>{t}</span>
                 ))}
               </div>
             </div>
@@ -758,19 +758,19 @@ export default function ProfilKart({ rol, userId }) {
             { icon: "settings", text: "Ayarlar", color: "var(--text2)", action: () => {
               window.location.href = "/ayarlar";
             }},
-          ].map((item, i, arr) => (
+          ].map((item) => (
             <div
-              key={i}
+              key={item.text}
               onClick={() => item.action && item.action()}
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
                 padding: "14px 14px",
-                borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none",
+                borderBottom: item.action !== undefined && item.action !== "" ? "1px solid var(--border)" : "none",
                 cursor: "pointer",
                 transition: "background 0.2s",
-                borderRadius: i === 0 ? "12px 12px 0 0" : i === arr.length - 1 ? "0 0 12px 12px" : "0"
+                borderRadius: item.action !== undefined && item.action !== "" ? (item.action.toString().includes("ayarlar") ? "12px 12px 0 0" : (item.action.toString().includes("help") ? "0 0 12px 12px" : "0")) : "0"
               }}
               onMouseEnter={e => e.currentTarget.style.background = "var(--bg2)"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}

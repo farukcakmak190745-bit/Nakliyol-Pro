@@ -75,9 +75,9 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
       {aktifSeferler && Array.isArray(aktifSeferler) && aktifSeferler.length > 0 && (
         <>
           <div className="section-title">AKTİF SEFERLER ({aktifSeferler.length})</div>
-          {aktifSeferler.map((sefer, index) => {
+          {aktifSeferler.map((sefer) => {
             if (!sefer || !sefer.id || !sefer.durum) {
-              console.error('Hata: undefined aktif sefer at index:', index, 'sefer:', sefer);
+              console.error('Hata: undefined aktif sefer, skipping:', sefer);
               return null;
             }
             return (
@@ -142,9 +142,9 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
         <>
           {aktifSeferler && Array.isArray(aktifSeferler) && aktifSeferler.length > 0 && <div style={{ height: 20 }}></div>}
           <div className="section-title">GEÇMİŞ SEFERLER ({bitmisSeferler.length})</div>
-          {bitmisSeferler.map((sefer, index) => {
+          {bitmisSeferler.map((sefer) => {
             if (!sefer || !sefer.id || !sefer.durum) {
-              console.error('Hata: undefined bitmis sefer at index:', index, 'sefer:', sefer);
+              console.error('Hata: undefined bitmis sefer, skipping:', sefer);
               return null;
             }
             return (
