@@ -155,3 +155,4 @@ Hata alırsanız:
 3. README dosyasını kontrol edin
 
 **NakliYol © 2026 - Türkiye'nin En İyi Kamyon Platformu**
+
