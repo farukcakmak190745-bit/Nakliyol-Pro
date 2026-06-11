@@ -32,6 +32,12 @@ function MobilApp({ cikisYap }) {
   const [sekme, setSekme] = useState("ilanlar");
   const [seciliKonusma, setSeciliKonusma] = useState(null);
 
+  // ChatSayfasi açma handler
+  const onChatAc = (konusmaId, seferBilgileri) => {
+    console.log('💬 ChatSayfasi açılıyor:', konusmaId, seferBilgileri);
+    setSeciliKonusma(konusmaId);
+  };
+
   // Use useMemo to avoid hoisting issues with state variables
   const sayfa = React.useMemo(() => {
     if (!oturum) return null;
@@ -50,13 +56,7 @@ function MobilApp({ cikisYap }) {
       profil:     <IssizProfilSayfasi />,
     };
     return oturum.role === "kamyoncu" ? kamyoncuSayfalar[sekme] : issizSayfalar[sekme];
-  }, [sekme, oturum]);
-
-  // ChatSayfasi açma handler
-  const onChatAc = (konusmaId, seferBilgileri) => {
-    console.log('💬 ChatSayfasi açılıyor:', konusmaId, seferBilgileri);
-    setSeciliKonusma(konusmaId);
-  };
+  }, [sekme, oturum, onChatAc]);
 
   console.log("🚀 MobilApp render edildi - oturum:", oturum);
 
