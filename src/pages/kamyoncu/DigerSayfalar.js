@@ -19,7 +19,7 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
   // Eski kayıtlar için fallback: tc_kimlik veya telefon eşleşmesi
   // (Bunlar şoförün değil hesap sahibinin bilgileri olduğu eski versiyon kayıtlar için)
   const seferlerList = (seferler || []).filter(s => {
-    if (!oturum) return false;
+    if (!oturum || !s) return false;
     // Yeni kayıtlar: user_id eşleşmesi
     if (s.kamyoncu_user_id === oturum.id) return true;
     // Eski kayıtlar için fallback (şoför bilgileri === hesap sahibi bilgileri durumunda)
@@ -27,8 +27,8 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
     if (s.kamyoncu_tel && s.kamyoncu_tel === oturum.telefon) return true;
     return false;
   });
-  const aktifSeferler = seferlerList.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
-  const bitmisSeferler = seferlerList.filter(s => s.durum === "tamamlandı");
+  const aktifSeferler = seferlerList.filter(s => s && (s.durum === "yolda" || s.durum === "teslima_bekleniyor"));
+  const bitmisSeferler = seferlerList.filter(s => s && s.durum === "tamamlandı");
 
   const konusmaAc = (sefer) => {
     if (!sefer || !sefer.olusturan || !sefer.yuk || !sefer.nereden || !sefer.nereye) {
