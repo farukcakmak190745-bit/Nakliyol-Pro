@@ -23,7 +23,6 @@ export function BildirimlerSayfasi() {
               className="card"
               style={{ marginBottom: 0, border: "2px solid rgba(251,191,36,0.3)", cursor: "pointer", transition: "transform 0.2s" }}
               onClick={() => {
-                // En baştaki bildiriye tıklanırsa sil, diğerleri için aç
                 if (index === 0 && bildirimler.length > 1) {
                   setBildirimlerList(prev => prev.slice(1));
                 }
@@ -40,12 +39,13 @@ export function BildirimlerSayfasi() {
                     {b.icerik.substring(0, 80)}...
                   </div>
                   <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4 }}>
-                    {new Date(b.olusturma_zamani).toLocaleString('tr-TR')}
+                    {new Date(b.olusturma_zamani).toLocaleString('tr-TR')};
                   </div>
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
