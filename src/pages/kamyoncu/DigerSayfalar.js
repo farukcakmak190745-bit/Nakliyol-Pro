@@ -27,8 +27,8 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
     if (s.kamyoncu_tel && s.kamyoncu_tel === oturum.telefon) return true;
     return false;
   });
-  const aktifSeferler = seferlerList.filter(s => s && (s.durum === "yolda" || s.durum === "teslima_bekleniyor"));
-  const bitmisSeferler = seferlerList.filter(s => s && s.durum === "tamamlandı");
+  const aktifSeferler = (seferlerList || []).filter(s => s && (s.durum === "yolda" || s.durum === "teslima_bekleniyor"));
+  const bitmisSeferler = (seferlerList || []).filter(s => s && s.durum === "tamamlandı");
 
   const konusmaAc = (sefer) => {
     if (!sefer || !sefer.olusturan || !sefer.yuk || !sefer.nereden || !sefer.nereye) {
