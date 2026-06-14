@@ -539,8 +539,9 @@ export default function ProfilKart({ rol, userId }) {
                 <div style={{ fontSize: 18, fontWeight: 700, color: tema?.birincil || "var(--text)", fontFamily: "var(--font-d)" }}>{s.val}</div>
                 <div style={{ fontSize: 9, color: "var(--text3)", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>{s.lbl}</div>
               </div>
-            ))}
-          </div>
+            )
+          })}
+        </div>
         </div>
 
         {/* ============ PRO ÜYELİK ============ */}
