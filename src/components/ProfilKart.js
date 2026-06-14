@@ -15,6 +15,11 @@ export default function ProfilKart({ rol, userId }) {
   const isKamyoncu = rol === "kamyoncu";
   const [seciliKullanici, setSeciliKullanici] = useState(null);
 
+  // Güvenlik: rol ve isKamyoncu null kontrolü
+  if (!rol && !isKamyoncu) {
+    console.warn('⚠️ ProfilKart: rol undefined, varsayılan issiz kullanılıyor');
+  }
+
   useEffect(() => {
     if (userId) {
       // Veritabanından belirli bir kullanıcının bilgilerini çek
@@ -125,7 +130,7 @@ export default function ProfilKart({ rol, userId }) {
     setTimeout(() => setIbanKaydedildi(false), 2000);
   };
 
-  // Belgeler (rol bazlı)
+  // Belgeler (rol bazlı) - null kontrolü ile korundu
   const belgeTanimlari = isKamyoncu
     ? [
         { id: 1, ad: "Ehliyet (E Sınıfı)", ok: true },
@@ -141,7 +146,7 @@ export default function ProfilKart({ rol, userId }) {
         { id: 4, ad: "Ticari Sicil", ok: false },
       ];
 
-  // Statler (belgeTanimlari'den önce tanımlanmalı)
+  // Statler (belgeTanimlari'den önce tanımlanmalı) - null kontrolü ile korundu
   const statler = isKamyoncu
     ? [
         { val: "127", lbl: "Sefer", icon: "🚚" },
@@ -160,8 +165,8 @@ export default function ProfilKart({ rol, userId }) {
   const [belgelerim, setBelgelerim] = useState([]);
 
   // Kullanıcının yüklediği belgeleri bul
-  const kullanicininBelgeleri = belgelerim.filter(b => belgeTanimlari?.some(bt => bt.ad === b.dosya_adi));
-  const tamamlananBelge = kullanicininBelgeleri.filter(b => b.onaylandi).length;
+  const kullanicininBelgeleri = belgelerim?.filter(b => belgeTanimlari?.some(bt => bt?.ad === b?.dosya_adi)) || [];
+  const tamamlananBelge = kullanicininBelgeleri.filter(b => b?.onaylandi).length;
   const belgeYuzdesi = belgeTanimlari?.length ? Math.round((tamamlananBelge / belgeTanimlari.length) * 100) : 0;
 
   const dosyaInputRef = useRef();
@@ -515,7 +520,7 @@ export default function ProfilKart({ rol, userId }) {
             📊 İSTATİSTİKLER
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-            {statler.map((s) => {
+            {statler?.map((s) => {
               if (!s || !s.val || !s.lbl) return null;
               return (
               <div key={`${s.val}-${s.lbl}`} style={{
@@ -673,7 +678,7 @@ export default function ProfilKart({ rol, userId }) {
                   background: "var(--bg2)",
                   borderRadius: "12px",
                   padding: "12px 14px",
-                  marginBottom: kullanicininBelgeleri.length > 0 && b.id === belgeTanimlari.length ? 0 : 8,
+                  marginBottom: (kullanicininBelgeleri?.length || 0) > 0 && b.id === (belgeTanimlari?.length || 0) ? 0 : 8,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
