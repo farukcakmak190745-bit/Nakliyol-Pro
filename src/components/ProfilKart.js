@@ -160,9 +160,9 @@ export default function ProfilKart({ rol, userId }) {
   const [belgelerim, setBelgelerim] = useState([]);
 
   // Kullanıcının yüklediği belgeleri bul
-  const kullanicininBelgeleri = belgelerim.filter(b => belgeTanimlari.some(bt => bt.ad === b.dosya_adi));
+  const kullanicininBelgeleri = belgelerim.filter(b => belgeTanimlari?.some(bt => bt.ad === b.dosya_adi));
   const tamamlananBelge = kullanicininBelgeleri.filter(b => b.onaylandi).length;
-  const belgeYuzdesi = Math.round((tamamlananBelge / belgeTanimlari.length) * 100);
+  const belgeYuzdesi = belgeTanimlari?.length ? Math.round((tamamlananBelge / belgeTanimlari.length) * 100) : 0;
 
   const dosyaInputRef = useRef();
   const [belgeEklendi, setBelgeEklendi] = useState(false);
@@ -341,7 +341,7 @@ export default function ProfilKart({ rol, userId }) {
             />
           ) : (
             <div className="display" style={{ fontSize: 24, color: tema?.birincil || "var(--text)", marginTop: 8 }}>
-              {oturum?.ad || (isKamyoncu ? "Sürücü" : "Firma")}
+              {oturum?.ad || oturum?.firmaAdi || (isKamyoncu ? "Sürücü" : "Firma")}
             </div>
           )}
 
@@ -599,7 +599,7 @@ export default function ProfilKart({ rol, userId }) {
               <div style={{ width: 32, height: 32, borderRadius: "10px", background: tema?.iconBg || "rgba(59,130,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📁</div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>BELGELERİM</div>
-                <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>{kullanicininBelgeleri.length}/{belgeTanimlari.length} belge • {belgeYuzdesi}% tamamlandı</div>
+                <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>{kullanicininBelgeleri?.length || 0}/{belgeTanimlari?.length || 0} belge • {belgeYuzdesi || 0}% tamamlandı</div>
               </div>
             </div>
             <div style={{ position: "relative" }}>
@@ -665,9 +665,9 @@ export default function ProfilKart({ rol, userId }) {
             )}
 
             {/* Belge tanımları */}
-            {belgeTanimlari.map((b) => {
-              if (!b) return null;
-              const kullanimda = kullanicininBelgeleri.some(kb => kb.dosya_adi === b.ad);
+            {belgeTanimlari?.map((b) => {
+              if (!b || !b.ad) return null;
+              const kullanimda = kullanicininBelgeleri?.some(kb => kb.dosya_adi === b.ad);
               return (
                 <div key={b.id || `doc-type-${b.ad}`} style={{
                   background: "var(--bg2)",
