@@ -82,6 +82,10 @@ export default function ProfilKart({ rol, userId }) {
       gosterMesaj("hata", "Ad soyad boş olamaz");
       return;
     }
+    if (!oturum?.id) {
+      gosterMesaj("hata", "Oturum bulunamadı. Lütfen çıkış yapıp tekrar giriş yapın.");
+      return;
+    }
     const payload = {
       ad: form.ad.trim(),
       telefon: form.telefon.trim(),
@@ -91,8 +95,12 @@ export default function ProfilKart({ rol, userId }) {
       payload.plaka = form.plaka.trim();
       payload.dorse_plaka = form.dorse_plaka.trim();
     }
+    if (!profilGuncelle || typeof profilGuncelle !== 'function') {
+      gosterMesaj("hata", "Profil güncelleme hatası: Fonksiyon bulunamadı");
+      return;
+    }
     const sonuc = await profilGuncelle(payload);
-    if (sonuc.ok) {
+    if (sonuc?.ok) {
       gosterMesaj("ok", "✓ Profil güncellendi");
       setDuzenle(false);
     } else {
@@ -194,10 +202,19 @@ export default function ProfilKart({ rol, userId }) {
     const dosya = e.target.files?.[0];
     if (!dosya) return;
 
+    if (!oturum?.id) {
+      alert('Oturum bulunamadı. Lütfen çıkış yapıp tekrar giriş yapın.');
+      return;
+    }
+
     setBelgeYukleniyor(dosya.name);
 
     try {
       // AppContext'ten gelen fonksiyonu kullan
+      if (!kullaniciBelgesiYukle || typeof kullaniciBelgesiYukle !== 'function') {
+        throw new Error('Belge yükleme fonksiyonu bulunamadı');
+      }
+
       const result = await kullaniciBelgesiYukle(dosya);
 
       // Varsa mevcut belgeleri çek
@@ -207,7 +224,7 @@ export default function ProfilKart({ rol, userId }) {
       setTimeout(() => setBelgeEklendi(false), 3000);
     } catch (err) {
       console.error('Belge yüklenemedi:', err);
-      alert('Belge yüklenemedi. Lütfen tekrar deneyin.');
+      alert(`Belge yüklenemedi: ${err.message || 'Lütfen tekrar deneyin.'}`);
     } finally {
       setBelgeYukleniyor(null);
       if (dosyaInputRef.current) dosyaInputRef.current.value = '';
@@ -253,7 +270,7 @@ export default function ProfilKart({ rol, userId }) {
             onClick={() => setDuzenle(d => !d)}
             style={{
               padding: "10px 16px",
-              background: duzenle ? "var(--bg3)" : tema.gradient,
+              background: duzenle ? "var(--bg3)" : tema?.gradient || "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
               color: duzenle ? "var(--text)" : "#0a0a0a",
               border: "none",
               borderRadius: "12px",
@@ -286,7 +303,7 @@ export default function ProfilKart({ rol, userId }) {
             height: 100,
             margin: "0 auto 16px",
             borderRadius: "50%",
-            background: tema.gradient,
+            background: tema && tema.gradient ? tema.gradient : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -313,7 +330,7 @@ export default function ProfilKart({ rol, userId }) {
                 padding: "12px 14px",
                 background: "var(--bg3)",
                 color: "var(--text)",
-                border: `1px solid ${tema.birincil}`,
+                border: `1px solid ${tema?.birincil || "var(--border)"}`,
                 borderRadius: "12px",
                 fontSize: 18,
                 fontWeight: 700,
@@ -331,7 +348,7 @@ export default function ProfilKart({ rol, userId }) {
           {/* Rol rozeti */}
           <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
             <span style={{
-              background: tema.gradient,
+              background: tema?.gradient || "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
               color: "#0a0a0a",
               padding: "5px 12px",
               borderRadius: "20px",
@@ -380,7 +397,7 @@ export default function ProfilKart({ rol, userId }) {
                   value={form.telefon}
                   onChange={e => setForm(f => ({ ...f, telefon: e.target.value }))}
                   placeholder="05XX..."
-                  style={{ width: "100%", textAlign: "center", padding: "6px", background: "var(--bg2)", color: "var(--text)", border: `1px solid ${tema.birincil}`, borderRadius: "8px", fontSize: 13, fontWeight: 600, outline: "none", marginTop: 4, WebkitTextFillColor: "var(--text)" }}
+                  style={{ width: "100%", textAlign: "center", padding: "6px", background: "var(--bg2)", color: "var(--text)", border: `1px solid ${tema && tema.birincil ? tema.birincil : "var(--border)"}`, borderRadius: "8px", fontSize: 13, fontWeight: 600, outline: "none", marginTop: 4, WebkitTextFillColor: "var(--text)" }}
                 />
               ) : (
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{oturum?.telefon || "—"}</div>
@@ -395,7 +412,7 @@ export default function ProfilKart({ rol, userId }) {
                   onChange={e => setForm(f => ({ ...f, tc_kimlik: e.target.value }))}
                   placeholder="11 hane"
                   maxLength={11}
-                  style={{ width: "100%", textAlign: "center", padding: "6px", background: "var(--bg2)", color: "var(--text)", border: `1px solid ${tema.birincil}`, borderRadius: "8px", fontSize: 13, fontWeight: 600, outline: "none", marginTop: 4, WebkitTextFillColor: "var(--text)" }}
+                  style={{ width: "100%", textAlign: "center", padding: "6px", background: "var(--bg2)", color: "var(--text)", border: `1px solid ${tema && tema.birincil ? tema.birincil : "var(--border)"}`, borderRadius: "8px", fontSize: 13, fontWeight: 600, outline: "none", marginTop: 4, WebkitTextFillColor: "var(--text)" }}
                 />
               ) : (
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", marginTop: 4, fontFamily: "monospace", letterSpacing: 1 }}>
@@ -425,7 +442,7 @@ export default function ProfilKart({ rol, userId }) {
                     value={form.plaka}
                     onChange={e => setForm(f => ({ ...f, plaka: e.target.value.toUpperCase() }))}
                     placeholder="34 ABC 123"
-                    style={{ width: "100%", textAlign: "center", padding: "6px", background: "var(--bg2)", color: "var(--text)", border: `1px solid ${tema.birincil}`, borderRadius: "8px", fontSize: 13, fontWeight: 700, letterSpacing: 1, outline: "none", marginTop: 4, WebkitTextFillColor: "var(--text)" }}
+                    style={{ width: "100%", textAlign: "center", padding: "6px", background: "var(--bg2)", color: "var(--text)", border: `1px solid ${tema && tema.birincil ? tema.birincil : "var(--border)"}`, borderRadius: "8px", fontSize: 13, fontWeight: 700, letterSpacing: 1, outline: "none", marginTop: 4, WebkitTextFillColor: "var(--text)" }}
                   />
                 ) : (
                   <div style={{ display: "inline-block", background: "#fff", color: "#000", fontFamily: "var(--font-d)", fontSize: 13, padding: "4px 12px", borderRadius: "5px", border: "2px solid #003099", marginTop: 4, letterSpacing: 2, fontWeight: 700 }}>
@@ -441,7 +458,7 @@ export default function ProfilKart({ rol, userId }) {
                     value={form.dorse_plaka}
                     onChange={e => setForm(f => ({ ...f, dorse_plaka: e.target.value.toUpperCase() }))}
                     placeholder="34 ABC 123"
-                    style={{ width: "100%", textAlign: "center", padding: "6px", background: "var(--bg2)", color: "var(--text)", border: `1px solid ${tema.birincil}`, borderRadius: "8px", fontSize: 13, fontWeight: 700, letterSpacing: 1, outline: "none", marginTop: 4, WebkitTextFillColor: "var(--text)" }}
+                    style={{ width: "100%", textAlign: "center", padding: "6px", background: "var(--bg2)", color: "var(--text)", border: `1px solid ${tema && tema.birincil ? tema.birincil : "var(--border)"}`, borderRadius: "8px", fontSize: 13, fontWeight: 700, letterSpacing: 1, outline: "none", marginTop: 4, WebkitTextFillColor: "var(--text)" }}
                   />
                 ) : (
                   <div style={{ display: "inline-block", background: "#fff", color: "#000", fontFamily: "var(--font-d)", fontSize: 13, padding: "4px 12px", borderRadius: "5px", border: "2px solid #003099", marginTop: 4, letterSpacing: 2, fontWeight: 700 }}>
@@ -460,7 +477,7 @@ export default function ProfilKart({ rol, userId }) {
                 width: "100%",
                 marginTop: 14,
                 padding: "14px",
-                background: tema.gradient,
+                background: tema?.gradient || "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
                 color: "#0a0a0a",
                 border: "none",
                 borderRadius: "12px",
@@ -498,8 +515,10 @@ export default function ProfilKart({ rol, userId }) {
             📊 İSTATİSTİKLER
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-            {statler.map((s) => (
-              <div key={s.val} style={{
+            {statler.map((s) => {
+              if (!s || !s.val || !s.lbl) return null;
+              return (
+              <div key={`${s.val}-${s.lbl}`} style={{
                 textAlign: "center",
                 padding: "12px 4px",
                 background: "var(--bg2)",
@@ -507,11 +526,17 @@ export default function ProfilKart({ rol, userId }) {
                 border: "1px solid var(--border2)",
                 transition: "all 0.3s"
               }}
-              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.borderColor = tema.birincil; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.borderColor = "var(--border2)"; }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.borderColor = tema?.birincil || "var(--border2)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.borderColor = "var(--border2)";
+              }}
               >
                 <div style={{ fontSize: 18, marginBottom: 4 }}>{s.icon}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: tema.birincil, fontFamily: "var(--font-d)" }}>{s.val}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: tema?.birincil || "var(--text)", fontFamily: "var(--font-d)" }}>{s.val}</div>
                 <div style={{ fontSize: 9, color: "var(--text3)", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>{s.lbl}</div>
               </div>
             ))}
@@ -570,7 +595,7 @@ export default function ProfilKart({ rol, userId }) {
         <div className="card" style={{ marginBottom: 14, padding: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 32, height: 32, borderRadius: "10px", background: tema.iconBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📁</div>
+              <div style={{ width: 32, height: 32, borderRadius: "10px", background: tema?.iconBg || "rgba(59,130,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📁</div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>BELGELERİM</div>
                 <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>{kullanicininBelgeleri.length}/{belgeTanimlari.length} belge • {belgeYuzdesi}% tamamlandı</div>
@@ -640,9 +665,10 @@ export default function ProfilKart({ rol, userId }) {
 
             {/* Belge tanımları */}
             {belgeTanimlari.map((b) => {
+              if (!b) return null;
               const kullanimda = kullanicininBelgeleri.some(kb => kb.dosya_adi === b.ad);
               return (
-                <div key={b.id} style={{
+                <div key={b.id || `doc-type-${b.ad}`} style={{
                   background: "var(--bg2)",
                   borderRadius: "12px",
                   padding: "12px 14px",
@@ -653,7 +679,7 @@ export default function ProfilKart({ rol, userId }) {
                   border: `1px solid ${kullanimda ? "rgba(16,185,129,0.2)" : "rgba(251,191,36,0.1)"}`,
                   transition: "all 0.2s"
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = kullanimda ? "rgba(16,185,129,0.4)" : tema.birincil; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = kullanimda ? "rgba(16,185,129,0.4)" : tema?.birincil || "rgba(251,191,36,0.1)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = kullanimda ? "rgba(16,185,129,0.2)" : "rgba(251,191,36,0.1)"; }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -680,8 +706,8 @@ export default function ProfilKart({ rol, userId }) {
                     <button onClick={belgeEkleTikla} style={{
                       padding: "6px 12px",
                       background: "var(--bg3)",
-                      border: `1px solid ${tema.birincil}`,
-                      color: tema.birincil,
+                      border: `1px solid ${tema?.birincil || "var(--border)"}`,
+                      color: tema?.birincil || "#3b82f6",
                       borderRadius: "8px",
                       fontSize: 11,
                       fontWeight: 700,
