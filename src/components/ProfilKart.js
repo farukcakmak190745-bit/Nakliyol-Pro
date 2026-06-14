@@ -820,8 +820,8 @@ export default function ProfilKart({ rol, userId }) {
               <span style={{ fontSize: 14, flex: 1, fontWeight: 500, color: "var(--text)" }}>{item.text}</span>
               <span style={{ color: "var(--text3)", fontSize: 18 }}>›</span>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
         {/* ============ ÇIKIŞ ============ */}
         <button
