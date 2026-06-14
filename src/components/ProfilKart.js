@@ -340,7 +340,7 @@ export default function ProfilKart({ rol, userId }) {
               }}
             />
           ) : (
-            <div className="display" style={{ fontSize: 24, color: tema.birincil, marginTop: 8 }}>
+            <div className="display" style={{ fontSize: 24, color: tema?.birincil || "var(--text)", marginTop: 8 }}>
               {oturum?.ad || (isKamyoncu ? "Sürücü" : "Firma")}
             </div>
           )}
@@ -603,9 +603,9 @@ export default function ProfilKart({ rol, userId }) {
               </div>
             </div>
             <div style={{ position: "relative" }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: tema.birincil }}>{belgeYuzdesi}%</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: tema?.birincil || "var(--text)" }}>{belgeYuzdesi}%</div>
               <div style={{ width: 50, height: 4, background: "var(--bg3)", borderRadius: "2px", marginTop: 4, overflow: "hidden" }}>
-                <div style={{ width: `${belgeYuzdesi}%`, height: "100%", background: tema.gradient, borderRadius: "2px", transition: "width 0.5s" }} />
+                <div style={{ width: `${belgeYuzdesi}%`, height: "100%", background: tema?.gradient || "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", borderRadius: "2px", transition: "width 0.5s" }} />
               </div>
             </div>
           </div>
