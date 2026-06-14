@@ -13,12 +13,26 @@ export default function ProfilKart({ rol, userId }) {
   const { oturum, cikisYap, profilGuncelle, kullaniciBelgesiYukle, kullaniciBilgileri } = useApp();
 
   const isKamyoncu = rol === "kamyoncu";
-  const [seciliKullanici, setSeciliKullanici] = useState(null);
 
   // Güvenlik: rol ve isKamyoncu null kontrolü
   if (!rol && !isKamyoncu) {
     console.warn('⚠️ ProfilKart: rol undefined, varsayılan issiz kullanılıyor');
   }
+
+  // Fallback değerler - render'dan önce tanımlanmalı
+  const tema = isKamyoncu
+    ? { birincil: "#fbbf24", ikincil: "#f59e0b", gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)", iconBg: "rgba(251,191,36,0.15)" }
+    : { birincil: "#3b82f6", ikincil: "#2563eb", gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", iconBg: "rgba(59,130,246,0.15)" };
+
+  const statler = isKamyoncu
+    ? [{ val: "127", lbl: "Sefer", icon: "🚚" }, { val: "98%", lbl: "Başarı", icon: "🎯" }, { val: "4 Yıl", lbl: "Deneyim", icon: "⏱️" }, { val: "4.9", lbl: "Puan", icon: "⭐" }]
+    : [{ val: "47", lbl: "İlan", icon: "📋" }, { val: "89", lbl: "Sefer", icon: "🚚" }, { val: "4.8", lbl: "Puan", icon: "⭐" }, { val: "3 Yıl", lbl: "Deneyim", icon: "⏱️" }];
+
+  const belgeTanimlari = isKamyoncu
+    ? [{ id: 1, ad: "Ehliyet (E Sınıfı)", ok: true }, { id: 2, ad: "Araç Ruhsatı", ok: !!oturum?.plaka }, { id: 3, ad: "Sorumluluk Sigortası", ok: true }, { id: 4, ad: "SRC Belgesi", ok: false }, { id: 5, ad: "ADR Belgesi", ok: false }]
+    : [{ id: 1, ad: "Firma Kayıt Belgesi", ok: true }, { id: 2, ad: "Vergi Levhası", ok: true }, { id: 3, ad: "İş Yeri Güvenliği", ok: true }, { id: 4, ad: "Ticari Sicil", ok: false }];
+
+  const [seciliKullanici, setSeciliKullanici] = useState(null);
 
   useEffect(() => {
     if (userId) {
@@ -130,37 +144,6 @@ export default function ProfilKart({ rol, userId }) {
     setTimeout(() => setIbanKaydedildi(false), 2000);
   };
 
-  // Belgeler (rol bazlı) - null kontrolü ile korundu
-  const belgeTanimlari = isKamyoncu
-    ? [
-        { id: 1, ad: "Ehliyet (E Sınıfı)", ok: true },
-        { id: 2, ad: "Araç Ruhsatı", ok: !!oturum?.plaka },
-        { id: 3, ad: "Sorumluluk Sigortası", ok: true },
-        { id: 4, ad: "SRC Belgesi", ok: false },
-        { id: 5, ad: "ADR Belgesi", ok: false },
-      ]
-    : [
-        { id: 1, ad: "Firma Kayıt Belgesi", ok: true },
-        { id: 2, ad: "Vergi Levhası", ok: true },
-        { id: 3, ad: "İş Yeri Güvenliği", ok: true },
-        { id: 4, ad: "Ticari Sicil", ok: false },
-      ];
-
-  // Statler (belgeTanimlari'den önce tanımlanmalı) - null kontrolü ile korundu
-  const statler = isKamyoncu
-    ? [
-        { val: "127", lbl: "Sefer", icon: "🚚" },
-        { val: "98%", lbl: "Başarı", icon: "🎯" },
-        { val: "4 Yıl", lbl: "Deneyim", icon: "⏱️" },
-        { val: "4.9", lbl: "Puan", icon: "⭐" },
-      ]
-    : [
-        { val: "47", lbl: "İlan", icon: "📋" },
-        { val: "89", lbl: "Sefer", icon: "🚚" },
-        { val: "4.8", lbl: "Puan", icon: "⭐" },
-        { val: "3 Yıl", lbl: "Deneyim", icon: "⏱️" },
-      ];
-
   // Belgelerim state - kullanicininBelgeleri kullanmadan önce tanımlanmalı
   const [belgelerim, setBelgelerim] = useState([]);
 
@@ -172,11 +155,6 @@ export default function ProfilKart({ rol, userId }) {
   const dosyaInputRef = useRef();
   const [belgeEklendi, setBelgeEklendi] = useState(false);
   const [belgeYukleniyor, setBelgeYukleniyor] = useState(null);
-
-  // Renk paleti (tema) - render başlamadan önce tanımlanmalı
-  const tema = isKamyoncu
-    ? { birincil: "#fbbf24", ikincil: "#f59e0b", gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)", iconBg: "rgba(251,191,36,0.15)" }
-    : { birincil: "#3b82f6", ikincil: "#2563eb", gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", iconBg: "rgba(59,130,246,0.15)" };
 
   // Belgeleri yükle
   useEffect(() => {
