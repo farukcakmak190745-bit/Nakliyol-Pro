@@ -23,6 +23,7 @@ export default function ProfilKart({ rol, userId }) {
   const tema = isKamyoncu
     ? { birincil: "#fbbf24", ikincil: "#f59e0b", gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)", iconBg: "rgba(251,191,36,0.15)" }
     : { birincil: "#3b82f6", ikincil: "#2563eb", gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", iconBg: "rgba(59,130,246,0.15)" };
+  const defaultTema = { birincil: "#3b82f6", ikincil: "#2563eb", gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", iconBg: "rgba(59,130,246,0.15)" };
 
   const statler = isKamyoncu
     ? [{ val: "127", lbl: "Sefer", icon: "🚚" }, { val: "98%", lbl: "Başarı", icon: "🎯" }, { val: "4 Yıl", lbl: "Deneyim", icon: "⏱️" }, { val: "4.9", lbl: "Puan", icon: "⭐" }]
@@ -253,7 +254,7 @@ export default function ProfilKart({ rol, userId }) {
             onClick={() => setDuzenle(d => !d)}
             style={{
               padding: "10px 16px",
-              background: duzenle ? "var(--bg3)" : tema?.gradient || "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+              background: duzenle ? "var(--bg3)" : (tema?.gradient || defaultTema.gradient),
               color: duzenle ? "var(--text)" : "#0a0a0a",
               border: "none",
               borderRadius: "12px",
@@ -313,7 +314,7 @@ export default function ProfilKart({ rol, userId }) {
                 padding: "12px 14px",
                 background: "var(--bg3)",
                 color: "var(--text)",
-                border: `1px solid ${tema?.birincil || "var(--border)"}`,
+                border: `1px solid ${(tema?.birincil) || defaultTema.birincil}`,
                 borderRadius: "12px",
                 fontSize: 18,
                 fontWeight: 700,
@@ -323,7 +324,7 @@ export default function ProfilKart({ rol, userId }) {
               }}
             />
           ) : (
-            <div className="display" style={{ fontSize: 24, color: tema?.birincil || "var(--text)", marginTop: 8 }}>
+            <div className="display" style={{ fontSize: 24, color: (tema?.birincil) || defaultTema.birincil, marginTop: 8 }}>
               {oturum?.ad || oturum?.firmaAdi || (isKamyoncu ? "Sürücü" : "Firma")}
             </div>
           )}
@@ -331,7 +332,7 @@ export default function ProfilKart({ rol, userId }) {
           {/* Rol rozeti */}
           <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
             <span style={{
-              background: tema?.gradient || "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+              background: (tema?.gradient) || defaultTema.gradient,
               color: "#0a0a0a",
               padding: "5px 12px",
               borderRadius: "20px",
@@ -460,7 +461,7 @@ export default function ProfilKart({ rol, userId }) {
                 width: "100%",
                 marginTop: 14,
                 padding: "14px",
-                background: tema?.gradient || "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                background: (tema?.gradient) || defaultTema.gradient,
                 color: "#0a0a0a",
                 border: "none",
                 borderRadius: "12px",
@@ -511,7 +512,7 @@ export default function ProfilKart({ rol, userId }) {
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.borderColor = tema?.birincil || "var(--border2)";
+                e.currentTarget.style.borderColor = (tema?.birincil) || defaultTema.birincil;
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.transform = "translateY(0)";
@@ -519,7 +520,7 @@ export default function ProfilKart({ rol, userId }) {
               }}
               >
                 <div style={{ fontSize: 18, marginBottom: 4 }}>{s.icon}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: tema?.birincil || "var(--text)", fontFamily: "var(--font-d)" }}>{s.val}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: (tema?.birincil) || defaultTema.birincil, fontFamily: "var(--font-d)" }}>{s.val}</div>
                 <div style={{ fontSize: 9, color: "var(--text3)", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>{s.lbl}</div>
               </div>
             )
@@ -579,16 +580,16 @@ export default function ProfilKart({ rol, userId }) {
         <div className="card" style={{ marginBottom: 14, padding: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 32, height: 32, borderRadius: "10px", background: tema?.iconBg || "rgba(59,130,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📁</div>
+              <div style={{ width: 32, height: 32, borderRadius: "10px", background: (tema?.iconBg) || defaultTema.iconBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📁</div>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>BELGELERİM</div>
                 <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>{kullanicininBelgeleri?.length || 0}/{belgeTanimlari?.length || 0} belge • {belgeYuzdesi || 0}% tamamlandı</div>
               </div>
             </div>
             <div style={{ position: "relative" }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: tema?.birincil || "var(--text)" }}>{belgeYuzdesi}%</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: (tema?.birincil) || defaultTema.birincil }}>{belgeYuzdesi}%</div>
               <div style={{ width: 50, height: 4, background: "var(--bg3)", borderRadius: "2px", marginTop: 4, overflow: "hidden" }}>
-                <div style={{ width: `${belgeYuzdesi}%`, height: "100%", background: tema?.gradient || "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", borderRadius: "2px", transition: "width 0.5s" }} />
+                <div style={{ width: `${belgeYuzdesi}%`, height: "100%", background: (tema?.gradient) || defaultTema.gradient, borderRadius: "2px", transition: "width 0.5s" }} />
               </div>
             </div>
           </div>
@@ -663,7 +664,7 @@ export default function ProfilKart({ rol, userId }) {
                   border: `1px solid ${kullanimda ? "rgba(16,185,129,0.2)" : "rgba(251,191,36,0.1)"}`,
                   transition: "all 0.2s"
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = kullanimda ? "rgba(16,185,129,0.4)" : tema?.birincil || "rgba(251,191,36,0.1)"; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = kullanimda ? "rgba(16,185,129,0.4)" : (tema?.birincil) || defaultTema.birincil; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = kullanimda ? "rgba(16,185,129,0.2)" : "rgba(251,191,36,0.1)"; }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -690,8 +691,8 @@ export default function ProfilKart({ rol, userId }) {
                     <button onClick={belgeEkleTikla} style={{
                       padding: "6px 12px",
                       background: "var(--bg3)",
-                      border: `1px solid ${tema?.birincil || "var(--border)"}`,
-                      color: tema?.birincil || "#3b82f6",
+                      border: `1px solid ${(tema?.birincil) || defaultTema.birincil}`,
+                      color: (tema?.birincil) || defaultTema.birincil,
                       borderRadius: "8px",
                       fontSize: 11,
                       fontWeight: 700,
