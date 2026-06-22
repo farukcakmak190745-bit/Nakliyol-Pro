@@ -33,7 +33,7 @@ export function BildirimlerModal() {
           </div>
 
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-            {gosterenBildirim.baslik}
+            {gosterenBildirim?.baslik}
           </div>
 
           <div
@@ -49,7 +49,7 @@ export function BildirimlerModal() {
               marginBottom: 24
             }}
           >
-            {gosterenBildirim.icerik}
+            {gosterenBildirim?.icerik}
           </div>
 
           <div style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'center' }}>

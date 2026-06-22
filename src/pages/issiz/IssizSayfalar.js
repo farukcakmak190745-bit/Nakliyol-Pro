@@ -597,7 +597,7 @@ export function MesajlarSayfasi({ onGeri }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 600, fontSize: 14, color: "#fbbf24" }}>{k.partnerAd}</div>
               <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {k.mesajlar && k.mesajlar.length > 0 ? (k.mesajlar[k.mesajlar.length - 1].metin || "📄 Dosya gönderildi") : (k.baslik || "")}
+                {k.mesajlar && k.mesajlar.length > 0 ? (k.mesajlar[k.mesajlar.length - 1]?.metin || "📄 Dosya gönderildi") : (k.baslik || "")}
               </div>
             </div>
             <div style={{ flexShrink: 0, textAlign: "right" }}>
