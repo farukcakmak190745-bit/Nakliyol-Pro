@@ -79,16 +79,16 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
     setDosya(null);
   };
 
-  const ilkMesajiOkundu = konusma?.mesajlar?.length > 0 && konusma.mesajlar[0]?.gonderen === "konusmaci";
+  const ilkMesajiOkundu = konusma?.mesajlar?.length > 0 && konusma?.mesajlar?.[0]?.gonderen === "konusmaci";
 
   return (
     <div className="scroll-content" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 140px)" }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid var(--border)", background: typeof konusma.bg === 'string' ? konusma.bg : "var(--bg1)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid var(--border)", background: konusma?.bg && typeof konusma.bg === 'string' ? konusma.bg : "var(--bg1)" }}>
         <button onClick={onGeri} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer" }}>‹</button>
 
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
-          {konusma.resim ? (
+          {konusma?.resim ? (
             <img src={konusma.resim} alt="Profil" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
           ) : (
             <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--bg3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
@@ -97,7 +97,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
           )}
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ fontWeight: 600, fontSize: 16 }}>{partnerAd}</div>
+              <div style={{ fontWeight: 600, fontSize: 16 }}>{partnerAd || ""}</div>
               {partnerRol === "kamyoncu" && (
                 <Pill durum="kamyoncu" />
               )}
@@ -131,7 +131,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
         )}
 
         <div style={{ fontSize: 11, color: "var(--text3)" }}>
-          {konusma.sonGuncelleme ? new Date(konusma.sonGuncelleme).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "—"}
+          {konusma?.sonGuncelleme ? new Date(konusma.sonGuncelleme).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "—"}
         </div>
       </div>
 
@@ -144,7 +144,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {konusma.mesajlar.map((m, i) => {
+            {konusma?.mesajlar?.map((m, i) => {
               if (!m) return null;
               const isBen = m.gonderen === "ben";
               return (
@@ -174,8 +174,8 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontSize: 20 }}>📄</span>
                           <div>
-                            <div style={{ fontWeight: 600 }}>{m.veri.ad}</div>
-                            <div style={{ fontSize: 11, opacity: 0.8 }}>{(m.veri.boyut / 1024).toFixed(1)} KB</div>
+                            <div style={{ fontWeight: 600 }}>{m.veri.ad || ""}</div>
+                            <div style={{ fontSize: 11, opacity: 0.8 }}>{m.veri.boyut ? (m.veri.boyut / 1024).toFixed(1) : 0} KB</div>
                           </div>
                         </div>
                       )}

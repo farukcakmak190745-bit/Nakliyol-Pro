@@ -95,16 +95,16 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
     }
   };
 
-  const ilkMesajiOkundu = konusma?.mesajlar?.length > 0 && konusma.mesajlar[0]?.gonderen === "konusmaci";
+  const ilkMesajiOkundu = konusma?.mesajlar?.length > 0 && konusma?.mesajlar?.[0]?.gonderen === "konusmaci";
 
   return (
     <div className="scroll-content" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 140px)" }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid var(--border)", background: typeof konusma.bg === 'string' ? konusma.bg : "var(--bg1)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid var(--border)", background: konusma?.bg && typeof konusma.bg === 'string' ? konusma.bg : "var(--bg1)" }}>
         <button onClick={onGeri} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer" }}>‹</button>
 
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
-          {konusma.resim ? (
+          {konusma?.resim ? (
             <img src={konusma.resim} alt="Profil" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
           ) : (
             <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--bg3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
@@ -113,7 +113,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
           )}
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ fontWeight: 600, fontSize: 16 }}>{partnerAd}</div>
+              <div style={{ fontWeight: 600, fontSize: 16 }}>{partnerAd || ""}</div>
               {partnerRol === "kamyoncu" && (
                 <Pill durum="kamyoncu" />
               )}
@@ -147,7 +147,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
         )}
 
         <div style={{ fontSize: 11, color: "var(--text3)" }}>
-          {new Date(konusma.sonGuncelleme).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+          {konusma?.sonGuncelleme ? new Date(konusma.sonGuncelleme).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "—"}
         </div>
       </div>
 
