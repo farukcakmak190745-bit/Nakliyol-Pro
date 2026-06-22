@@ -35,11 +35,11 @@ export function BildirimlerModal() {
 
         <div style={{ maxWidth: 440, margin: '0 auto', padding: 24, paddingTop: 60 }}>
           <div style={{ fontSize: 28, color: '#fbbf24', marginBottom: 16 }}>
-            {gosterenBildirim.icon || '🔔'}
+            {gosterenBildirim?.icon || '🔔'}
           </div>
 
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-            {gosterenBildirim.baslik}
+            {gosterenBildirim?.baslik || 'Bildirimsiz'}
           </div>
 
           <div
@@ -55,11 +55,11 @@ export function BildirimlerModal() {
               marginBottom: 24
             }}
           >
-            {gosterenBildirim.icerik}
+            {gosterenBildirim?.icerik || 'İçerik yok'}
           </div>
 
           <div style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'center' }}>
-            {new Date(gosterenBildirim.olusturma_zamani).toLocaleString('tr-TR')}
+            {gosterenBildirim?.olusturma_zamani ? new Date(gosterenBildirim.olusturma_zamani).toLocaleString('tr-TR') : '—'}
           </div>
         </div>
       </div>

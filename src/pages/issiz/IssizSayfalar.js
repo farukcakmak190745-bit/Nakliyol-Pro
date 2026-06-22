@@ -310,7 +310,7 @@ export function TekliflerSayfasi() {
     ? seferler.filter(s => s.ilan_id && kendiIlanIdleri.has(s.ilan_id))
     : [];
   const mevcutSeferler = kendiSeferler.filter(s => s.durum === "bekliyor");
-  const kabulEdilecekler = mevcutSeferler.filter(s => kabulEdilen.has(s.id));
+  const kabulEdilecekler = mevcutSeferler.filter(s => kabulEdilen.has(s?.id));
   const aktifSeferler = kendiSeferler.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
 
   useEffect(() => {
@@ -326,15 +326,15 @@ export function TekliflerSayfasi() {
     const allBekleyenler = [
       ...backendBekleyenler.map(s => ({
         ilanId: s.ilan_id,
-        yuk: s.yuk,
-        nereden: s.nereden,
-        nereye: s.nereye,
+        yuk: s?.yuk,
+        nereden: s?.nereden,
+        nereye: s?.nereye,
         bilgiler: {
           ad: s.kamyoncu,
-          tel: s.kamyoncu_tel,
-          cekiciPlaka: s.plaka,
-          dorsePlaka: s.dorse_plaka,
-          tc_kimlik: s.kamyoncu_tc
+          tel: s?.kamyoncu_tel,
+          cekiciPlaka: s?.plaka,
+          dorsePlaka: s?.dorse_plaka,
+          tc_kimlik: s?.kamyoncu_tc
         }
       })),
       ...localOnaylar
@@ -415,16 +415,16 @@ export function TekliflerSayfasi() {
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Plakalar</div>
                   <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4 }}>
-                    🚚 {o.bilgiler?.cekiciPlaka}<br/>🚐 {o.bilgiler?.dorsePlaka}
+                    🚚 {typeof o.bilgiler?.cekiciPlaka === 'string' ? o.bilgiler.cekiciPlaka : '—'}<br/>🚐 {typeof o.bilgiler?.dorsePlaka === 'string' ? o.bilgiler.dorsePlaka : '—'}
                   </div>
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Telefon</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4 }}>{o.bilgiler?.tel}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4 }}>{typeof o.bilgiler?.tel === 'string' ? o.bilgiler.tel : '—'}</div>
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>TC Kimlik</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4 }}>{o.bilgiler?.tc_kimlik}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4 }}>{typeof o.bilgiler?.tc_kimlik === 'string' ? o.bilgiler.tc_kimlik : '—'}</div>
                 </div>
               </div>
 
@@ -458,22 +458,22 @@ export function TekliflerSayfasi() {
         <>
           <div className="section-title">AKTİF İŞLER ({aktifSeferler.length})</div>
           {aktifSeferler.map(s => (
-            <div key={s.id} className="card" style={{ marginBottom: 14 }} onClick={() => {
+            <div key={s?.id} className="card" style={{ marginBottom: 14 }} onClick={() => {
               const newConversationId = konusmaOluştur({
-                partnerId: s.kamyoncu || s.kamyoncu_tc || String(s.id),
-                partnerAd: s.kamyoncu || s.kamyoncu_tc || "Kamyoncu",
+                partnerId: s?.kamyoncu || s?.kamyoncu_tc || String(s?.id),
+                partnerAd: s?.kamyoncu || s?.kamyoncu_tc || "Kamyoncu",
                 partnerRol: "kamyoncu",
-                baslik: `${s.yuk} - ${s.nereden} → ${s.nereye}`,
-                resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + String(s.kamyoncu || s.kamyoncu_tc || "K").substring(0, 2).toUpperCase(),
+                baslik: `${s?.yuk} - ${s?.nereden} → ${s?.nereye}`,
+                resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + String(s?.kamyoncu || s?.kamyoncu_tc || "K").substring(0, 2).toUpperCase(),
                 bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
               });
-              setKonusmaIdMap(prev => ({ ...prev, [s.id]: newConversationId }));
+              setKonusmaIdMap(prev => ({ ...prev, [s?.id]: newConversationId }));
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ fontSize: 32 }}>🚛</div>
                   <div>
-                    <div style={{ fontSize: 16, color: "#fbbf24", fontWeight: 600 }}>{s.yuk}</div>
+                    <div style={{ fontSize: 16, color: "#fbbf24", fontWeight: 600 }}>{s?.yuk}</div>
                     <div style={{ fontSize: 10, color: "var(--text3)", letterSpacing: 1.5 }}>Yük Tipi</div>
                   </div>
                 </div>
@@ -482,24 +482,24 @@ export function TekliflerSayfasi() {
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                <span style={{ fontSize: 14, fontWeight: 600 }}>{s.nereden}</span>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{s?.nereden}</span>
                 <span style={{ color: "#fbbf24" }}>→</span>
-                <span style={{ fontSize: 14, fontWeight: 600 }}>{s.nereye}</span>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{s?.nereye}</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Plaka</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#3b82f6" }}>{s.plaka}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#3b82f6" }}>{typeof s?.plaka === 'string' ? s?.plaka : '—'}</div>
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Ücret</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24" }}>₺{s.toplamUcret?.toLocaleString() || s.ucret.toLocaleString()}</div>
-                  <div style={{ fontSize: 9, color: "#3b82f6", marginTop: 2 }}>{!s.odemeGun || s.odemeGun === 0 || s.odemeTuru === "pesin" ? "💰 Peşin" : `${s.odemeGun} Gün`}</div>
-                  {s.kdvOrani > 0 && <div style={{ fontSize: 9, color: "#10b981", marginTop: 1 }}>+KDV</div>}
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24" }}>₺{typeof s?.toplamUcret === 'number' ? s?.toplamUcret.toLocaleString() : (typeof s?.ucret === 'number' ? s?.ucret.toLocaleString() : '0')}</div>
+                  <div style={{ fontSize: 9, color: "#3b82f6", marginTop: 2 }}>{!s?.odemeGun || s?.odemeGun === 0 || s?.odemeTuru === "pesin" ? "💰 Peşin" : `${s?.odemeGun} Gün`}</div>
+                  {s?.kdvOrani > 0 && <div style={{ fontSize: 9, color: "#10b981", marginTop: 1 }}>+KDV</div>}
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Tonaj</div>
-                  <div style={{ fontSize: 16, fontWeight: 700 }}>{s.ton > 0 ? `${s.ton} Ton` : "🔥 Serbest"}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700 }}>{s?.ton > 0 ? `${s?.ton} Ton` : "🔥 Serbest"}</div>
                 </div>
               </div>
               <button
@@ -519,25 +519,25 @@ export function TekliflerSayfasi() {
           {aktifSeferler.length > 0 && <div style={{ height: 20 }}></div>}
           <div className="section-title">GELEN TEKLİFLER ({kabulEdilecekler.length})</div>
           {kabulEdilecekler.map(s => (
-            <div key={s.id} className="card" style={{ marginBottom: 14, border: "1px solid rgba(251,191,36,0.3)" }}>
+            <div key={s?.id} className="card" style={{ marginBottom: 14, border: "1px solid rgba(251,191,36,0.3)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#fff", flexShrink: 0 }}>✓</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, fontSize: 15, color: "#fbbf24" }}>{s.kamyoncu}</div>
-                  <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>₺{s.ucret.toLocaleString()} • {formatTarih(s.tarih)}</div>
+                  <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>₺{s?.ucret.toLocaleString()} • {formatTarih(s.tarih)}</div>
                 </div>
                 <button
                   onClick={() => {
                     const newConversationId = konusmaOluştur({
-                      partnerId: s.kamyoncu || s.kamyoncu_tc || String(s.id),
-                      partnerAd: s.kamyoncu || s.kamyoncu_tc || "Kamyoncu",
+                      partnerId: s?.kamyoncu || s?.kamyoncu_tc || String(s?.id),
+                      partnerAd: s?.kamyoncu || s?.kamyoncu_tc || "Kamyoncu",
                       partnerRol: "kamyoncu",
-                      baslik: `${s.yuk} - ${s.nereden} → ${s.nereye}`,
-                      resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + String(s.kamyoncu || s.kamyoncu_tc || "K").substring(0, 2).toUpperCase(),
+                      baslik: `${s?.yuk} - ${s?.nereden} → ${s?.nereye}`,
+                      resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + String(s?.kamyoncu || s?.kamyoncu_tc || "K").substring(0, 2).toUpperCase(),
                       bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                     });
-                    setKonusmaIdMap(prev => ({ ...prev, [s.id]: newConversationId }));
-                    ilkMesajiGonder(newConversationId, `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${s.kamyoncu || s.kamyoncu_tc || "Belirtilmedi"}\n📞 Tel: ${s.kamyoncuTel || "Belirtilmedi"}\n🚚 Çekici Plaka: ${s.plaka || "Belirtilmedi"}\n🚐 Dorse Plaka: ${s.dorsePlaka || "Belirtilmedi"}\n🆔 TC Kimlik: ${s.kamyoncu_tc || "Belirtilmedi"}\n\nŞimdi convo üzerinden konuşabiliriz.`);
+                    setKonusmaIdMap(prev => ({ ...prev, [s?.id]: newConversationId }));
+                    ilkMesajiGonder(newConversationId, `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${s?.kamyoncu || s?.kamyoncu_tc || "Belirtilmedi"}\n📞 Tel: ${s?.kamyoncuTel || "Belirtilmedi"}\n🚚 Çekici Plaka: ${s?.plaka || "Belirtilmedi"}\n🚐 Dorse Plaka: ${s?.dorsePlaka || "Belirtilmedi"}\n🆔 TC Kimlik: ${s?.kamyoncu_tc || "Belirtilmedi"}\n\nŞimdi convo üzerinden konuşabiliriz.`);
                   }}
                   className="btn btn-primary"
                   style={{ padding: "10px 18px", fontSize: 12 }}
@@ -602,7 +602,7 @@ export function MesajlarSayfasi({ onGeri }) {
             </div>
             <div style={{ flexShrink: 0, textAlign: "right" }}>
               <div style={{ fontSize: 11, color: "var(--text3)" }}>
-                {new Date(k.sonOkuma).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                {k.sonOkuma ? new Date(k.sonOkuma).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "—"}
               </div>
             </div>
           </div>

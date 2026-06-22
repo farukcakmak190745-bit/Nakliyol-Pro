@@ -53,7 +53,7 @@ export function BildirimlerModal() {
           </div>
 
           <div style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'center' }}>
-            {new Date(gosterenBildirim.olusturma_zamani).toLocaleString('tr-TR')}
+            {gosterenBildirim.olusturma_zamani ? new Date(gosterenBildirim.olusturma_zamani).toLocaleString('tr-TR') : '—'}
           </div>
         </div>
       </div>

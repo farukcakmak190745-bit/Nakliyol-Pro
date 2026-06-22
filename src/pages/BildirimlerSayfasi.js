@@ -23,8 +23,8 @@ export function BildirimlerSayfasi() {
               className="card"
               style={{ marginBottom: 0, border: "2px solid rgba(251,191,36,0.3)", cursor: "pointer", transition: "transform 0.2s" }}
               onClick={() => {
-                if (index === 0 && bildirimler.length > 1) {
-                  setBildirimlerList(prev => prev.slice(1));
+                if (index === 0 && bildirimler?.length > 1) {
+                  setBildirimlerList(prev => prev?.slice(1));
                 }
                 setGosterenBildirim(b);
               }}
@@ -34,12 +34,12 @@ export function BildirimlerSayfasi() {
                   {b.tur === 'basvuru' ? '⏳' : '✉️'}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: "#fbbf24" }}>{b.baslik}</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "#fbbf24" }}>{b?.baslik || 'Bildirimsiz'}</div>
                   <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {b.icerik.substring(0, 80)}...
+                    {(b?.icerik || '').substring(0, 80)}...
                   </div>
                   <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4 }}>
-                    {new Date(b.olusturma_zamani).toLocaleString('tr-TR')};
+                    {b?.olusturma_zamani ? new Date(b.olusturma_zamani).toLocaleString('tr-TR') : '—'}
                   </div>
                 </div>
               </div>
