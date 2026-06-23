@@ -1,4 +1,4 @@
-import { Truck, FileText, Star, Building2, User, Phone, IdCard, CarFront, FileCheck, ShieldCheck, CreditCard, Calendar, MessageSquare, Bell, Mail, Clock, Shield, ChevronRight, Check, X, Settings, HelpCircle, Lock, Loader, Package, Activity, BellRing, MapPin, TrendingUp, Eye, EyeOff, Send, Download, Upload, LogOut, UserCircle, CheckCircle, Circle, Grid, List, Filter, Search, Home, Briefcase, CalendarDays, FileJson, Building, Map } from "lucide-react";
+import { Truck, FileText, Star, Building2, User, Phone, IdCard, CarFront, FileCheck, ShieldCheck, CreditCard, Calendar, MessageSquare, Bell, Mail, Clock, Shield, ChevronRight, Check, X, Settings, HelpCircle, Lock, Loader, Package, Activity, BellRing, MapPin, TrendingUp, Eye, EyeOff, Send, Download, Upload, LogOut, UserCircle, CheckCircle, Circle, Grid, List, Filter, Search, Home, Briefcase, CalendarDays, FileJson, Building, Map, Trash } from "lucide-react";
 
 /**
  * Profesyonel Icon Sistemi
@@ -234,6 +234,7 @@ export const IconMap = {
   building2: Building,
 
   // 🗺️ Harita
+  map: Map,
   map2: Map,
 
   // 🔥 Icons used in AppContext
