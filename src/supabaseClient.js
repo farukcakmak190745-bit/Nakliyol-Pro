@@ -1,16 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
+function getEnv(name) {
+  // CRA: process.env.REACT_APP_* (replaced at build time by webpack)
+  if (typeof process !== 'undefined' && process.env && process.env['REACT_APP_' + name])
+    return process.env['REACT_APP_' + name];
+  // Vite: import.meta.env.VITE_*
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env['VITE_' + name])
+      return import.meta.env['VITE_' + name];
+  } catch (e) {}
+  return '';
+}
+
+const supabaseUrl = getEnv('SUPABASE_URL');
+const supabaseAnonKey = getEnv('SUPABASE_ANON_KEY');
 
 // Initialize Supabase client
 export let supabase = null;
-let isDemoMode = false;
 
 try {
-  console.log('🔧 Supabase client başlatılıyor...');
-  console.log('Supabase URL:', supabaseUrl ? '✓ Var' : '❌ Yok');
-
   if (supabaseUrl && supabaseAnonKey) {
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
