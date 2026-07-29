@@ -1,25 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-function getEnv(name) {
-  // CRA: process.env.REACT_APP_* (replaced at build time by webpack)
-  if (typeof process !== 'undefined' && process.env && process.env['REACT_APP_' + name])
-    return process.env['REACT_APP_' + name];
-  // Vite: import.meta.env.VITE_*
-  try {
-    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env['VITE_' + name])
-      return import.meta.env['VITE_' + name];
-  } catch (e) {}
-  return '';
-}
-
-const supabaseUrl = getEnv('SUPABASE_URL');
-const supabaseAnonKey = getEnv('SUPABASE_ANON_KEY');
+// CRA defines process.env.REACT_APP_* via DefinePlugin at build time
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
 
 // Initialize Supabase client
 export let supabase = null;
 
-try {
-  if (supabaseUrl && supabaseAnonKey) {
+if (supabaseUrl && supabaseAnonKey) {
+  try {
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: true,
@@ -34,31 +23,20 @@ try {
         params: {
           eventsPerSecond: 10
         },
-        // WebSocket hatası durumunda console log ekle
         onError: (error) => {
           console.error('❌ Realtime WebSocket HATASI:', error.message);
         }
       }
     });
 
-    console.log('✅ Supabase client başarıyla oluşturuldu');
-
-    // Handle auth state changes
     supabase.auth.onAuthStateChange((event, session) => {
       console.log('🔐 Auth state changed:', event);
     });
-
-    // Realtime bağlantı kontrolü
-    setTimeout(() => {
-      console.log('📡 Realtime bağlantısı kuruldu');
-    }, 1000);
-  } else {
-    console.warn('⚠️ Supabase URL veya key eksik! Demo modunda çalışılıyor.');
-    isDemoMode = true;
+  } catch (error) {
+    console.error('❌ Supabase client oluşturulamadı:', error);
   }
-} catch (error) {
-  console.error('❌ Supabase client oluşturulamadı:', error);
-  isDemoMode = true;
+} else {
+  console.warn('⚠️ Supabase URL veya key eksik! Demo modunda çalışılıyor.');
 }
 
 // Global Realtime channel reference
