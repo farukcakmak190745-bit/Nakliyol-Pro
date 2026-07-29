@@ -64,8 +64,8 @@ export const MesajProvider = ({ children }) => {
         gonderen: m.gonderen === userId ? 'ben' : 'konusmaci',
         gonderen_id: m.gonderen,
         zaman: m.zaman,
-        okundu: !!m.okundu_zaman,
-        okunduZamani: m.okundu_zaman
+        okundu: !!m.okundu_zamani,
+        okunduZamani: m.okundu_zamani
       }));
 
       // Gönderen kim ise ve okundu_zamani null ise okunmamıs sayısını hesapla
@@ -140,10 +140,10 @@ export const MesajProvider = ({ children }) => {
                 gonderen,
                 gonderen_id: msg.gonderen,
                 zaman: msg.zaman,
-                okundu: !!msg.okundu_zaman,
-                okunduZamani: msg.okundu_zaman
+                okundu: !!msg.okundu_zamani,
+                okunduZamani: msg.okundu_zamani
               }],
-              okunmamis: gonderen === 'konusmaci' && !msg.okundu_zaman ? k.okunmamis + 1 : k.okunmamis,
+              okunmamis: gonderen === 'konusmaci' && !msg.okundu_zamani ? k.okunmamis + 1 : k.okunmamis,
               sonGuncelleme: msg.zaman
             };
           }));
@@ -370,9 +370,9 @@ export const MesajProvider = ({ children }) => {
       try {
         await supabase
           .from('messages')
-          .update({ okundu_zaman: new Date().toISOString() })
+          .update({ okundu_zamani: new Date().toISOString() })
           .eq('conversation_id', konusmaId)
-          .is('okundu_zaman', null);
+          .is('okundu_zamani', null);
 
         await supabase
           .from('conversations')
