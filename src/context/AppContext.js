@@ -1014,20 +1014,7 @@ export const AppProvider = ({ children }) => {
     }, 5000);
   }, []);
 
-  // Bildirimleri otomatik göster — only for notifications arriving via realtime INSERT
-  useEffect(() => {
-    if (bildirimlerList && bildirimlerList.length > 0) {
-      const enSonBildirim = bildirimlerList[0];
-      if (!gosterenBildirim || gosterenBildirim.id !== enSonBildirim.id) {
-        bildirimGoster(
-          enSonBildirim.baslik,
-          enSonBildirim.icerik,
-          '🔔',
-          enSonBildirim.id
-        );
-      }
-    }
-  }, [bildirimlerList, gosterenBildirim, bildirimGoster]);
+
 
   const başvuruGonder = useCallback(async (ilanId, bilgiler) => {
     // DEBUG: başvuruGonder çağrılıyor mu?
@@ -1385,8 +1372,8 @@ export const AppProvider = ({ children }) => {
           },
           async (payload) => {
             console.log('🔔 Yeni bildirim (realtime):', payload.new);
-            // Yeni bildirimi direkt state'e ekle (en başa)
             setBildirimlerList(prev => [payload.new, ...(prev || [])]);
+            bildirimGoster(payload.new.baslik, payload.new.icerik, '🔔', payload.new.id);
           }
         )
         .subscribe();
