@@ -1005,17 +1005,16 @@ export const AppProvider = ({ children }) => {
     setBildirimler(prev => ({ ...prev, [tur]: deger }));
   }, []);
 
-  const bildirimGoster = useCallback((baslik, icerik, icon = "🔔") => {
-    setGosterenBildirim({ baslik, icerik, icon });
+  const bildirimGoster = useCallback((baslik, icerik, icon = "🔔", id = null) => {
+    setGosterenBildirim({ baslik, icerik, icon, id });
     setToastBildirim({ baslik, icerik, icon });
 
-    // 5 saniye sonra otomatik kapat
     setTimeout(() => {
       setToastBildirim(null);
     }, 5000);
   }, []);
 
-  // Bildirimleri otomatik göster
+  // Bildirimleri otomatik göster — only for notifications arriving via realtime INSERT
   useEffect(() => {
     if (bildirimlerList && bildirimlerList.length > 0) {
       const enSonBildirim = bildirimlerList[0];
@@ -1023,7 +1022,8 @@ export const AppProvider = ({ children }) => {
         bildirimGoster(
           enSonBildirim.baslik,
           enSonBildirim.icerik,
-          '🔔'
+          '🔔',
+          enSonBildirim.id
         );
       }
     }
@@ -1421,7 +1421,7 @@ export const AppProvider = ({ children }) => {
       kayitOl, girisYap, cikisYap,
       ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle, profilGuncelle, kullaniciBelgesiYukle,
       konusmaOluştur, ilkMesajiGonder,
-      bildirimler: bildirimlerList, bildirimGuncelle, setBildirimlerList, gosterenBildirim, setGosterenBildirim,
+      bildirimler: bildirimlerList, bildirimGoster, bildirimGuncelle, setBildirimlerList, gosterenBildirim, setGosterenBildirim,
       kamyoncuBasvuru, setKamyoncuBasvuru,
       seferOnayDurumu, ilaniOnayla, ilaniReddet,
       bekleyenOnaylariGetir,

@@ -60,19 +60,7 @@ function MobilApp({ cikisYap }) {
 
   console.log("🚀 MobilApp render edildi - oturum:", oturum);
 
-  // Bildirimleri göster
-  useEffect(() => {
-    if (bildirimlerList && bildirimlerList.length > 0) {
-      const enSonBildirim = bildirimlerList[0];
-      if (!gosterenBildirim || gosterenBildirim.id !== enSonBildirim.id) {
-        bildirimGoster(
-          enSonBildirim.baslik,
-          enSonBildirim.icerik,
-          '🔔'
-        );
-      }
-    }
-  }, [bildirimlerList, gosterenBildirim, bildirimGoster]);
+
 
   // Oturum değiştiğinde默认 sekme'yi ayarla
   useEffect(() => {
