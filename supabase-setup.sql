@@ -218,13 +218,11 @@ CREATE POLICY "Users can view messages in their conversations" ON messages
 CREATE POLICY "Users can send messages" ON messages
   FOR INSERT WITH CHECK (auth.uid() = gonderen_id);
 
--- NOT: Kod 'okundu_zamani' ve 'conversation_id' kullanıyor.
--- Gerçek DB sütun adlarınıza göre aşağıdaki politikayı düzenlemeniz gerekebilir.
 CREATE POLICY "Users can update messages in their conversations" ON messages
   FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM conversations
-      WHERE conversations.id = messages.konusma_id
+      WHERE conversations.id = messages.conversation_id
       AND (
         conversations.partner_id = auth.uid() OR
         auth.uid() = messages.gonderen_id
