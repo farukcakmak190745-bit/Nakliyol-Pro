@@ -1421,7 +1421,7 @@ export const AppProvider = ({ children }) => {
       kayitOl, girisYap, cikisYap,
       ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle, profilGuncelle, kullaniciBelgesiYukle,
       konusmaOluştur, ilkMesajiGonder,
-      bildirimler: bildirimlerList, bildirimGuncelle, setBildirimlerList,
+      bildirimler: bildirimlerList, bildirimGuncelle, setBildirimlerList, gosterenBildirim, setGosterenBildirim,
       kamyoncuBasvuru, setKamyoncuBasvuru,
       seferOnayDurumu, ilaniOnayla, ilaniReddet,
       bekleyenOnaylariGetir,
