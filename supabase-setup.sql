@@ -225,7 +225,7 @@ CREATE POLICY "Users can update messages in their conversations" ON messages
       WHERE conversations.id = messages.conversation_id
       AND (
         conversations.partner_id = auth.uid() OR
-        auth.uid() = messages.gonderen
+        auth.uid()::text = messages.gonderen
       )
     )
   );
