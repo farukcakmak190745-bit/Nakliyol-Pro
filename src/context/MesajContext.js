@@ -69,45 +69,7 @@ export const MesajProvider = ({ children }) => {
       }));
 
       // Gönderen kim ise ve okundu_zamani null ise okunmamıs sayısını hesapla
-      let okunmamis = messagesData.filter(m => m.gonderen === 'konusmaci' && !m.okundu).length;
-
-      // Eğer gerçekten okunmamıs varsa state'i güncelle ve Supabase'e güncelle
-      if (okunmamis > 0 && supabase) {
-        console.log(`🔍 ${okunmamis} okunmamıs mesaj bulundu: ${c.id}, işaretleniyor...`);
-
-        // 1. Mesajları okundu olarak güncelle (state güncellemesi için)
-        messagesData.forEach(msg => {
-          if (msg.gonderen === 'konusmaci' && !msg.okundu) {
-            msg.okundu = true;
-            msg.okunduZamani = new Date().toISOString();
-          }
-        });
-
-        // 2. State'i güncelle
-        setKonusmalar(prev => prev.map(k => {
-          if (k.id === c.id) {
-            return {
-              ...k,
-              mesajlar: messagesData,
-              okunmamis: 0
-            };
-          }
-          return k;
-        }));
-
-        // 3. Supabase'e de güncelle (duyarsız)
-        supabase
-          .from('messages')
-          .update({ okundu_zamani: new Date().toISOString() })
-          .eq('conversation_id', c.id)
-          .is('okundu_zamani', null)
-          .then(() => {
-            console.log(`✅ ${okunmamis} mesaj okundu olarak işaretlendi: ${c.id}`);
-          })
-          .catch(err => {
-            console.error('❌ Mesajları okundu olarak işaretleme hatası:', err);
-          });
-      }
+      const okunmamis = messagesData.filter(m => m.gonderen === 'konusmaci' && !m.okundu).length;
 
       return {
         id: c.id,
@@ -393,11 +355,12 @@ export const MesajProvider = ({ children }) => {
     if (!konusmaId) return;
 
     // 1. Önce state'i güncelle (React durumunu korumak için)
+    const simdi = new Date().toISOString();
     setKonusmalar(prev => prev.map(k => {
       if (k.id !== konusmaId) return k;
       return {
         ...k,
-        mesajlar: k.mesajlar.map(m => ({ ...m, okundu: true })),
+        mesajlar: k.mesajlar.map(m => ({ ...m, okundu: true, okunduZamani: simdi })),
         okunmamis: 0
       };
     }));
