@@ -10,7 +10,7 @@ import { IconMap } from "./Icons";
  *   - userId: İsteğe bağlı - belirtilirse o kullanıcının profilini gösterir
  */
 export default function ProfilKart({ rol, userId }) {
-  const { oturum, cikisYap, profilGuncelle, kullaniciBelgesiYukle, kullaniciBilgileri } = useApp();
+  const { oturum, cikisYap, profilGuncelle, kullaniciBelgesiYukle, kullaniciBilgileri, ilanlar, seferler } = useApp();
 
   const isKamyoncu = rol === "kamyoncu";
 
@@ -25,15 +25,32 @@ export default function ProfilKart({ rol, userId }) {
     : { birincil: "#3b82f6", ikincil: "#2563eb", gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", iconBg: "rgba(59,130,246,0.15)" };
   const defaultTema = { birincil: "#3b82f6", ikincil: "#2563eb", gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", iconBg: "rgba(59,130,246,0.15)" };
 
+  const [seciliKullanici, setSeciliKullanici] = useState(null);
+
+  const kullaniciSeferleri = seferler?.filter(s =>
+    isKamyoncu ? s.kamyoncu_user_id === seciliKullanici?.id : s.olusturan_id === seciliKullanici?.id
+  ) || [];
+  const kullaniciIlanlari = ilanlar?.filter(i => i.olusturan_id === seciliKullanici?.id) || [];
+  const tamamlananSefer = kullaniciSeferleri.filter(s => s.durum === "teslim_edildi" || s.durum === "tamamlandi").length;
+  const basariOrani = kullaniciSeferleri.length > 0 ? Math.round((tamamlananSefer / kullaniciSeferleri.length) * 100) : 0;
+
   const statler = isKamyoncu
-    ? [{ val: "127", lbl: "Sefer", icon: "🚚" }, { val: "98%", lbl: "Başarı", icon: "🎯" }, { val: "4 Yıl", lbl: "Deneyim", icon: "⏱️" }, { val: "4.9", lbl: "Puan", icon: "⭐" }]
-    : [{ val: "47", lbl: "İlan", icon: "📋" }, { val: "89", lbl: "Sefer", icon: "🚚" }, { val: "4.8", lbl: "Puan", icon: "⭐" }, { val: "3 Yıl", lbl: "Deneyim", icon: "⏱️" }];
+    ? [
+        { val: String(kullaniciSeferleri.length), lbl: "Sefer", icon: "🚚" },
+        { val: basariOrani > 0 ? `%${basariOrani}` : "-", lbl: "Başarı", icon: "🎯" },
+        { val: oturum?.puan ? String(oturum.puan) : "-", lbl: "Puan", icon: "⭐" },
+        { val: "-", lbl: "Deneyim", icon: "⏱️" }
+      ]
+    : [
+        { val: String(kullaniciIlanlari.length), lbl: "İlan", icon: "📋" },
+        { val: String(kullaniciSeferleri.length), lbl: "Sefer", icon: "🚚" },
+        { val: oturum?.puan ? String(oturum.puan) : "-", lbl: "Puan", icon: "⭐" },
+        { val: "-", lbl: "Deneyim", icon: "⏱️" }
+      ];
 
   const belgeTanimlari = isKamyoncu
     ? [{ id: 1, ad: "Ehliyet (E Sınıfı)", ok: true }, { id: 2, ad: "Araç Ruhsatı", ok: !!oturum?.plaka }, { id: 3, ad: "Sorumluluk Sigortası", ok: true }, { id: 4, ad: "SRC Belgesi", ok: false }, { id: 5, ad: "ADR Belgesi", ok: false }]
     : [{ id: 1, ad: "Firma Kayıt Belgesi", ok: true }, { id: 2, ad: "Vergi Levhası", ok: true }, { id: 3, ad: "İş Yeri Güvenliği", ok: true }, { id: 4, ad: "Ticari Sicil", ok: false }];
-
-  const [seciliKullanici, setSeciliKullanici] = useState(null);
 
   useEffect(() => {
     if (userId) {

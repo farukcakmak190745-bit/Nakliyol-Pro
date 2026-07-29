@@ -7,14 +7,11 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
-    this.setState({
-      error,
-      errorInfo
-    });
+    this.setState({ errorInfo });
 
     // Log error to console (can be replaced with Sentry or similar in production)
     console.error("Error Boundary catch:", error, errorInfo);

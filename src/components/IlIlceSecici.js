@@ -29,7 +29,7 @@ export default function IlIlceSecici({ value = "", onChange, placeholder = "İl 
 
   const seciliIlObj = useMemo(
     () => iller.find(i => i.il === parsed.il),
-    [parsed.il]
+    [iller, parsed.il]
   );
 
   const ilceler = seciliIlObj?.ilceler || [];

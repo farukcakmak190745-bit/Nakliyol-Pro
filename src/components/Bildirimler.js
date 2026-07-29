@@ -1,6 +1,6 @@
 import { useApp } from "../context/AppContext";
 
-export function BildirimlerModal() {
+function BildirimlerSheet() {
   const { bildirimlerList, gosterenBildirim, setGosterenBildirim } = useApp();
 
   if (!gosterenBildirim) return null;
