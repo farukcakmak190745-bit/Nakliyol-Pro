@@ -1272,9 +1272,9 @@ export const AppProvider = ({ children }) => {
     // Bilgi mesajını konuşmaya gönder (konum, saat, fatura detaylarıyla)
     if (yeniKonusma) {
       let detayMesaji = `✓ Başvurunuz kabul edildi!\n\n👤 ${kamyoncuAd}\n📞 ${kamyoncuTel}\n🚚 ${plaka} / ${dorsePlaka}\n🆔 ${tc}\n\n`;
-      if (ilan.yuklemeKonum) detayMesaji += `📍 Yükleme: ${ilan.yuklemeKonum}\n`;
+      if (ilan.yuklemeKonum) detayMesaji += `🗺️YK:${ilan.yuklemeKonum}\n`;
       if (ilan.yuklemeSaatBas || ilan.yuklemeSaatBit) detayMesaji += `⏰ Yükleme saati: ${ilan.yuklemeSaatBas || "?"} - ${ilan.yuklemeSaatBit || "?"}\n`;
-      if (ilan.bosaltmaKonum) detayMesaji += `🏁 Boşaltma: ${ilan.bosaltmaKonum}\n`;
+      if (ilan.bosaltmaKonum) detayMesaji += `🗺️BS:${ilan.bosaltmaKonum}\n`;
       if (ilan.bosaltmaSaatBas || ilan.bosaltmaSaatBit) detayMesaji += `⏰ Boşaltma saati: ${ilan.bosaltmaSaatBas || "?"} - ${ilan.bosaltmaSaatBit || "?"}\n`;
       if (ilan.faturaBaslik) detayMesaji += `🧾 Fatura: ${ilan.faturaBaslik}\n`;
       detayMesaji += `\nDetaylar için konuşma üzerinden iletişime geçin.`;

@@ -265,18 +265,18 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                     {m.metin && (
                       <div>
                         {m.metin.split("\n").map((line, idx) => {
-                          const konumRegex = /^([📍🏁])\s*(.+?):\s*(.+)/;
+                          const konumRegex = /^🗺️(YK|BS):(.+)/;
                           const konumMatch = line.match(konumRegex);
                           if (konumMatch) {
-                            const adres = encodeURIComponent(konumMatch[3].trim());
-                            const renk = isBen ? "rgba(255,255,255,0.9)" : "var(--mavi)";
+                            const adres = encodeURIComponent(konumMatch[2].trim());
+                            const etiket = konumMatch[1] === "YK" ? "Yükleme" : "Boşaltma";
+                            const ikon = konumMatch[1] === "YK" ? "📍" : "🏁";
                             return (
-                              <div key={`line-${idx}`} style={{ marginBottom: 8 }}>
-                                <div>{line}</div>
+                              <div key={`line-${idx}`} style={{ marginTop: 6, marginBottom: 4 }}>
                                 <a href={`https://www.google.com/maps/search/?api=1&query=${adres}`} target="_blank" rel="noopener noreferrer"
-                                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", textDecoration: "none", cursor: "pointer", fontSize: 36, marginTop: 6, color: renk }}
-                                  title="Google Maps'te yol tarifi al">
-                                  🗺️
+                                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", textDecoration: "none", cursor: "pointer", fontSize: 40 }}
+                                  title={`${etiket} - Google Maps'te yol tarifi al`}>
+                                  {ikon}
                                 </a>
                               </div>
                             );
