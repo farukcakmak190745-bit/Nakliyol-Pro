@@ -6,8 +6,11 @@ const Ctx = createContext();
 export const MesajProvider = ({ children }) => {
   const [konusmalar, setKonusmalar] = useState([]);
   const [konusmaIDs, setKonusmaIDs] = useState({});
+  const [silinenIds, setSilinenIds] = useState(new Set());
   const konusmaIDsRef = useRef({});
   konusmaIDsRef.current = konusmaIDs;
+  const silinenIdsRef = useRef(new Set());
+  silinenIdsRef.current = silinenIds;
   const subscribedRef = useRef(false);
   const currentUserIdRef = useRef(null);
 
@@ -125,6 +128,11 @@ export const MesajProvider = ({ children }) => {
         async (payload) => {
           console.log('🔄 Yeni mesaj:', payload.new);
           const msg = payload.new;
+          // Silinmiş mesajı geri ekleme
+          if (silinenIdsRef.current.has(msg.id)) {
+            console.log('⏭️ Silinmiş mesaj atlandı:', msg.id);
+            return;
+          }
           setKonusmalar(prev => prev.map(k => {
             if (k.id !== msg.conversation_id) return k;
             const gonderen = msg.gonderen === userId ? 'ben' : 'konusmaci';
@@ -428,23 +436,39 @@ export const MesajProvider = ({ children }) => {
   const konusmaSil = useCallback((konusmaId) => {
     setKonusmalar(prev => prev.filter(k => k.id !== konusmaId));
   }, []);
+  const [silinenIds, setSilinenIds] = useState(new Set());
+
   const konusmaTemizle = useCallback(async (konusmaId) => {
     if (!konusmaId) return;
-    setKonusmalar(prev => prev.map(k =>
-      k.id === konusmaId ? { ...k, mesajlar: [], okunmamis: 0 } : k
-    ));
+    // Tüm mesaj ID'lerini silinenler listesine ekle
+    setKonusmalar(prev => {
+      const k = prev.find(c => c.id === konusmaId);
+      if (k?.mesajlar) {
+        setSilinenIds(old => new Set([...old, ...k.mesajlar.map(m => m.id)]));
+      }
+      return prev.map(c =>
+        c.id === konusmaId ? { ...c, mesajlar: [], okunmamis: 0 } : c
+      );
+    });
     if (supabase) {
-      await supabase.from('messages').delete().eq('conversation_id', konusmaId);
+      try {
+        await supabase.from('messages').delete().eq('conversation_id', konusmaId);
+      } catch (err) { console.error('❌ Toplu silme hatası:', err); }
     }
   }, []);
 
   const mesajSil = useCallback(async (konusmaId, mesajId) => {
     if (!konusmaId || !mesajId) return;
+    setSilinenIds(prev => new Set([...prev, mesajId]));
     setKonusmalar(prev => prev.map(k =>
       k.id === konusmaId ? { ...k, mesajlar: k.mesajlar.filter(m => m.id !== mesajId) } : k
     ));
-    if (supabase && !mesajId.startsWith('temp_')) {
-      await supabase.from('messages').delete().eq('id', mesajId);
+    try {
+      if (supabase) {
+        await supabase.from('messages').delete().eq('id', mesajId);
+      }
+    } catch (err) {
+      console.error('❌ Mesaj silme hatası:', err);
     }
   }, []);
   const konusmaDurumunuGuncelle = useCallback(() => {}, []);
