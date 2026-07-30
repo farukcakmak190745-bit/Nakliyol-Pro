@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS ilanlar (
   olusturan TEXT NOT NULL,
   olusturan_puan DECIMAL(3, 2) DEFAULT 5.0,
   yuk TEXT NOT NULL,
+  aciklama TEXT,
   nereden TEXT NOT NULL,
   nereye TEXT NOT NULL,
   ucret DECIMAL(10, 2) NOT NULL,

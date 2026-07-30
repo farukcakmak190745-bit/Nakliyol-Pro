@@ -243,6 +243,25 @@ export default function ProfilKart({ rol, userId }) {
     }
   };
 
+  const [aktifModal, setAktifModal] = useState(null);
+  const modalIcerik = {
+    yardim: {
+      icon: "❓",
+      baslik: "Yardım & Destek",
+      icerik: "Merhaba! Nakliyol Pro uygulamasında yardıma mı ihtiyacınız var?\n\n📞 Destek Hattı: 0850 XXX XXXX\n📧 E-posta: destek@nakliyol.com\n💬 Canlı Destek: Uygulama içi mesajlaşma\n\nSıkça Sorulan Sorular:\n• İlan nasıl oluşturulur? 'İlan Ver' sekmesinden yeni ilan oluşturabilirsiniz.\n• Teklif nasıl verilir? İlan detay sayfasından 'Teklif Ver' butonunu kullanın.\n• Sefer takibi nasıl yapılır? 'Seferlerim' sekmesinden seferlerinizi takip edebilirsiniz.\n• Ödeme nasıl alınır? IBAN bilgilerinizi profil sayfanıza ekleyin."
+    },
+    yorumlar: {
+      icon: "⭐",
+      baslik: "Aldığım Yorumlar",
+      icerik: "Yorumlar özelliği çok yakında yayınlanacak!\n\nBu özellik ile:\n✅ İşverenler sizi değerlendirebilecek\n✅ 1-5 yıldız arası puanlama sistemi\n✅ Yorumlar profilinizde görünecek\n✅ Güvenilirlik puanınız artacak\n\nGüncellemeleri takip etmek için bildirimleri açık tutun."
+    },
+    gizlilik: {
+      icon: "🔒",
+      baslik: "Gizlilik Politikası",
+      icerik: "Nakliyol Pro Gizlilik Politikası\n\n✅ Verileriniz şifrelenerek saklanır\n✅ Kişisel bilgileriniz yalnızca işverenlerle paylaşılır\n✅ Kullanım verileriyle hizmet kalitesi analiz edilir\n✅ Supabase altyapısı ile çalışıyor\n✅ KVKK / GDPR uyumlu\n✅ Üçüncü taraflarla veri paylaşılmaz\n✅ Hesap silme talepleri 24 saat içinde işleme alınır\n\nDetaylı bilgi için: destek@nakliyol.com"
+    }
+  };
+
   return (
     <div className="scroll-content" style={{ paddingBottom: 100 }}>
       {/* ============ HERO KAPAK ============ */}
@@ -768,23 +787,23 @@ export default function ProfilKart({ rol, userId }) {
         <div className="card" style={{ marginBottom: 14, padding: 6 }}>
           {[
             { icon: "help", text: "Yardım & Destek", color: "var(--text2)", action: () => {
-              window.location.href = "/bildirimler";
+              setAktifModal("yardim");
             }},
             { icon: "file", text: "İş Geçmişim", color: "#3b82f6", action: () => {
               if (isKamyoncu) {
-                window.location.href = "/app?sekme=ilanlar";
+                window.location.hash = "#/app?sekme=ilanlar";
               } else {
-                window.location.href = "/app?sekme=ilanlarim";
+                window.location.hash = "#/app?sekme=ilanlarim";
               }
             }},
             { icon: "star", text: "Aldığım Yorumlar", color: "#fbbf24", action: () => {
-              alert("Yorumlar yakında! Bugün yayınlanacak.");
+              setAktifModal("yorumlar");
             }},
             { icon: "lock", text: "Gizlilik Politikası", color: "var(--text2)", action: () => {
-              alert("Gizlilik Politikası:\n\n✅ Verileriniz güvende\n✅ Kişisel bilgileriniz işverenlerle paylaşılır\n✅ Kullanım verileriyle analiz yapılır\n✅ Supabase ile çalışıyor\n✅ GDPR uyumlu");
+              setAktifModal("gizlilik");
             }},
             { icon: "settings", text: "Ayarlar", color: "var(--text2)", action: () => {
-              window.location.href = "/ayarlar";
+              window.location.hash = "#/ayarlar";
             }},
           ].map((item) => (
             <div
@@ -795,10 +814,9 @@ export default function ProfilKart({ rol, userId }) {
                 alignItems: "center",
                 gap: 12,
                 padding: "14px 14px",
-                borderBottom: item.action !== undefined && item.action !== "" ? "1px solid var(--border)" : "none",
+                borderBottom: item.text !== "Ayarlar" ? "1px solid var(--border)" : "none",
                 cursor: "pointer",
-                transition: "background 0.2s",
-                borderRadius: item.action !== undefined && item.action !== "" ? (item.action.toString().includes("ayarlar") ? "12px 12px 0 0" : (item.action.toString().includes("help") ? "0 0 12px 12px" : "0")) : "0"
+                transition: "background 0.2s"
               }}
               onMouseEnter={e => e.currentTarget.style.background = "var(--bg2)"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -821,8 +839,8 @@ export default function ProfilKart({ rol, userId }) {
               <span style={{ fontSize: 14, flex: 1, fontWeight: 500, color: "var(--text)" }}>{item.text}</span>
               <span style={{ color: "var(--text3)", fontSize: 18 }}>›</span>
             </div>
-            ))}
-          </div>
+          ))}
+        </div>
 
         {/* ============ ÇIKIŞ ============ */}
         <button
@@ -852,6 +870,33 @@ export default function ProfilKart({ rol, userId }) {
           Nakliyol Pro • v1.0.0
         </div>
       </div>
+
+      {aktifModal && (
+        <div className="sheet-overlay" onClick={() => setAktifModal(null)}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setAktifModal(null)} style={{
+              position: 'fixed', top: 20, right: 20,
+              background: 'var(--bg1)', border: '1px solid var(--border2)',
+              borderRadius: '12px', padding: '12px 16px', fontSize: 18,
+              cursor: 'pointer', zIndex: 101, transition: 'var(--tr)'
+            }}>✕</button>
+            <div style={{ maxWidth: 440, margin: '0 auto', padding: 24, paddingTop: 60 }}>
+              <div style={{ fontSize: 28, marginBottom: 16 }}>{modalIcerik[aktifModal]?.icon || '📄'}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                {modalIcerik[aktifModal]?.baslik || ''}
+              </div>
+              <div style={{
+                fontSize: 14, color: 'var(--text2)', lineHeight: 1.8,
+                background: 'rgba(22,22,22,0.5)', padding: 14, borderRadius: '12px',
+                border: '1px solid rgba(251,191,36,0.1)', whiteSpace: 'pre-line',
+                marginBottom: 24
+              }}>
+                {modalIcerik[aktifModal]?.icerik || ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

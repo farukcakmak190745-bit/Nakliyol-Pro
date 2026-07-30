@@ -178,7 +178,7 @@ export default function IlanlarSayfasi() {
                 {[
                   { k: "Tonaj", v: secilen?.ton > 0 ? `${secilen.ton} Ton` : "🔥 Serbest" },
                   { k: "Ödeme Planı", v: !secilen?.odemeGun || secilen.odemeGun === 0 ? "💰 Peşin" : `${secilen.odemeGun} Gün Sonra` },
-                  { k: "Ücret", v: `₺${secilen?.ucret?.toLocaleString() || 0}` },
+                  { k: "Ücret", v: <>₺{secilen?.ucret?.toLocaleString() || 0} {secilen?.kdvOrani > 0 ? "(+KDV)" : "(Sabit)"}</> },
                   { k: "Araç Tipi", v: secilen?.aracTip || "Belirtilmedi" },
                   { k: "Tarih", v: <><IconMap.calendar size={14} className="icon-primary" /> {formatTarih(secilen?.tarih)}</> },
                 ].map(({ k, v }, idx) => (

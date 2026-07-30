@@ -91,11 +91,18 @@ export const AppProvider = ({ children }) => {
 
         // Set the fetched data
         if (ilanlarData) {
-          // Her ilana olusturanın kullanıcı bilgilerini ekle (firma adi, puan)
+          // Her ilana olusturanın kullanıcı bilgilerini ekle + camelCase normalize
           const ilanlarWithUsers = ilanlarData.map(ilan => {
             const olusturanUser = usersData?.find(u => u.id === ilan.olusturan_id || u.email === ilan.olusturan);
             return {
               ...ilan,
+              aracTip: ilan.arac_tip,
+              odemeTuru: ilan.odeme_turu,
+              odemeGun: ilan.odeme_gun,
+              kdvOrani: ilan.kdv_orani,
+              kdvTutari: ilan.kdv_tutari,
+              toplamUcret: ilan.toplam_ucret,
+              aciklama: ilan.aciklama || "",
               firmaAdi: olusturanUser?.firma_adi || null,
               profilFoto: olusturanUser?.fotograf || null,
               telefon: olusturanUser?.telefon || null,
@@ -606,6 +613,7 @@ export const AppProvider = ({ children }) => {
 
     const ilan = {
       yuk: yeni.yuk,
+      aciklama: yeni.aciklama || "",
       nereden: yeni.nereden,
       nereye: yeni.nereye,
       ucret: yeni.ucret,
@@ -644,12 +652,13 @@ export const AppProvider = ({ children }) => {
       // Normalize data for display
       const normalizedData = {
         ...data,
-        toplamUcret: data.toplam_ucret,
-        kdvOrani: data.kdv_orani,
-        kdvTutari: data.kdv_tutari,
         aracTip: data.arac_tip,
         odemeTuru: data.odeme_turu,
         odemeGun: data.odeme_gun,
+        kdvOrani: data.kdv_orani,
+        kdvTutari: data.kdv_tutari,
+        toplamUcret: data.toplam_ucret,
+        aciklama: data.aciklama || "",
         olusturanPuan: data.olusturan?.puan || 5.0
       };
       setIlanlar(prev => [normalizedData, ...prev]);
@@ -1327,7 +1336,16 @@ export const AppProvider = ({ children }) => {
       const { data } = await supabase.from('ilanlar').select('*').order('tarih', { ascending: false }).limit(50);
       if (data) {
         console.log(`📋 İlanlar realtime güncellendi: ${data.length}`);
-        setIlanlar(data);
+        setIlanlar(data.map(ilan => ({
+          ...ilan,
+          aracTip: ilan.arac_tip,
+          odemeTuru: ilan.odeme_turu,
+          odemeGun: ilan.odeme_gun,
+          kdvOrani: ilan.kdv_orani,
+          kdvTutari: ilan.kdv_tutari,
+          toplamUcret: ilan.toplam_ucret,
+          aciklama: ilan.aciklama || "",
+        })));
       }
     });
 

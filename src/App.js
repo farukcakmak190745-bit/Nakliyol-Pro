@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 // Force rebuild - fixing hoisting issues
 import { AppProvider, useApp } from "./context/AppContext";
 import { MesajProvider, useMesaj } from "./context/MesajContext";
@@ -32,6 +32,18 @@ function MobilApp({ cikisYap }) {
   const [sekme, setSekme] = useState("ilanlar");
   const [seciliKonusma, setSeciliKonusma] = useState(null);
 
+  // URL'den sekme parametresini oku (hash-based navigation)
+  const urlSekmeKullanildi = useRef(false);
+  useEffect(() => {
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.split('?')[1] || '');
+    const urlSekme = params.get('sekme');
+    if (urlSekme) {
+      setSekme(urlSekme);
+      urlSekmeKullanildi.current = true;
+    }
+  }, []);
+
   // ChatSayfasi açma handler
   const onChatAc = (konusmaId, seferBilgileri) => {
     console.log('💬 ChatSayfasi açılıyor:', konusmaId, seferBilgileri);
@@ -62,8 +74,9 @@ function MobilApp({ cikisYap }) {
 
 
 
-  // Oturum değiştiğinde默认 sekme'yi ayarla
+  // Oturum değiştiğinde default sekme'yi ayarla (URL'den gelmediyse)
   useEffect(() => {
+    if (urlSekmeKullanildi.current) return;
     if (oturum) {
       if (oturum.role === 'kamyoncu') {
         setSekme("ilanlar");
