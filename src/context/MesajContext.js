@@ -275,7 +275,7 @@ export const MesajProvider = ({ children }) => {
   // MESAJ GONDER: Supabase messages'a yaz
   // =============================================
   const mesajGonder = useCallback(async (konusmaId, metin, veriTipi = 'metin', veri = null) => {
-    if (!konusmaId || !metin) return;
+    if (!konusmaId || (!metin && !veri)) return;
 
     // Local state güncelle (optimistic)
     setKonusmalar(prev => prev.map(k => {
@@ -339,14 +339,30 @@ export const MesajProvider = ({ children }) => {
         return {
           ...k,
           mesajlar: k.mesajlar.map(m =>
-            m.id.startsWith('temp_') && m.metin === metin
+            m.id.startsWith('temp_') && m.metin === metin && m.veriTipi === veriTipi
               ? { ...m, id: msgRow.id }
               : m
           )
         };
       }));
+
+      // Bildirim - mesaj alıcısına
+      const konusma = konusmalar.find(k => k.id === konusmaId);
+      if (konusma) {
+        const aliciId = gonderenId === konusma.user_id ? konusma.partner_id : konusma.user_id;
+        if (aliciId) {
+          const bildirimIcerik = metin || (veri?.ad ? `📎 ${veri.ad}` : '📎 Dosya');
+          await supabase.from('bildirimler').insert({
+            kullanici_id: aliciId,
+            tur: 'mesaj',
+            baslik: 'Yeni mesaj',
+            icerik: bildirimIcerik.length > 100 ? bildirimIcerik.substring(0, 100) + '...' : bildirimIcerik,
+            sefer_id: konusma.ilan_id || null
+          }).catch(err => console.error('Mesaj bildirimi hatası:', err));
+        }
+      }
     }
-  }, []);
+  }, [konusmalar]);
 
   // =============================================
   // OKUNDU İŞARETLE

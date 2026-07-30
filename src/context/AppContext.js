@@ -938,6 +938,8 @@ export const AppProvider = ({ children }) => {
   }, [seferler, supabase]);
 
   const islemiTeslimEt = useCallback(async (seferId) => {
+    const sefer = seferler.find(s => s.id === seferId);
+
     setSeferler(prev => prev.map(s => {
       if (s.id === seferId) {
         return {
@@ -956,8 +958,19 @@ export const AppProvider = ({ children }) => {
         teslim_tarihi: new Date().toISOString().split("T")[0],
         odeme_durumu: "beklemede"
       }).eq('id', seferId);
+
+      // İşverene teslim bildirimi
+      if (sefer?.olusturan_id) {
+        await supabase.from('bildirimler').insert({
+          kullanici_id: sefer.olusturan_id,
+          tur: 'teslim',
+          baslik: 'İş teslim edildi',
+          icerik: `${sefer.yuk || ''} - ${sefer.nereden || ''} → ${sefer.nereye || ''}\n\nKamyoncu işi teslim etti ve ödeme bekliyor.`,
+          sefer_id: seferId
+        }).catch(err => console.error('Teslim bildirimi hatası:', err));
+      }
     }
-  }, [supabase]);
+  }, [supabase, seferler]);
 
   const ibanGuncelle = useCallback((alan, deger) => {
     setOturum(prev => {
@@ -1252,14 +1265,14 @@ export const AppProvider = ({ children }) => {
       console.warn('⚠️ Konuşma açılamadı:', { olusturan_id: ilan.olusturan_id, kamyoncuUserId });
     }
 
-    // Bildirim oluştur - İşveren için
-    if (supabase && mevcutSefer.olusturan_id) {
+    // Bildirim oluştur - Kamyoncuya (başvurusu kabul edildi)
+    if (supabase && kamyoncuUserId) {
       try {
         const { error: bildirimErr } = await supabase.from('bildirimler').insert({
-          kullanici_id: mevcutSefer.olusturan_id,
+          kullanici_id: kamyoncuUserId,
           tur: 'sefer_onay',
-          baslik: `${kamyoncuAd} iş başvurusunu kabul etti`,
-          icerik: `${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}\n\nÇekici: ${plaka}\nDorse: ${dorsePlaka}\nTel: ${kamyoncuTel}`,
+          baslik: 'Başvurunuz onaylandı!',
+          icerik: `${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}\n\n${kamyoncuAd} için başvurunuz işveren tarafından kabul edildi. Detaylar için konuşmayı kontrol edin.`,
           sefer_id: mevcutSefer.id,
           ilan_id: ilanId
         });
@@ -1310,7 +1323,19 @@ export const AppProvider = ({ children }) => {
     setSeferler(prev => prev.map(s =>
       s.id === mevcutSefer.id ? { ...s, durum: 'reddedildi' } : s
     ));
-  }, [seferler, supabase]);
+
+    // Bildirim - başvurusu reddedilen kamyoncuya
+    if (supabase && mevcutSefer.kamyoncu_user_id) {
+      const ilan = ilanlar.find(i => i.id === ilanId || i.id === mevcutSefer.ilan_id);
+      await supabase.from('bildirimler').insert({
+        kullanici_id: mevcutSefer.kamyoncu_user_id,
+        tur: 'red',
+        baslik: 'Başvurunuz reddedildi',
+        icerik: `${ilan?.yuk || ''} - ${ilan?.nereden || ''} → ${ilan?.nereye || ''}`,
+        ilan_id: ilanId
+      }).catch(err => console.error('Red bildirimi hatası:', err));
+    }
+  }, [seferler, supabase, ilanlar]);
 
   const bekleyenOnaylariGetir = useCallback(() => {
     const onayBekleyenler = [];
