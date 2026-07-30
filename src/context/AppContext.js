@@ -1510,7 +1510,7 @@ export const AppProvider = ({ children }) => {
 
   return (
     <Ctx.Provider value={{
-      oturum, loading, kullanicilar: adminKullanicilar, ilanlar, seferler, teklifler, konusmalar,
+      oturum, loading, kullanicilar: adminKullanicilar, ilanlar, setIlanlar, seferler, teklifler, konusmalar,
       kayitOl, girisYap, cikisYap,
       ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle, profilGuncelle, kullaniciBelgesiYukle,
       konusmaOluştur, ilkMesajiGonder,

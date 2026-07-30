@@ -4,7 +4,7 @@ import { supabase } from "../supabaseClient";
 import { IconMap } from "./Icons";
 
 export default function ProfilKart({ rol, userId }) {
-  const { oturum, cikisYap, profilGuncelle, ibanGuncelle, kullaniciBelgesiYukle, kullaniciBilgileri, ilanlar, seferler } = useApp();
+  const { oturum, cikisYap, profilGuncelle, ibanGuncelle, kullaniciBelgesiYukle, kullaniciBilgileri, ilanlar, setIlanlar, seferler } = useApp();
   const isKamyoncu = rol === "kamyoncu";
 
   const tema = isKamyoncu
@@ -203,6 +203,9 @@ export default function ProfilKart({ rol, userId }) {
 
       await profilGuncelle({ fotograf: publicUrl }).catch(() => {});
       setSeciliKullanici(prev => prev ? { ...prev, fotograf: publicUrl } : prev);
+      setIlanlar(prev => prev.map(i =>
+        i.olusturan_id === oturum.id ? { ...i, profilFoto: publicUrl } : i
+      ));
       gosterMesaj("ok", "Profil fotoğrafı güncellendi");
     } catch (err) {
       console.error('Fotoğraf hatası:', err);
