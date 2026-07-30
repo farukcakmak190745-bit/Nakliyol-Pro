@@ -178,19 +178,40 @@ export default function ProfilKart({ rol, userId }) {
 
     try {
       const dosyaAdi = `profil_${oturum.id}_${Date.now()}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('avatars')
+      const { error: uploadError } = await supabase.storage
+        .from('belgeler')
         .upload(dosyaAdi, dosya, { upsert: true });
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
+        .from('belgeler')
         .getPublicUrl(dosyaAdi);
 
-      await profilGuncelle({ fotograf: publicUrl });
+      const { error: dbError } = await supabase.from('belgeler').insert([{
+        kullanici_id: oturum.id,
+        rol: oturum.rol,
+        dosya_adi: 'profil_fotografi',
+        dosya_yolu: dosyaAdi,
+        url: publicUrl,
+        onaylandi: true,
+        olusturulma_tarihi: new Date().toISOString()
+      }]);
+
+      if (dbError) throw dbError;
+
+      const sonuc = await profilGuncelle({ fotograf: publicUrl });
+      if (!sonuc?.ok) {
+        const eskiOturum = oturum;
+        setTimeout(() => {
+          if (eskiOturum) {
+            eskiOturum.fotograf = publicUrl;
+          }
+        }, 0);
+      }
       gosterMesaj("ok", "Profil fotoğrafı güncellendi");
     } catch (err) {
+      console.error('Fotoğraf yükleme hatası:', err);
       gosterMesaj("hata", "Fotoğraf yüklenemedi");
     }
   };
@@ -543,29 +564,6 @@ export default function ProfilKart({ rol, userId }) {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* ===== IBAN BÖLÜMÜ ===== */}
-        <div style={{
-          padding: 18, marginBottom: 14,
-          background: "var(--bg1)", borderRadius: 16,
-          border: `1px solid ${tema.birincil}15`
-        }}>
-          <div style={stl.bolumBaslik}>💰 IBAN Bilgileri</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div>
-              <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 4, fontWeight: 600 }}>IBAN</div>
-              <div style={stl.input({ fontSize: 13, fontWeight: 600, fontFamily: "monospace", letterSpacing: 1 })}>
-                {kullanici?.iban || "IBAN eklenmemiş"}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 4, fontWeight: 600 }}>IBAN Sahibi</div>
-              <div style={stl.input({ fontSize: 13, fontWeight: 600 })}>
-                {kullanici?.ibanSahibi || "Belirtilmemiş"}
-              </div>
-            </div>
           </div>
         </div>
 
