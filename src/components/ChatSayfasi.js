@@ -28,10 +28,9 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   const messageContainerRef = useRef(null);
   const yaziyorTimerRef = useRef(null);
 
-  // Medya galerisi için
-  const medyaList = konusma?.mesajlar?.filter(m => m.veri && (m.veri.tip === "img" || m.veri.tip === "pdf")) || [];
-
   const konusma = konusmalar?.find(k => k.id === konusmaId);
+
+  const medyaList = konusma?.mesajlar?.filter(m => m.veri && (m.veri.tip === "img" || m.veri.tip === "pdf")) || [];
   const isBenKamyoncu = oturum?.rol === "kamyoncu";
   const partnerAd = konusma?.partnerAd || "";
   const partnerRol = konusma?.partnerRol || "";
