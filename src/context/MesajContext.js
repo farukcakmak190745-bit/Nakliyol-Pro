@@ -414,8 +414,52 @@ export const MesajProvider = ({ children }) => {
   const konusmaTemizle = useCallback(() => {}, []);
   const konusmaDurumunuGuncelle = useCallback(() => {}, []);
   const konusmaBasliginiGuncelle = useCallback(() => {}, []);
-  const yaziyorGoster = useCallback(() => {}, []);
   const konusmaResmiGuncelle = useCallback(() => {}, []);
+
+  // =============================================
+  // YAZIYOR GOSTERGESI (gerçek broadcast)
+  // =============================================
+  const yaziyorTimersRef = useRef({});
+  const yaziyorChannelRef = useRef(null);
+
+  useEffect(() => {
+    if (!supabase) return;
+    const channel = supabase.channel('typing-broadcast', {
+      config: { broadcast: { self: false } }
+    });
+    channel.on('broadcast', { event: 'typing' }, ({ payload }) => {
+      const { konusmaId, userId, ad, isWriting } = payload;
+      setKonusmalar(prev => prev.map(k => {
+        if (k.id !== konusmaId) return k;
+        if (!isWriting && k.yaziyor === userId) {
+          return { ...k, yaziyor: null, yaziyorAd: null };
+        }
+        if (!isWriting) return k;
+        return { ...k, yaziyor: userId, yaziyorAd: ad };
+      }));
+      if (isWriting) {
+        clearTimeout(yaziyorTimersRef.current[konusmaId]);
+        yaziyorTimersRef.current[konusmaId] = setTimeout(() => {
+          setKonusmalar(prev => prev.map(k => {
+            if (k.id !== konusmaId || k.yaziyor !== userId) return k;
+            return { ...k, yaziyor: null, yaziyorAd: null };
+          }));
+        }, 3000);
+      }
+    });
+    channel.subscribe();
+    yaziyorChannelRef.current = channel;
+    return () => { channel.unsubscribe(); };
+  }, []);
+
+  const yaziyorGoster = useCallback((konusmaId, isWriting, userId, ad) => {
+    if (!yaziyorChannelRef.current) return;
+    yaziyorChannelRef.current.send({
+      type: 'broadcast',
+      event: 'typing',
+      payload: { konusmaId, userId, ad, isWriting }
+    });
+  }, []);
   const dosyaYukle = useCallback((dosya) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();

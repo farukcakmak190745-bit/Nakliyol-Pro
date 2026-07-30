@@ -12,7 +12,8 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
       tumMesajlariOkundu,
       konusmaBasliginiGuncelle,
       konusmaTemizle,
-      dosyaYukle
+      dosyaYukle,
+      yaziyorGoster
     } = useMesaj();
 
   console.log("ChatSayfasi rendered - konusmaId:", konusmaId, "oturum:", oturum);
@@ -23,6 +24,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   const [konusmaAcildi, setKonusmaAcildi] = useState(false);
   const [konusmaBitti, setKonusmaBitti] = useState(false);
   const messageContainerRef = useRef(null);
+  const yaziyorTimerRef = useRef(null);
 
   const konusma = konusmalar?.find(k => k.id === konusmaId);
   const isBenKamyoncu = oturum?.rol === "kamyoncu";
@@ -345,7 +347,14 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
             className="input"
             placeholder="Mesaj yazın..."
             value={mesaj}
-            onChange={e => setMesaj(e.target.value)}
+            onChange={e => {
+              setMesaj(e.target.value);
+              clearTimeout(yaziyorTimerRef.current);
+              yaziyorGoster(konusmaId, true, oturum?.id, oturum?.ad);
+              yaziyorTimerRef.current = setTimeout(() => {
+                yaziyorGoster(konusmaId, false, oturum?.id, oturum?.ad);
+              }, 2000);
+            }}
             onKeyPress={e => e.key === "Enter" && gonder(e)}
             style={{ flex: 1, padding: "12px 16px" }}
           />
