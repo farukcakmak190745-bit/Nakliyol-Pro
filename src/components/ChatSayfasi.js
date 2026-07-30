@@ -11,7 +11,8 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
       mesajiOkundu,
       tumMesajlariOkundu,
       konusmaBasliginiGuncelle,
-      konusmaTemizle
+      konusmaTemizle,
+      dosyaYukle
     } = useMesaj();
 
   console.log("ChatSayfasi rendered - konusmaId:", konusmaId, "oturum:", oturum);
@@ -88,7 +89,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
     </div>
   );
 
-  const dosyaYukle = async (e) => {
+  const dosyaSecVeGonder = async (e) => {
     const dosya = e.target.files[0];
     if (!dosya) return;
 
@@ -337,7 +338,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
         <form onSubmit={gonder} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
           <label style={{ padding: 12, cursor: "pointer", background: "var(--bg2)", borderRadius: "12px", fontSize: 20, transition: "all 0.2s" }} title="Dosya yükle">
             📎
-            <input type="file" accept="image/*,.pdf" onChange={dosyaYukle} style={{ display: "none" }} />
+            <input type="file" accept="image/*,.pdf" onChange={dosyaSecVeGonder} style={{ display: "none" }} />
           </label>
 
           <input

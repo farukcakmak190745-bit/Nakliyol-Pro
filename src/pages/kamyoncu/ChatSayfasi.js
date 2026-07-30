@@ -49,13 +49,12 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
     </div>
   );
 
-  const dosyaYukle = async (e) => {
+  const dosyaSecVeGonder = async (e) => {
     const dosya = e.target.files[0];
     if (!dosya) return;
 
     setYukleniyor(true);
     try {
-      // Call parent's dosyaYukle from useMesaj
       const yukluDosya = await dosyaYukle(dosya);
       await mesajGonder(konusmaId, "", yukluDosya.veriTipi, yukluDosya);
       setMesaj("");
@@ -75,24 +74,6 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
     await mesajGonder(konusmaId, mesaj, "metin", null);
     setMesaj("");
     setDosya(null);
-  };
-
-  const handleDosyaYukle = async (e) => {
-    const dosya = e.target.files[0];
-    if (!dosya) return;
-
-    setYukleniyor(true);
-    try {
-      const yukluDosya = await dosyaYukle(dosya);
-      await mesajGonder(konusmaId, "", yukluDosya.veriTipi, yukluDosya);
-      setMesaj("");
-      setDosya(null);
-    } catch (err) {
-      console.error("Dosya yükleme hatası:", err);
-      alert("Dosya yüklenemedi: " + err.message);
-    } finally {
-      setYukleniyor(false);
-    }
   };
 
   const ilkMesajiOkundu = konusma?.mesajlar?.length > 0 && konusma?.mesajlar?.[0]?.gonderen === "konusmaci";
@@ -247,7 +228,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
         <form onSubmit={gonder} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
           <label style={{ padding: 10, cursor: "pointer", background: "var(--bg2)", borderRadius: "var(--r)", fontSize: 20, transition: "all 0.2s" }} title="Dosya yükle">
             📎
-            <input type="file" accept="image/*,.pdf" onChange={dosyaYukle} style={{ display: "none" }} />
+            <input type="file" accept="image/*,.pdf" onChange={dosyaSecVeGonder} style={{ display: "none" }} />
           </label>
 
           <input
