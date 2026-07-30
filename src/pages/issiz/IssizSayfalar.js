@@ -619,9 +619,10 @@ export function TekliflerSayfasi() {
 }
 
 export function MesajlarSayfasi({ onGeri }) {
-  const { oturum } = useApp();
+  const { oturum, seferler } = useApp();
   const { konusmalar, loadConversations } = useMesaj();
   const [secili, setSecili] = useState(null);
+  const [kategori, setKategori] = useState("aktif"); // aktif | tamamlanan | tumu
 
   // Oturum değişince konuşmaları yeniden yükle (auth listener fallback)
   useEffect(() => {
@@ -630,6 +631,14 @@ export function MesajlarSayfasi({ onGeri }) {
       loadConversations?.(oturum.id);
     }
   }, [oturum?.id, loadConversations]);
+
+  const filtrelenmisKonusmalar = konusmalar?.filter(k => {
+    if (kategori === "tumu") return true;
+    const s = seferler?.find(sf => sf.ilan_id === k.ilan_id || sf.ilanId === k.ilan_id);
+    if (kategori === "aktif") return !s || ["bekliyor", "yolda", "teslima_bekleniyor"].includes(s.durum);
+    if (kategori === "tamamlanan") return s?.durum === "odendi";
+    return true;
+  });
 
   if (secili) {
     const konusma = konusmalar?.find(k => k.id === secili);
@@ -642,14 +651,33 @@ export function MesajlarSayfasi({ onGeri }) {
 
   return (
     <div className="scroll-content">
-      <div className="section-title">MESAJLAR ({konusmalar?.length || 0})</div>
-      {(!konusmalar || konusmalar.length === 0) ? (
-        <EmptyState icon="💬" text="Henüz mesaj yok" />
+      <div className="section-title">MESAJLAR</div>
+      <div style={{ display: "flex", gap: 8, padding: "0 16px 12px" }}>
+        {["aktif", "tamamlanan", "tumu"].map(k => (
+          <button key={k} onClick={() => setKategori(k)} style={{
+            padding: "6px 16px", borderRadius: "20px", border: "1px solid rgba(251,191,36,0.3)",
+            background: kategori === k ? "linear-gradient(135deg, #fbbf24, #f59e0b)" : "transparent",
+            color: kategori === k ? "#000" : "var(--text2)", fontWeight: 600, fontSize: 12, cursor: "pointer"
+          }}>
+            {k === "aktif" ? "Aktif" : k === "tamamlanan" ? "Tamamlanan" : "Tümü"}
+          </button>
+        ))}
+      </div>
+      {(!filtrelenmisKonusmalar || filtrelenmisKonusmalar.length === 0) ? (
+        <EmptyState icon="💬" text={kategori === "aktif" ? "Aktif konuşma yok" : kategori === "tamamlanan" ? "Tamamlanan konuşma yok" : "Henüz mesaj yok"} />
       ) : (
-        konusmalar.map(k => (
-          <div key={k.id} className="card" style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} onClick={() => setSecili(k.id)}>
-            <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#fff", flexShrink: 0 }}>
+        filtrelenmisKonusmalar.map(k => {
+          const s = seferler?.find(sf => sf.ilan_id === k.ilan_id || sf.ilanId === k.ilan_id);
+          return (<div key={k.id} className="card" style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} onClick={() => setSecili(k.id)}>
+            <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#fff", flexShrink: 0, position: "relative" }}>
               {k.partnerRol === "kamyoncu" ? "🚛" : "🏢"}
+              {s && (
+                <div style={{
+                  position: "absolute", bottom: -2, right: -2, width: 14, height: 14, borderRadius: "50%",
+                  background: s.durum === "odendi" ? "#10b981" : s.durum === "yolda" ? "#3b82f6" : s.durum === "teslima_bekleniyor" ? "#f59e0b" : "#6b7280",
+                  border: "2px solid var(--bg1)"
+                }} />
+              )}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 600, fontSize: 14, color: "#fbbf24" }}>{k.partnerAd}</div>
