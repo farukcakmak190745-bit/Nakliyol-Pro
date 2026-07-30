@@ -94,13 +94,12 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
         `${ibanSahibi ? `👤 ${ibanSahibi}\n` : ''}` +
         `🏦 ${iban}`;
 
-      if (dosya) {
-        mesajMetni += `\n\n📎 Teslim Evrağı: ${dosyaAdi}`;
-      }
-
       // 4) Mesajı gönder
       if (konusma?.id) {
         await mesajContext.mesajGonder(konusma.id, mesajMetni);
+        if (dosya) {
+          await mesajContext.mesajGonder(konusma.id, "📎 Teslim Evrağı", dosya.veriTipi, dosya);
+        }
         console.log('✅ Teslimat mesajı gönderildi');
       } else {
         console.warn('⚠️ Konuşma bulunamadı, mesaj gönderilemedi');
