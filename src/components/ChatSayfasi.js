@@ -24,8 +24,12 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   const [konusmaAcildi, setKonusmaAcildi] = useState(false);
   const [konusmaBitti, setKonusmaBitti] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
+  const [galeriAcik, setGaleriAcik] = useState(false);
   const messageContainerRef = useRef(null);
   const yaziyorTimerRef = useRef(null);
+
+  // Medya galerisi için
+  const medyaList = konusma?.mesajlar?.filter(m => m.veri && (m.veri.tip === "img" || m.veri.tip === "pdf")) || [];
 
   const konusma = konusmalar?.find(k => k.id === konusmaId);
   const isBenKamyoncu = oturum?.rol === "kamyoncu";
@@ -185,7 +189,17 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
         <div style={{ fontSize: 11, color: "var(--text3)" }}>
                 {new Date(sonGuncelleme).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
               </div>
-            </div>
+
+        {/* Galeri butonu */}
+        {medyaList.length > 0 && (
+          <button onClick={() => setGaleriAcik(true)} style={{
+            background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)",
+            borderRadius: "10px", padding: "6px 10px", cursor: "pointer", fontSize: 16
+          }} title="Medya galerisi">
+            🖼️ {medyaList.length}
+          </button>
+        )}
+          </div>
 
             {/* İş Kartı */}
             {sefer && (
@@ -243,6 +257,47 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                   color: "#fff", fontSize: 28, width: 44, height: 44,
                   borderRadius: "50%", cursor: "pointer"
                 }}>✕</button>
+              </div>
+            )}
+
+            {/* Medya Galerisi */}
+            {galeriAcik && (
+              <div onClick={() => setGaleriAcik(false)} style={{
+                position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+                background: "rgba(0,0,0,0.92)", zIndex: 999,
+                display: "flex", flexDirection: "column", padding: 20,
+                overflowY: "auto"
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <div style={{ color: "#fff", fontSize: 18, fontWeight: 600 }}>🖼️ Medya ({medyaList.length})</div>
+                  <button onClick={() => setGaleriAcik(false)} style={{
+                    background: "rgba(255,255,255,0.1)", border: "none",
+                    color: "#fff", fontSize: 24, width: 40, height: 40,
+                    borderRadius: "50%", cursor: "pointer"
+                  }}>✕</button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                  {medyaList.map((m, i) => (
+                    m.veri.tip === "img" ? (
+                      <img key={m.id || i} src={m.veri.veri}
+                        onClick={(e) => { e.stopPropagation(); setLightboxImage(m.veri.veri); }}
+                        style={{ width: "100%", aspectRatio: "1", objectFit: "cover", borderRadius: "8px", cursor: "pointer" }} />
+                    ) : (
+                      <div key={m.id || i} onClick={(e) => e.stopPropagation()}
+                        style={{
+                          aspectRatio: "1", borderRadius: "8px", cursor: "pointer",
+                          background: "rgba(255,255,255,0.1)", display: "flex",
+                          flexDirection: "column", alignItems: "center", justifyContent: "center",
+                          fontSize: 12, color: "#fff", gap: 4, padding: 8
+                        }}>
+                        <span style={{ fontSize: 24 }}>📄</span>
+                        <span style={{ textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+                          {m.veri.ad || "Dosya"}
+                        </span>
+                      </div>
+                    )
+                  ))}
+                </div>
               </div>
             )}
 
