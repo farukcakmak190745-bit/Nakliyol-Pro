@@ -17,7 +17,11 @@ export function IlanVerSayfasi() {
     kdvEkle: false,
     tarih: "",
     aracTip: "",
-    aciklama: "", odemeTuru: "pesin", odemeGun: 0
+    aciklama: "", odemeTuru: "pesin", odemeGun: 0,
+    yuklemeKonum: "", bosaltmaKonum: "",
+    yuklemeSaatBas: "", yuklemeSaatBit: "",
+    bosaltmaSaatBas: "", bosaltmaSaatBit: "",
+    faturaBaslik: ""
   });
   const [tamam, setTamam] = useState(false);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -46,7 +50,11 @@ export function IlanVerSayfasi() {
         ucret: "",
         kdvEkle: false,
         tarih: "",
-        aracTip: "", aciklama: "", odemeTuru: "pesin", odemeGun: 0
+        aracTip: "", aciklama: "", odemeTuru: "pesin", odemeGun: 0,
+        yuklemeKonum: "", bosaltmaKonum: "",
+        yuklemeSaatBas: "", yuklemeSaatBit: "",
+        bosaltmaSaatBas: "", bosaltmaSaatBit: "",
+        faturaBaslik: ""
       });
     }, 2000);
   };
@@ -150,6 +158,57 @@ export function IlanVerSayfasi() {
         <div className="input-group">
           <Label>Açıklama</Label>
           <textarea className={inputStyle} rows={3} placeholder="Özel şartlar, araç özellikleri..." value={form.aciklama} onChange={e => set("aciklama", e.target.value)} style={{ resize: "vertical", lineHeight: 1.6 }} />
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 20 }}>📍</span>
+          <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: 1.5, color: "#fbbf24" }}>KONUM & SAAT</span>
+        </div>
+        <div className="input-group">
+          <Label>Yükleme Yeri (Adres)</Label>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input className={inputStyle} placeholder="Yükleme adresini girin..." value={form.yuklemeKonum} onChange={e => set("yuklemeKonum", e.target.value)} style={{ flex: 1 }} />
+            {form.yuklemeKonum && (
+              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.yuklemeKonum)}`} target="_blank" rel="noopener noreferrer" style={{ padding: "10px 12px", borderRadius: "10px", background: "var(--bg3)", border: "1px solid var(--border2)", color: "#3b82f6", textDecoration: "none", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+                🗺 Harita
+              </a>
+            )}
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 10 }}>
+          <div className="input-group">
+            <Label>Yükleme Saati</Label>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input className={inputStyle} type="time" value={form.yuklemeSaatBas} onChange={e => set("yuklemeSaatBas", e.target.value)} style={{ flex: 1 }} />
+              <span style={{ color: "var(--text3)", fontSize: 12 }}>—</span>
+              <input className={inputStyle} type="time" value={form.yuklemeSaatBit} onChange={e => set("yuklemeSaatBit", e.target.value)} style={{ flex: 1 }} />
+            </div>
+          </div>
+          <div className="input-group">
+            <Label>Fatura Başlığı</Label>
+            <input className={inputStyle} placeholder="Firma adı..." value={form.faturaBaslik} onChange={e => set("faturaBaslik", e.target.value)} />
+          </div>
+        </div>
+        <div className="input-group" style={{ marginTop: 10 }}>
+          <Label>Boşaltma Yeri (Adres)</Label>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input className={inputStyle} placeholder="Boşaltma adresini girin..." value={form.bosaltmaKonum} onChange={e => set("bosaltmaKonum", e.target.value)} style={{ flex: 1 }} />
+            {form.bosaltmaKonum && (
+              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.bosaltmaKonum)}`} target="_blank" rel="noopener noreferrer" style={{ padding: "10px 12px", borderRadius: "10px", background: "var(--bg3)", border: "1px solid var(--border2)", color: "#3b82f6", textDecoration: "none", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+                🗺 Harita
+              </a>
+            )}
+          </div>
+        </div>
+        <div className="input-group" style={{ marginTop: 10 }}>
+          <Label>Boşaltma Saati</Label>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input className={inputStyle} type="time" value={form.bosaltmaSaatBas} onChange={e => set("bosaltmaSaatBas", e.target.value)} style={{ flex: 1 }} />
+            <span style={{ color: "var(--text3)", fontSize: 12 }}>—</span>
+            <input className={inputStyle} type="time" value={form.bosaltmaSaatBit} onChange={e => set("bosaltmaSaatBit", e.target.value)} style={{ flex: 1 }} />
+          </div>
         </div>
       </div>
 

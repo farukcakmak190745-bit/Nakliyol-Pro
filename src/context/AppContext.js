@@ -103,6 +103,13 @@ export const AppProvider = ({ children }) => {
               kdvTutari: ilan.kdv_tutari,
               toplamUcret: ilan.toplam_ucret,
               aciklama: ilan.aciklama || "",
+              yuklemeKonum: ilan.yukleme_konum || "",
+              bosaltmaKonum: ilan.bosaltma_konum || "",
+              yuklemeSaatBas: ilan.yukleme_saat_bas || "",
+              yuklemeSaatBit: ilan.yukleme_saat_bit || "",
+              bosaltmaSaatBas: ilan.bosaltma_saat_bas || "",
+              bosaltmaSaatBit: ilan.bosaltma_saat_bit || "",
+              faturaBaslik: ilan.fatura_baslik || "",
               firmaAdi: olusturanUser?.firma_adi || null,
               profilFoto: olusturanUser?.fotograf || null,
               telefon: olusturanUser?.telefon || null,
@@ -622,6 +629,13 @@ export const AppProvider = ({ children }) => {
       kdv_orani: yeni.kdvEkle ? 1 : 0,
       kdv_tutari: 0,
       toplam_ucret: yeni.ucret,
+      yukleme_konum: yeni.yuklemeKonum || "",
+      bosaltma_konum: yeni.bosaltmaKonum || "",
+      yukleme_saat_bas: yeni.yuklemeSaatBas || "",
+      yukleme_saat_bit: yeni.yuklemeSaatBit || "",
+      bosaltma_saat_bas: yeni.bosaltmaSaatBas || "",
+      bosaltma_saat_bit: yeni.bosaltmaSaatBit || "",
+      fatura_baslik: yeni.faturaBaslik || "",
       durum: "aktif",
       istek_sayisi: 0,
       belgeler: [],
@@ -655,6 +669,13 @@ export const AppProvider = ({ children }) => {
         kdvTutari: data.kdv_tutari,
         toplamUcret: data.toplam_ucret,
         aciklama: data.aciklama || "",
+        yuklemeKonum: data.yukleme_konum || "",
+        bosaltmaKonum: data.bosaltma_konum || "",
+        yuklemeSaatBas: data.yukleme_saat_bas || "",
+        yuklemeSaatBit: data.yukleme_saat_bit || "",
+        bosaltmaSaatBas: data.bosaltma_saat_bas || "",
+        bosaltmaSaatBit: data.bosaltma_saat_bit || "",
+        faturaBaslik: data.fatura_baslik || "",
         olusturanPuan: data.olusturan?.puan || 5.0
       };
       setIlanlar(prev => [normalizedData, ...prev]);
@@ -1233,10 +1254,16 @@ export const AppProvider = ({ children }) => {
       }).catch(err => console.error('Bildirim hatası:', err));
     }
 
-    // Bilgi mesajını konuşmaya gönder
+    // Bilgi mesajını konuşmaya gönder (konum, saat, fatura detaylarıyla)
     if (yeniKonusma) {
-      const bilgiMesaji = `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${kamyoncuAd}\n📞 Tel: ${kamyoncuTel}\n🚚 Çekici Plaka: ${plaka}\n🚐 Dorse Plaka: ${dorsePlaka}\n🆔 TC Kimlik: ${tc}\n\nŞimdi convo üzerinden konuşabiliriz.`;
-      await mesajGonder(yeniKonusma, bilgiMesaji);
+      let detayMesaji = `✓ Başvurunuz kabul edildi!\n\n👤 ${kamyoncuAd}\n📞 ${kamyoncuTel}\n🚚 ${plaka} / ${dorsePlaka}\n🆔 ${tc}\n\n`;
+      if (ilan.yuklemeKonum) detayMesaji += `📍 Yükleme: ${ilan.yuklemeKonum}\n`;
+      if (ilan.yuklemeSaatBas || ilan.yuklemeSaatBit) detayMesaji += `⏰ Yükleme saati: ${ilan.yuklemeSaatBas || "?"} - ${ilan.yuklemeSaatBit || "?"}\n`;
+      if (ilan.bosaltmaKonum) detayMesaji += `🏁 Boşaltma: ${ilan.bosaltmaKonum}\n`;
+      if (ilan.bosaltmaSaatBas || ilan.bosaltmaSaatBit) detayMesaji += `⏰ Boşaltma saati: ${ilan.bosaltmaSaatBas || "?"} - ${ilan.bosaltmaSaatBit || "?"}\n`;
+      if (ilan.faturaBaslik) detayMesaji += `🧾 Fatura: ${ilan.faturaBaslik}\n`;
+      detayMesaji += `\nDetaylar için konuşma üzerinden iletişime geçin.`;
+      await mesajGonder(yeniKonusma, detayMesaji);
     }
   }, [ilanlar, seferler, konusmaAc, mesajGonder, supabase, oturum]);
 
@@ -1341,6 +1368,13 @@ export const AppProvider = ({ children }) => {
           kdvTutari: ilan.kdv_tutari,
           toplamUcret: ilan.toplam_ucret,
           aciklama: ilan.aciklama || "",
+          yuklemeKonum: ilan.yukleme_konum || "",
+          bosaltmaKonum: ilan.bosaltma_konum || "",
+          yuklemeSaatBas: ilan.yukleme_saat_bas || "",
+          yuklemeSaatBit: ilan.yukleme_saat_bit || "",
+          bosaltmaSaatBas: ilan.bosaltma_saat_bas || "",
+          bosaltmaSaatBit: ilan.bosaltma_saat_bit || "",
+          faturaBaslik: ilan.fatura_baslik || "",
         })));
       }
     });

@@ -51,6 +51,13 @@ CREATE TABLE ilanlar (
   belgeler JSONB DEFAULT '[]',
   iban TEXT,
   iban_sahibi TEXT,
+  yukleme_konum TEXT,
+  bosaltma_konum TEXT,
+  yukleme_saat_bas TEXT,
+  yukleme_saat_bit TEXT,
+  bosaltma_saat_bas TEXT,
+  bosaltma_saat_bit TEXT,
+  fatura_baslik TEXT,
   olusturma_zamani TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
