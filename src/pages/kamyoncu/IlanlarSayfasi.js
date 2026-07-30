@@ -44,10 +44,8 @@ const IlanKart = ({ ilan, onClick }) => {
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div className="price">₺{ilan.toplamUcret?.toLocaleString() || ilan.ucret.toLocaleString()}</div>
-          <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>
-            {ilan.kdvOrani > 0 ? "💰 +KDV" : "💵 Sabit"}
-          </div>
+          <div className="price">₺{ilan.ucret?.toLocaleString()}</div>
+          {ilan.kdvOrani > 0 && <div style={{ fontSize: 10, color: "#10b981", marginTop: 2 }}>+KDV</div>}
         </div>
       </div>
 
@@ -178,7 +176,7 @@ export default function IlanlarSayfasi() {
                 {[
                   { k: "Tonaj", v: secilen?.ton > 0 ? `${secilen.ton} Ton` : "🔥 Serbest" },
                   { k: "Ödeme Planı", v: !secilen?.odemeGun || secilen.odemeGun === 0 ? "💰 Peşin" : `${secilen.odemeGun} Gün Sonra` },
-                  { k: "Ücret", v: <>₺{secilen?.ucret?.toLocaleString() || 0} {secilen?.kdvOrani > 0 ? "(+KDV)" : "(Sabit)"}</> },
+                  { k: "Ücret", v: <>₺{secilen?.ucret?.toLocaleString() || 0} {secilen?.kdvOrani > 0 ? <span style={{color:"#10b981"}}> +KDV</span> : ""}</> },
                   { k: "Araç Tipi", v: secilen?.aracTip || "Belirtilmedi" },
                   { k: "Tarih", v: <><IconMap.calendar size={14} className="icon-primary" /> {formatTarih(secilen?.tarih)}</> },
                 ].map(({ k, v }, idx) => (

@@ -14,7 +14,7 @@ export function IlanVerSayfasi() {
     nereden: "", nereye: "", yuk: "",
     tonaj: "20",
     ucret: "",
-    ucretTipi: "duz",
+    kdvEkle: false,
     tarih: "",
     aracTip: "",
     aciklama: "", odemeTuru: "pesin", odemeGun: 0
@@ -28,19 +28,13 @@ export function IlanVerSayfasi() {
       return;
     }
     const ucret = Number(form.ucret);
-    const kdvOrani = form.ucretTipi === "kdv" ? 0.2 : 0;
-    const kdvTutari = ucret * kdvOrani;
-    const toplamUcret = ucret + kdvTutari;
 
-    console.log(`📤 Yeni ilan gönderiliyor:`, { ...form, ton: 0, ucret: ucret, kdvOrani: kdvOrani, kdvTutari: kdvTutari, toplamUcret: toplamUcret, odemeTuru: form.odemeTuru, odemeGun: Number(form.odemeGun) });
+    console.log(`📤 Yeni ilan gönderiliyor:`, { ...form, ton: 0, ucret: ucret, odemeTuru: form.odemeTuru, odemeGun: Number(form.odemeGun) });
 
     ilanEkle({
       ...form,
       ton: 0,
       ucret: ucret,
-      kdvOrani: kdvOrani,
-      kdvTutari: kdvTutari,
-      toplamUcret: toplamUcret,
       odemeTuru: form.odemeTuru,
       odemeGun: Number(form.odemeGun)
     });
@@ -50,7 +44,7 @@ export function IlanVerSayfasi() {
       setForm({
         nereden: "", nereye: "", yuk: "",
         ucret: "",
-        ucretTipi: "kdv",
+        kdvEkle: false,
         tarih: "",
         aracTip: "", aciklama: "", odemeTuru: "pesin", odemeGun: 0
       });
@@ -119,7 +113,7 @@ export function IlanVerSayfasi() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 10 }}>
           <div className="input-group">
-            <Label zorunlu>Fiyat</Label>
+            <Label zorunlu>Fiyat (₺)</Label>
             <input className={inputStyle} type="number" placeholder="8500" value={form.ucret} onChange={e => set("ucret", e.target.value)} />
           </div>
           <div className="input-group">
@@ -131,12 +125,16 @@ export function IlanVerSayfasi() {
           </div>
         </div>
 
-        <div style={{ marginBottom: 14 }}>
-          <Label zorunlu>Ücret Tipi</Label>
-          <select className={inputStyle} value={form.ucretTipi} onChange={e => set("ucretTipi", e.target.value)} style={{ cursor: "pointer", background: "var(--bg2)" }}>
-            <option value="kdv">💵 +KDV</option>
-            <option value="duz">💵 Sabit Fiyat</option>
-          </select>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none" }}>
+            <input
+              type="checkbox"
+              checked={form.kdvEkle}
+              onChange={e => set("kdvEkle", e.target.checked)}
+              style={{ width: 18, height: 18, cursor: "pointer" }}
+            />
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text2)" }}>+KDV</span>
+          </label>
         </div>
       </div>
 
@@ -493,7 +491,7 @@ export function TekliflerSayfasi() {
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Ücret</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24" }}>₺{typeof s?.toplamUcret === 'number' ? s?.toplamUcret.toLocaleString() : (typeof s?.ucret === 'number' ? s?.ucret.toLocaleString() : '0')}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24" }}>₺{typeof s?.ucret === 'number' ? s?.ucret.toLocaleString() : '0'}</div>
                   <div style={{ fontSize: 9, color: "#3b82f6", marginTop: 2 }}>{!s?.odemeGun || s?.odemeGun === 0 || s?.odemeTuru === "pesin" ? "💰 Peşin" : `${s?.odemeGun} Gün`}</div>
                   {s?.kdvOrani > 0 && <div style={{ fontSize: 9, color: "#10b981", marginTop: 1 }}>+KDV</div>}
                 </div>
@@ -798,9 +796,7 @@ export function IssizIlanlarSayfasi() {
                     <div style={{ fontSize: 18, fontWeight: 700, color: "#fbbf24", fontFamily: "var(--font-d)" }}>
                       ₺{Number(ilan.ucret || 0).toLocaleString("tr-TR")}
                     </div>
-                    <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>
-                      {ilan.ucretTipi === "kdv" ? "+KDV" : "Sabit"}
-                    </div>
+                    {ilan.kdvOrani > 0 && <div style={{ fontSize: 10, color: "#10b981", marginTop: 2 }}>+KDV</div>}
                   </div>
 
                   <button

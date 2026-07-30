@@ -607,10 +607,6 @@ export const AppProvider = ({ children }) => {
   }, [supabase]);
 
   const ilanEkle = useCallback(async (yeni) => {
-    const kdvOrani = yeni.ucretTipi === "kdv" ? 0.20 : 0;
-    const kdvTutari = yeni.ucret * kdvOrani;
-    const toplamUcret = yeni.ucret + kdvTutari;
-
     const ilan = {
       yuk: yeni.yuk,
       aciklama: yeni.aciklama || "",
@@ -623,9 +619,9 @@ export const AppProvider = ({ children }) => {
       arac_tip: yeni.aracTip,
       odeme_turu: yeni.odemeTuru || "pesin",
       odeme_gun: yeni.odemeGun || 0,
-      kdv_orani: kdvOrani,
-      kdv_tutari: kdvTutari,
-      toplam_ucret: toplamUcret,
+      kdv_orani: yeni.kdvEkle ? 1 : 0,
+      kdv_tutari: 0,
+      toplam_ucret: yeni.ucret,
       durum: "aktif",
       istek_sayisi: 0,
       belgeler: [],
