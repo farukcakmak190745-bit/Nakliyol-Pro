@@ -205,7 +205,7 @@ export default function ProfilKart({ rol, userId }) {
   const stl = {
     kapsayici: { paddingBottom: 100 },
     kart: (renk) => ({
-      background: "rgba(255,255,255,0.06)",
+      background: "var(--bg2)",
       backdropFilter: "blur(12px)",
       WebkitBackdropFilter: "blur(12px)",
       border: `1px solid ${renk}`,
@@ -214,7 +214,7 @@ export default function ProfilKart({ rol, userId }) {
     input: (ekle = {}) => ({
       width: "100%",
       padding: "10px 14px",
-      background: "rgba(255,255,255,0.08)",
+      background: "var(--bg3)",
       border: `1px solid ${tema.birincil}33`,
       borderRadius: 10,
       fontSize: 14,
@@ -279,7 +279,7 @@ export default function ProfilKart({ rol, userId }) {
             onClick={() => setDuzenle(d => !d)}
             style={{
               padding: "10px 16px",
-              background: duzenle ? "rgba(255,255,255,0.1)" : tema.gradient,
+              background: duzenle ? "var(--bg3)" : tema.gradient,
               color: duzenle ? "var(--text)" : "#fff",
               border: duzenle ? `1px solid ${tema.birincil}33` : "none",
               borderRadius: 12,
@@ -397,7 +397,7 @@ export default function ProfilKart({ rol, userId }) {
           {/* İLETİŞİM BİLGİLERİ */}
           <div style={{
             display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 16,
-            padding: 14, background: "rgba(255,255,255,0.05)", borderRadius: 14,
+            padding: 14, background: "var(--bg2)", borderRadius: 14,
             border: `1px solid ${tema.birincil}15`
           }}>
             <div style={{ textAlign: "center" }}>
@@ -440,7 +440,7 @@ export default function ProfilKart({ rol, userId }) {
           {isKamyoncu && (
             <div style={{
               display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8,
-              padding: 14, background: "rgba(255,255,255,0.05)", borderRadius: 14,
+              padding: 14, background: "var(--bg2)", borderRadius: 14,
               border: `1px solid ${tema.birincil}15`
             }}>
               <div style={{ textAlign: "center" }}>
@@ -530,7 +530,7 @@ export default function ProfilKart({ rol, userId }) {
             {statlar.map((s, i) => (
               <div key={i} style={{
                 textAlign: "center", padding: "14px 4px",
-                background: "rgba(255,255,255,0.05)", borderRadius: 12,
+                background: "var(--bg2)", borderRadius: 12,
                 border: `1px solid ${tema.birincil}15`,
                 transition: "all 0.3s"
               }}>
@@ -593,7 +593,7 @@ export default function ProfilKart({ rol, userId }) {
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: tema.birincil }}>{belgeYuzdesi}%</div>
-              <div style={{ width: 56, height: 4, background: "rgba(255,255,255,0.1)", borderRadius: 2, marginTop: 4, overflow: "hidden" }}>
+              <div style={{ width: 56, height: 4, background: "var(--bg3)", borderRadius: 2, marginTop: 4, overflow: "hidden" }}>
                 <div style={{ width: `${belgeYuzdesi}%`, height: "100%", background: tema.gradient, borderRadius: 2, transition: "width 0.6s" }} />
               </div>
             </div>
@@ -605,7 +605,7 @@ export default function ProfilKart({ rol, userId }) {
               {kullanicininBelgeleri.map(b => (
                 <div key={b.id} style={{
                   padding: "12px 14px",
-                  background: "rgba(255,255,255,0.05)", borderRadius: 12,
+                  background: "var(--bg2)", borderRadius: 12,
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                   border: "1px solid rgba(16,185,129,0.2)"
                 }}>
@@ -644,14 +644,14 @@ export default function ProfilKart({ rol, userId }) {
               return (
                 <div key={bt.id} style={{
                   padding: "12px 14px",
-                  background: "rgba(255,255,255,0.03)", borderRadius: 12,
+                  background: "var(--bg2)", borderRadius: 12,
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                   border: `1px solid ${yuklendi ? "rgba(16,185,129,0.2)" : `${tema.birincil}15`}`
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{
                       width: 32, height: 32, borderRadius: 8,
-                      background: yuklendi ? "rgba(16,185,129,0.15)" : "rgba(255,255,255,0.05)",
+                      background: yuklendi ? "rgba(16,185,129,0.15)" : "var(--bg3)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: 14, color: yuklendi ? "#10b981" : "var(--text3)"
                     }}>
@@ -777,7 +777,7 @@ export default function ProfilKart({ rol, userId }) {
               </div>
               <div style={{
                 fontSize: 14, color: "var(--text2)", lineHeight: 1.8,
-                background: "rgba(255,255,255,0.04)", padding: 16, borderRadius: 12,
+                background: "var(--bg2)", padding: 16, borderRadius: 12,
                 border: `1px solid ${tema.birincil}15`, whiteSpace: "pre-line",
                 marginBottom: 24
               }}>
