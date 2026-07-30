@@ -1351,6 +1351,16 @@ export const AppProvider = ({ children }) => {
   // Supabase postgres_changes ile tüm tabloları dinle
   // Oturum açıldığında subscribe ol, kapandığında unsubscribe
   // ============================================
+
+  const seferleriYenile = useCallback(async () => {
+    if (!supabase) return;
+    const { data } = await supabase.from('seferler').select('*').order('tarih', { ascending: false }).limit(50);
+    if (data) {
+      console.log(`🚚 Seferler güncellendi: ${data.length}`);
+      setSeferler(data);
+    }
+  }, [supabase]);
+
   useEffect(() => {
     if (!supabase) return;
 
@@ -1398,12 +1408,13 @@ export const AppProvider = ({ children }) => {
 
     // seferler değişiklikleri → state'i yeniden yükle
     const seferlerChannel = subscribeTable('seferler', async () => {
-      const { data } = await supabase.from('seferler').select('*').order('tarih', { ascending: false }).limit(50);
-      if (data) {
-        console.log(`🚚 Seferler realtime güncellendi: ${data.length}`);
-        setSeferler(data);
-      }
+      await seferleriYenile();
     });
+
+    // Periyodik yenileme (realtime yedek olarak)
+    const yenilemeAraligi = setInterval(async () => {
+      await seferleriYenile();
+    }, 10000);
 
     // teklifler değişiklikleri
     const tekliflerChannel = subscribeTable('teklifler', async () => {
@@ -1456,7 +1467,7 @@ export const AppProvider = ({ children }) => {
       refreshBildirimler();
     }
 
-    // Cleanup: tüm kanalları kapat
+    // Cleanup: tüm kanalları kapat ve intervali temizle
     return () => {
       console.log('🧹 Realtime subscriptions temizleniyor...');
       ilanlarChannel?.unsubscribe();
@@ -1464,8 +1475,9 @@ export const AppProvider = ({ children }) => {
       tekliflerChannel?.unsubscribe();
       usersChannel?.unsubscribe();
       bildirimlerChannel?.unsubscribe();
+      clearInterval(yenilemeAraligi);
     };
-  }, [supabase, oturum?.id]);
+  }, [supabase, oturum?.id, seferleriYenile]);
 
   return (
     <Ctx.Provider value={{
