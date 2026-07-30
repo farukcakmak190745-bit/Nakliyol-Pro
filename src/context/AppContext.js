@@ -91,17 +91,18 @@ export const AppProvider = ({ children }) => {
 
         // Set the fetched data
         if (ilanlarData) {
-          // Fetch profile photos from storage
-          let fotoMap = {};
-          try {
-            const { data: dosyalar } = await supabase.storage.from('belgeler').list('profile_photos', { limit: 100 });
-            if (dosyalar?.length) {
-              dosyalar.forEach(d => {
-                const { data: { publicUrl } } = supabase.storage.from('belgeler').getPublicUrl(`profile_photos/${d.name}`);
-                fotoMap[d.name] = publicUrl;
-              });
-            }
-          } catch (_) {}
+          // Fetch profile photos from belgeler table
+          const { data: profilFotograflari } = await supabase
+            .from('belgeler')
+            .select('kullanici_id, url')
+            .eq('dosya_adi', 'profil_fotografi')
+            .order('olusturulma_tarihi', { ascending: false });
+          const fotoMap = {};
+          if (profilFotograflari) {
+            profilFotograflari.forEach(f => {
+              if (!fotoMap[f.kullanici_id]) fotoMap[f.kullanici_id] = f.url;
+            });
+          }
           // Her ilana olusturanın kullanıcı bilgilerini ekle + camelCase normalize
           const ilanlarWithUsers = ilanlarData.map(ilan => {
             const olusturanUser = usersData?.find(u => u.id === ilan.olusturan_id || u.email === ilan.olusturan);
