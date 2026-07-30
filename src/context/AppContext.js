@@ -1147,6 +1147,16 @@ export const AppProvider = ({ children }) => {
 
     const ilan = ilanlar.find(i => i.id === ilanId);
     if (!ilan) return;
+    console.log('📋 ilaniOnayla - ilan:', {
+      id: ilan.id,
+      yuklemeKonum: ilan.yuklemeKonum,
+      bosaltmaKonum: ilan.bosaltmaKonum,
+      yuklemeSaatBas: ilan.yuklemeSaatBas,
+      yuklemeSaatBit: ilan.yuklemeSaatBit,
+      bosaltmaSaatBas: ilan.bosaltmaSaatBas,
+      bosaltmaSaatBit: ilan.bosaltmaSaatBit,
+      faturaBaslik: ilan.faturaBaslik
+    });
 
     const mevcutSefer = seferler.find(s => (s.ilan_id === ilanId || s.ilanId === ilanId) && s.durum === "bekliyor");
     if (!mevcutSefer) {
@@ -1244,14 +1254,19 @@ export const AppProvider = ({ children }) => {
 
     // Bildirim oluştur - İşveren için
     if (supabase && mevcutSefer.olusturan_id) {
-      await supabase.from('bildirimler').insert({
-        kullanici_id: mevcutSefer.olusturan_id,
-        tur: 'sefer_onay',
-        baslik: `${kamyoncuAd} iş başvurusunu kabul etti`,
-        icerik: `${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}\n\nÇekici: ${plaka}\nDorse: ${dorsePlaka}\nTel: ${kamyoncuTel}`,
-        sefer_id: mevcutSefer.id,
-        ilan_id: ilanId
-      }).catch(err => console.error('Bildirim hatası:', err));
+      try {
+        const { error: bildirimErr } = await supabase.from('bildirimler').insert({
+          kullanici_id: mevcutSefer.olusturan_id,
+          tur: 'sefer_onay',
+          baslik: `${kamyoncuAd} iş başvurusunu kabul etti`,
+          icerik: `${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}\n\nÇekici: ${plaka}\nDorse: ${dorsePlaka}\nTel: ${kamyoncuTel}`,
+          sefer_id: mevcutSefer.id,
+          ilan_id: ilanId
+        });
+        if (bildirimErr) console.error('Bildirim hatası:', bildirimErr);
+      } catch (bildirimErr) {
+        console.error('Bildirim hatası:', bildirimErr);
+      }
     }
 
     // Bilgi mesajını konuşmaya gönder (konum, saat, fatura detaylarıyla)
@@ -1263,7 +1278,9 @@ export const AppProvider = ({ children }) => {
       if (ilan.bosaltmaSaatBas || ilan.bosaltmaSaatBit) detayMesaji += `⏰ Boşaltma saati: ${ilan.bosaltmaSaatBas || "?"} - ${ilan.bosaltmaSaatBit || "?"}\n`;
       if (ilan.faturaBaslik) detayMesaji += `🧾 Fatura: ${ilan.faturaBaslik}\n`;
       detayMesaji += `\nDetaylar için konuşma üzerinden iletişime geçin.`;
+      console.log('📤 mesajGonder çağrılıyor:', { konusmaId: yeniKonusma, mesaj: detayMesaji });
       await mesajGonder(yeniKonusma, detayMesaji);
+      console.log('✅ mesajGonder tamamlandı');
     }
   }, [ilanlar, seferler, konusmaAc, mesajGonder, supabase, oturum]);
 
