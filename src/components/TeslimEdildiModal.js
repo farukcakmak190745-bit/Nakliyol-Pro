@@ -3,20 +3,35 @@ import { useApp } from "../context/AppContext";
 import { useMesaj } from "../context/MesajContext";
 
 export default function TeslimEdildiModal({ sefer, onClose }) {
-  const { oturum, islemiTeslimEt } = useApp();
+  const { oturum, islemiTeslimEt, belgeEkle } = useApp();
   const mesajContext = useMesaj();
 
-  // Form state — kamyonun kendi IBAN'ı + açıklama
+  // Form state — kamyonun kendi IBAN'ı + açıklama + dosya
   const [iban, setIban] = useState("");
   const [ibanSahibi, setIbanSahibi] = useState("");
   const [aciklama, setAciklama] = useState("");
   const [gonderiyor, setGonderiyor] = useState(false);
+  const [dosya, setDosya] = useState(null);
+  const [dosyaAdi, setDosyaAdi] = useState("");
 
   // Profilindeki IBAN'ı default olarak göster
   useEffect(() => {
     if (oturum?.iban) setIban(oturum.iban);
     if (oturum?.ibanSahibi) setIbanSahibi(oturum.ibanSahibi);
   }, [oturum]);
+
+  const dosyaSec = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDosyaAdi(file.name);
+    try {
+      const yukluDosya = await mesajContext.dosyaYukle(file);
+      setDosya(yukluDosya);
+    } catch (err) {
+      console.error("Dosya okunamadı:", err);
+      alert("Dosya okunamadı. Lütfen tekrar deneyin.");
+    }
+  };
 
   const handleSubmit = async () => {
     if (!aciklama.trim()) {
@@ -33,6 +48,19 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
     try {
       // 1) Sefer durumunu güncelle
       await islemiTeslimEt(sefer.id);
+
+      // 1b) Teslim evrağını sefere ekle
+      if (dosya) {
+        belgeEkle(sefer.id, {
+          id: `belge_${Date.now()}`,
+          tip: dosya.tip,
+          ad: dosyaAdi,
+          veri: dosya.veri,
+          boyut: dosya.boyut,
+          tur: "teslim_evragi"
+        });
+        console.log('✅ Teslim evrağı sefere eklendi:', dosyaAdi);
+      }
 
       // 2) Konuşmayı bul (ilan_id üzerinden)
       const ilanId = sefer.ilan_id || sefer.ilanId;
@@ -59,12 +87,16 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
       }
 
       // 3) Mesaj içeriği
-      const mesajMetni =
+      let mesajMetni =
         `✅ İŞ TESLİM EDİLDİ\n\n` +
         `📝 ${aciklama}\n\n` +
         `💳 Ödeme Yapılacak IBAN:\n` +
         `${ibanSahibi ? `👤 ${ibanSahibi}\n` : ''}` +
         `🏦 ${iban}`;
+
+      if (dosya) {
+        mesajMetni += `\n\n📎 Teslim Evrağı: ${dosyaAdi}`;
+      }
 
       // 4) Mesajı gönder
       if (konusma?.id) {
@@ -185,6 +217,36 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
               fontFamily: "inherit"
             }}
           />
+
+          {/* Teslim Evrağı */}
+          <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text3)", display: "block", marginBottom: 6 }}>
+            📎 TESLİM EVRAĞI
+          </label>
+          <label style={{
+            display: "flex", alignItems: "center", gap: 10, padding: "14px",
+            background: "var(--bg2)", border: "1px dashed var(--border2)",
+            borderRadius: "12px", cursor: "pointer", marginBottom: 22,
+            transition: "all 0.2s"
+          }}>
+            <span style={{ fontSize: 24 }}>{dosya ? "📄" : "📎"}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: dosya ? "var(--text2)" : "var(--text3)" }}>
+                {dosya ? dosyaAdi : "Teslim evrağı yükle (opsiyonel)"}
+              </div>
+              {dosya && (
+                <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>
+                  {dosya.tip === "img" ? "🖼️ Görsel" : dosya.tip === "pdf" ? "📄 PDF" : "📁 Dosya"} • {(dosya.boyut / 1024).toFixed(1)} KB
+                </div>
+              )}
+            </div>
+            {dosya && (
+              <button
+                onClick={(e) => { e.preventDefault(); setDosya(null); setDosyaAdi(""); }}
+                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "var(--text3)", padding: "4px" }}
+              >✕</button>
+            )}
+            <input type="file" accept="image/*,.pdf" onChange={dosyaSec} style={{ display: "none" }} />
+          </label>
 
           {/* Butonlar */}
           <div style={{ display: "flex", gap: 10 }}>
