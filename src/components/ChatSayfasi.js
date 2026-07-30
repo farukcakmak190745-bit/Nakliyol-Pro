@@ -3,19 +3,18 @@ import { useApp } from "../context/AppContext";
 import { useMesaj } from "../context/MesajContext";
 
 export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
-  try {
-    const { oturum, seferler } = useApp();
-    const {
-      konusmalar,
-      mesajGonder,
-      mesajiOkundu,
-      tumMesajlariOkundu,
-      konusmaBasliginiGuncelle,
-      konusmaTemizle,
-      dosyaYukle,
-      yaziyorGoster,
-      mesajSil
-    } = useMesaj();
+  const { oturum, seferler } = useApp();
+  const {
+    konusmalar,
+    mesajGonder,
+    mesajiOkundu,
+    tumMesajlariOkundu,
+    konusmaBasliginiGuncelle,
+    konusmaTemizle,
+    dosyaYukle,
+    yaziyorGoster,
+    mesajSil
+  } = useMesaj();
 
   console.log("ChatSayfasi rendered - konusmaId:", konusmaId, "oturum:", oturum);
 
@@ -89,15 +88,6 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
       messageContainerRef.current?.scrollTo({ top: messageContainerRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [konusma?.mesajlar]);
-
-  if (!konusma) return (
-    <div className="scroll-content" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400 }}>
-      <div style={{ textAlign: "center" }}>
-        <button onClick={onGeri} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer" }}>‹</button>
-        <div className="display" style={{ fontSize: 20, marginTop: 16 }}>Konuşma bulunamadı</div>
-      </div>
-    </div>
-  );
 
   const dosyaSecVeGonder = async (e) => {
     const dosya = e.target.files[0];
@@ -521,35 +511,4 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
       `}</style>
     </div>
   );
-  } catch (error) {
-    console.error('ChatSayfasi Component Error:', error);
-    return (
-      <div style={{
-        padding: 20,
-        textAlign: 'center',
-        color: 'var(--text3)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '400px'
-      }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🚨</div>
-        <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Chat Sayfası Hatası</div>
-        <div style={{ fontSize: 12, marginBottom: 16 }}>{error.message}</div>
-        <button onClick={() => window.location.reload()} style={{
-          padding: '10px 20px',
-          background: 'var(--guldum-gradient)',
-          border: 'none',
-          borderRadius: '8px',
-          color: '#0a0a0a',
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: 'pointer'
-        }}>
-          Sayfayı Yenile
-        </button>
-      </div>
-    );
-  }
 }
