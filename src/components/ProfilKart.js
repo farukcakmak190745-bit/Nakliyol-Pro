@@ -22,8 +22,8 @@ export default function ProfilKart({ rol, userId }) {
   // Fallback değerler - render'dan önce tanımlanmalı
   const tema = isKamyoncu
     ? { birincil: "#fbbf24", ikincil: "#f59e0b", gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)", iconBg: "rgba(251,191,36,0.15)" }
-    : { birincil: "#3b82f6", ikincil: "#2563eb", gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", iconBg: "rgba(59,130,246,0.15)" };
-  const defaultTema = { birincil: "#3b82f6", ikincil: "#2563eb", gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)", iconBg: "rgba(59,130,246,0.15)" };
+    : { birincil: "#1d4ed8", ikincil: "#0f172a", gradient: "linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%)", iconBg: "rgba(29,78,216,0.15)" };
+  const defaultTema = { birincil: "#1d4ed8", ikincil: "#0f172a", gradient: "linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%)", iconBg: "rgba(29,78,216,0.15)" };
 
   const [seciliKullanici, setSeciliKullanici] = useState(null);
 
@@ -269,12 +269,12 @@ export default function ProfilKart({ rol, userId }) {
         position: "relative",
         margin: "0 -16px 0 -16px",
         padding: "24px 20px 24px",
-        background: `radial-gradient(ellipse at top, ${isKamyoncu ? "rgba(251,191,36,0.25)" : "rgba(59,130,246,0.25)"} 0%, transparent 70%), linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%)`,
-        borderBottom: `1px solid ${isKamyoncu ? "rgba(251,191,36,0.2)" : "rgba(59,130,246,0.2)"}`,
+        background: `radial-gradient(ellipse at top, ${isKamyoncu ? "rgba(251,191,36,0.25)" : "rgba(29,78,216,0.25)"} 0%, transparent 70%), linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 100%)`,
+        borderBottom: `1px solid ${isKamyoncu ? "rgba(251,191,36,0.2)" : "rgba(29,78,216,0.2)"}`,
         overflow: "hidden"
       }}>
         {/* Dekoratif halkalar */}
-        <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: isKamyoncu ? "rgba(251,191,36,0.08)" : "rgba(59,130,246,0.08)", filter: "blur(40px)" }} />
+        <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: isKamyoncu ? "rgba(251,191,36,0.08)" : "rgba(29,78,216,0.08)", filter: "blur(40px)" }} />
         <div style={{ position: "absolute", bottom: -40, left: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(139,92,246,0.06)", filter: "blur(30px)" }} />
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", zIndex: 2 }}>
@@ -291,13 +291,13 @@ export default function ProfilKart({ rol, userId }) {
             style={{
               padding: "10px 16px",
               background: duzenle ? "var(--bg3)" : (tema?.gradient || defaultTema.gradient),
-              color: duzenle ? "var(--text)" : "#0a0a0a",
+              color: duzenle ? "var(--text)" : (isKamyoncu ? "#0a0a0a" : "#fff"),
               border: "none",
               borderRadius: "12px",
               fontSize: 12,
               fontWeight: 700,
               cursor: "pointer",
-              boxShadow: duzenle ? "none" : `0 4px 16px ${isKamyoncu ? "rgba(251,191,36,0.4)" : "rgba(59,130,246,0.4)"}`,
+              boxShadow: duzenle ? "none" : `0 4px 16px ${isKamyoncu ? "rgba(251,191,36,0.4)" : "rgba(29,78,216,0.4)"}`,
               transition: "all 0.3s"
             }}
           >
@@ -313,7 +313,7 @@ export default function ProfilKart({ rol, userId }) {
           padding: "24px 20px 24px",
           marginBottom: 14,
           background: "linear-gradient(180deg, var(--bg2) 0%, var(--bg1) 100%)",
-          border: `1px solid ${isKamyoncu ? "rgba(251,191,36,0.25)" : "rgba(59,130,246,0.25)"}`,
+          border: `1px solid ${isKamyoncu ? "rgba(251,191,36,0.25)" : "rgba(29,78,216,0.25)"}`,
           position: "relative",
           overflow: "hidden"
         }}>
@@ -323,12 +323,12 @@ export default function ProfilKart({ rol, userId }) {
             height: 100,
             margin: "0 auto 16px",
             borderRadius: "50%",
-            background: tema && tema.gradient ? tema.gradient : "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+            background: tema && tema.gradient ? tema.gradient : "linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 48,
-            boxShadow: `0 8px 24px ${isKamyoncu ? "rgba(251,191,36,0.4)" : "rgba(59,130,246,0.4)"}`,
+            boxShadow: `0 8px 24px ${isKamyoncu ? "rgba(251,191,36,0.4)" : "rgba(29,78,216,0.4)"}`,
             border: "4px solid var(--bg1)"
           }}>
             {(() => {
@@ -369,8 +369,7 @@ export default function ProfilKart({ rol, userId }) {
           <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
             <span style={{
               background: (tema?.gradient) || defaultTema.gradient,
-              color: "#0a0a0a",
-              padding: "5px 12px",
+              color: isKamyoncu ? "#0a0a0a" : "#fff",
               borderRadius: "20px",
               fontSize: 11,
               fontWeight: 700,
@@ -498,13 +497,13 @@ export default function ProfilKart({ rol, userId }) {
                 marginTop: 14,
                 padding: "14px",
                 background: (tema?.gradient) || defaultTema.gradient,
-                color: "#0a0a0a",
+                color: isKamyoncu ? "#0a0a0a" : "#fff",
                 border: "none",
                 borderRadius: "12px",
                 fontSize: 14,
                 fontWeight: 700,
                 cursor: "pointer",
-                boxShadow: `0 4px 16px ${isKamyoncu ? "rgba(251,191,36,0.4)" : "rgba(59,130,246,0.4)"}`,
+                boxShadow: `0 4px 16px ${isKamyoncu ? "rgba(251,191,36,0.4)" : "rgba(29,78,216,0.4)"}`,
                 transition: "all 0.2s"
               }}
             >
@@ -789,7 +788,7 @@ export default function ProfilKart({ rol, userId }) {
             { icon: "help", text: "Yardım & Destek", color: "var(--text2)", action: () => {
               setAktifModal("yardim");
             }},
-            { icon: "file", text: "İş Geçmişim", color: "#3b82f6", action: () => {
+            { icon: "file", text: "İş Geçmişim", color: "var(--mavi)", action: () => {
               if (isKamyoncu) {
                 window.location.hash = "#/app?sekme=ilanlar";
               } else {
@@ -887,7 +886,7 @@ export default function ProfilKart({ rol, userId }) {
               </div>
               <div style={{
                 fontSize: 14, color: 'var(--text2)', lineHeight: 1.8,
-                background: 'rgba(22,22,22,0.5)', padding: 14, borderRadius: '12px',
+                background: 'rgba(255,255,255,0.95)', padding: 14, borderRadius: '12px',
                 border: '1px solid rgba(251,191,36,0.1)', whiteSpace: 'pre-line',
                 marginBottom: 24
               }}>

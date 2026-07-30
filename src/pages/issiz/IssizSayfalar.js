@@ -62,7 +62,7 @@ export function IlanVerSayfasi() {
   const inputStyle = "input";
   const Label = ({ children, zorunlu }) => (
     <label className="label" style={{ marginBottom: 8 }}>
-      {zorunlu ? <>{children} <span style={{ color: "#ea580c", fontSize: 10 }}>*</span></> : children}
+      {zorunlu ? <>{children} <span style={{ color: "var(--turuncu)", fontSize: 10 }}>*</span></> : children}
     </label>
   );
 
@@ -171,7 +171,7 @@ export function IlanVerSayfasi() {
           <div style={{ display: "flex", gap: 8 }}>
             <input className={inputStyle} placeholder="Yükleme adresini girin..." value={form.yuklemeKonum} onChange={e => set("yuklemeKonum", e.target.value)} style={{ flex: 1 }} />
             {form.yuklemeKonum && (
-              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.yuklemeKonum)}`} target="_blank" rel="noopener noreferrer" style={{ padding: "10px 12px", borderRadius: "10px", background: "var(--bg3)", border: "1px solid var(--border2)", color: "#3b82f6", textDecoration: "none", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.yuklemeKonum)}`} target="_blank" rel="noopener noreferrer" style={{ padding: "10px 12px", borderRadius: "10px", background: "var(--bg3)", border: "1px solid var(--border2)", color: "#1d4ed8", textDecoration: "none", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
                 🗺 Harita
               </a>
             )}
@@ -196,7 +196,7 @@ export function IlanVerSayfasi() {
           <div style={{ display: "flex", gap: 8 }}>
             <input className={inputStyle} placeholder="Boşaltma adresini girin..." value={form.bosaltmaKonum} onChange={e => set("bosaltmaKonum", e.target.value)} style={{ flex: 1 }} />
             {form.bosaltmaKonum && (
-              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.bosaltmaKonum)}`} target="_blank" rel="noopener noreferrer" style={{ padding: "10px 12px", borderRadius: "10px", background: "var(--bg3)", border: "1px solid var(--border2)", color: "#3b82f6", textDecoration: "none", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
+              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.bosaltmaKonum)}`} target="_blank" rel="noopener noreferrer" style={{ padding: "10px 12px", borderRadius: "10px", background: "var(--bg3)", border: "1px solid var(--border2)", color: "#1d4ed8", textDecoration: "none", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
                 🗺 Harita
               </a>
             )}
@@ -222,7 +222,7 @@ export function IlanVerSayfasi() {
             { tur: "pesin", gun: 0, label: "Peşin", desc: "Hemen tam ödeme", color: "#10b981", ikon: "💰" },
             { tur: "vadeli", gun: 7, label: "7 Gün", desc: "Teslimden 7 gün sonra", color: "#ef4444", ikon: "⚡" },
             { tur: "vadeli", gun: 15, label: "15 Gün", desc: "Teslimden 15 gün sonra", color: "#fbbf24", ikon: "⏰" },
-            { tur: "vadeli", gun: 30, label: "30 Gün", desc: "Teslimden 30 gün sonra", color: "#3b82f6", ikon: "📅" },
+            { tur: "vadeli", gun: 30, label: "30 Gün", desc: "Teslimden 30 gün sonra", color: "#0f172a", ikon: "📅" },
           ].map((opt, idx) => {
             // Seçim karşılaştırması: tur + gun birlikte (çünkü tur "vadeli" 3 seçeneğe ait)
             const secili = form.odemeTuru === opt.tur && Number(form.odemeGun) === opt.gun;
@@ -546,12 +546,12 @@ export function TekliflerSayfasi() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Plaka</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#3b82f6" }}>{typeof s?.plaka === 'string' ? s?.plaka : '—'}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#1d4ed8" }}>{typeof s?.plaka === 'string' ? s?.plaka : '—'}</div>
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Ücret</div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24" }}>₺{typeof s?.ucret === 'number' ? s?.ucret.toLocaleString() : '0'}</div>
-                  <div style={{ fontSize: 9, color: "#3b82f6", marginTop: 2 }}>{!s?.odemeGun || s?.odemeGun === 0 || s?.odemeTuru === "pesin" ? "💰 Peşin" : `${s?.odemeGun} Gün`}</div>
+                  <div style={{ fontSize: 9, color: "#1d4ed8", marginTop: 2 }}>{!s?.odemeGun || s?.odemeGun === 0 || s?.odemeTuru === "pesin" ? "💰 Peşin" : `${s?.odemeGun} Gün`}</div>
                   {s?.kdvOrani > 0 && <div style={{ fontSize: 9, color: "#10b981", marginTop: 1 }}>+KDV</div>}
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
@@ -674,7 +674,7 @@ export function MesajlarSayfasi({ onGeri }) {
               {s && (
                 <div style={{
                   position: "absolute", bottom: -2, right: -2, width: 14, height: 14, borderRadius: "50%",
-                  background: s.durum === "odendi" ? "#10b981" : s.durum === "yolda" ? "#3b82f6" : s.durum === "teslima_bekleniyor" ? "#f59e0b" : "#6b7280",
+                  background: s.durum === "odendi" ? "#10b981" : s.durum === "yolda" ? "#1d4ed8" : s.durum === "teslima_bekleniyor" ? "#f59e0b" : "#6b7280",
                   border: "2px solid var(--bg1)"
                 }} />
               )}

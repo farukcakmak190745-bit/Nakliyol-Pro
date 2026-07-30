@@ -63,7 +63,7 @@ const IlanKart = ({ ilan, onClick }) => {
         <div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
           <IconMap.calendar size={12} className="icon-primary" /> {formatTarih(ilan.tarih)}
         </div>
-        <div style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.08) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, color: "#3b82f6", border: "1px solid rgba(59,130,246,0.2)" }}>
+        <div style={{ background: "linear-gradient(135deg, rgba(29,78,216,0.15) 0%, rgba(29,78,216,0.08) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, color: "#1d4ed8", border: "1px solid rgba(29,78,216,0.2)" }}>
           {(() => {
             const AracIcon = IconMap[aracIkon[ilan.aracTip] || "truck"];
             return AracIcon ? <AracIcon size={14} className="icon-primary" /> : <IconMap.truck size={14} className="icon-primary" />;
@@ -150,7 +150,7 @@ export default function IlanlarSayfasi() {
                 <span className="rota-arrow">→</span>
                 <span className="rota-city">{secilen?.nereye || "-"}</span>
               </div>
-              <div style={{ color: "var(--text2)", fontSize: 13, lineHeight: 1.8, marginBottom: 24, background: "rgba(22,22,22,0.5)", padding: 14, borderRadius: "12px", border: "1px solid rgba(251,191,36,0.1)" }}>
+              <div style={{ color: "var(--text2)", fontSize: 13, lineHeight: 1.8, marginBottom: 24, background: "rgba(255,255,255,0.9)", padding: 14, borderRadius: "12px", border: "1px solid rgba(251,191,36,0.1)" }}>
                 {secilen?.aciklama || "Açıklama yok"}
               </div>
 
@@ -243,7 +243,7 @@ export default function IlanlarSayfasi() {
                     }}
                     onFocus={(e) => {
                       e.target.style.borderColor = "#fbbf24";
-                      e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.2), 0 0 0 3px rgba(251,191,36,0.2)";
+                      e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.04), 0 0 0 3px rgba(29,78,216,0.15)";
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = "var(--border2)";
@@ -275,7 +275,7 @@ export default function IlanlarSayfasi() {
                     }}
                     onFocus={(e) => {
                       e.target.style.borderColor = "#fbbf24";
-                      e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.2), 0 0 0 3px rgba(251,191,36,0.2)";
+                      e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.04), 0 0 0 3px rgba(29,78,216,0.15)";
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = "var(--border2)";
@@ -310,14 +310,14 @@ export default function IlanlarSayfasi() {
                     }}
                     onFocus={(e) => {
                       e.target.style.borderColor = "#fbbf24";
-                      e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.2), 0 0 0 3px rgba(251,191,36,0.2)";
+                      e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.04), 0 0 0 3px rgba(29,78,216,0.15)";
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = "var(--border2)";
                       e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.2)";
                     }}
                   />
-                  <div style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#3b82f6", fontSize: "18px" }}>🚚</div>
+                  <div style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#1d4ed8", fontSize: "18px" }}>🚚</div>
                 </div>
                 <div style={{ position: "relative" }}>
                   <input
@@ -342,14 +342,14 @@ export default function IlanlarSayfasi() {
                     }}
                     onFocus={(e) => {
                       e.target.style.borderColor = "#fbbf24";
-                      e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.2), 0 0 0 3px rgba(251,191,36,0.2)";
+                      e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.04), 0 0 0 3px rgba(29,78,216,0.15)";
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = "var(--border2)";
                       e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.2)";
                     }}
                   />
-                  <div style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#3b82f6", fontSize: "18px" }}>🚐</div>
+                  <div style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#1d4ed8", fontSize: "18px" }}>🚐</div>
                 </div>
               </div>
 
@@ -377,7 +377,7 @@ export default function IlanlarSayfasi() {
                   }}
                   onFocus={(e) => {
                     e.target.style.borderColor = "#fbbf24";
-                    e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.2), 0 0 0 3px rgba(251,191,36,0.2)";
+                    e.target.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.04), 0 0 0 3px rgba(29,78,216,0.15)";
                   }}
                   onBlur={(e) => {
                     e.target.style.borderColor = "var(--border2)";

@@ -150,7 +150,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
       <div style={{
         display: "flex", alignItems: "center", gap: 12, padding: "14px 18px",
         borderBottom: "1px solid rgba(251,191,36,0.2)",
-        background: "linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(22,22,22,0.9) 100%)",
+        background: "linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(248,247,244,0.95) 100%)",
         backdropFilter: "blur(10px)"
       }}>
         <button onClick={onGeri} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer", transition: "var(--tr)" }}>‹</button>
@@ -174,7 +174,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
         {okunmamis > 0 && (
           <div style={{
             display: "flex", alignItems: "center", gap: 4,
-            background: "linear-gradient(135deg, var(--guldum-gradient), #ea580c)",
+            background: "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)",
             color: "#fff",
             padding: "5px 12px",
             borderRadius: "20px",
@@ -212,7 +212,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
             {sefer && (
               <div style={{
                 margin: "0 12px 8px", padding: "12px 16px",
-                background: "linear-gradient(135deg, rgba(251,191,36,0.1) 0%, rgba(22,22,22,0.8) 100%)",
+                background: "linear-gradient(135deg, rgba(251,191,36,0.1) 0%, rgba(248,247,244,0.9) 100%)",
                 border: "1px solid rgba(251,191,36,0.2)", borderRadius: "14px"
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -319,7 +319,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
           <>
             {konusma.yaziyor && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 16px", background: "var(--bg1)", borderRadius: "12px", marginBottom: 12, animation: "fadeIn 0.3s" }}>
-                <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, animation: "bounce 1.4s infinite ease-in-out both" }}>
+                <div style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--mavi)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, animation: "bounce 1.4s infinite ease-in-out both" }}>
                   <span style={{ animationDelay: "-0.32s" }}>•</span>
                   <span style={{ animationDelay: "-0.16s" }}>•</span>
                   <span>•</span>
@@ -361,11 +361,11 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                     lineHeight: 1.6,
                     position: "relative",
                     alignSelf: isBen ? "flex-end" : "flex-start",
-                    background: isBen ? "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" : "var(--bg2)",
+                    background: isBen ? "var(--satin-gradient)" : "var(--bg2)",
                     color: isBen ? "#fff" : "var(--text2)",
                     animation: "fadeIn 0.3s ease",
-                    border: isBen ? "1px solid rgba(59,130,246,0.3)" : "1px solid rgba(251,191,36,0.1)",
-                    boxShadow: isBen ? "0 4px 20px rgba(59,130,246,0.2)" : "none"
+                    border: isBen ? "1px solid rgba(29,78,216,0.2)" : "1px solid rgba(245,158,11,0.1)",
+                    boxShadow: isBen ? "0 4px 20px rgba(29,78,216,0.15)" : "none"
                   }}>
                     {m.veriTipi !== "metin" && m.veri && (
                       <div style={{
@@ -492,7 +492,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
             className="btn"
             style={{
               padding: "12px 18px",
-              background: (mesaj.trim() || dosya) && !yukleniyor ? "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" : "var(--bg3)",
+              background: (mesaj.trim() || dosya) && !yukleniyor ? "var(--satin-gradient)" : "var(--bg3)",
               opacity: (mesaj.trim() || dosya) && !yukleniyor ? 1 : 0.5,
               cursor: (mesaj.trim() || dosya) && !yukleniyor ? "pointer" : "not-allowed",
               borderRadius: "12px",

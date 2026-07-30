@@ -47,7 +47,7 @@ export function BildirimlerModal() {
               fontSize: 14,
               color: 'var(--text2)',
               lineHeight: 1.8,
-              background: 'rgba(22,22,22,0.5)',
+              background: 'rgba(255,255,255,0.95)',
               padding: 14,
               borderRadius: '12px',
               border: '1px solid rgba(251,191,36,0.1)',

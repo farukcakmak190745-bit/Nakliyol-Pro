@@ -100,19 +100,19 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>
-            <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>AD <span style={{ color: "#ea580c" }}>*</span></label>
+            <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>AD <span style={{ color: "var(--turuncu)" }}>*</span></label>
             <input className="input" placeholder="Mehmet" value={form.ad} onChange={e => set("ad", e.target.value)} />
             <Hata alan="ad" />
             <Hata alan="soyad" />
           </div>
           <div>
-            <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>SOYAD <span style={{ color: "#ea580c" }}>*</span></label>
+            <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>SOYAD <span style={{ color: "var(--turuncu)" }}>*</span></label>
             <input className="input" placeholder="Yılmaz" value={form.soyad} onChange={e => set("soyad", e.target.value)} />
             <Hata alan="soyad" />
           </div>
         </div>
         <div style={{ marginTop: 12 }}>
-          <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>TELEFON <span style={{ color: "#ea580c" }}>*</span></label>
+          <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>TELEFON <span style={{ color: "var(--turuncu)" }}>*</span></label>
           <div style={{ display: "flex", gap: 8 }}>
             <div style={{ background: "var(--bg2)", border: "1px solid rgba(251,191,36,0.1)", borderRadius: "12px", padding: "12px 16px", fontSize: 14, display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>🇹🇷 +90</div>
             <input className="input" placeholder="5xx xxx xx xx" maxLength={10} value={form.telefon} onChange={e => set("telefon", e.target.value.replace(/\D/g, ""))} />
@@ -120,7 +120,7 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
           <Hata alan="telefon" />
         </div>
         <div style={{ marginTop: 12 }}>
-          <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>TC KİMLİK NO <span style={{ color: "#ea580c" }}>*</span></label>
+          <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>TC KİMLİK NO <span style={{ color: "var(--turuncu)" }}>*</span></label>
           <input className="input" placeholder="xxxxxxxxxxx" maxLength={11} value={form.tc} onChange={e => set("tc", e.target.value.replace(/\D/g, ""))} />
         </div>
       </div>
@@ -132,14 +132,14 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
             <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: 1.5, color: "#fbbf24" }}>ARAÇ BİLGİLERİ</span>
           </div>
           <div>
-            <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>ARAÇ TİPİ <span style={{ color: "#ea580c" }}>*</span></label>
+            <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>ARAÇ TİPİ <span style={{ color: "var(--turuncu)" }}>*</span></label>
             <select className="input" value={form.aracTip} onChange={e => set("aracTip", e.target.value)} style={{ cursor: "pointer", background: "var(--bg2)" }}>
               <option value="">Seçin...</option>
               {["TIR", "10 Teker Açık", "10 Teker Tenteli", "Kırkayak Açık", "Kamyonet", "50 NC Kamyon", "Diğer"].map(t => <option key={t}>{t}</option>)}
             </select>
           </div>
           <div style={{ marginTop: 12 }}>
-            <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>PLAKA <span style={{ color: "#ea580c" }}>*</span></label>
+            <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>PLAKA <span style={{ color: "var(--turuncu)" }}>*</span></label>
             <input className="input" placeholder="34 ABC 123" value={form.plaka} onChange={e => set("plaka", e.target.value.toUpperCase())} />
             <Hata alan="plaka" />
           </div>
@@ -153,7 +153,7 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
             <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: 1.5, color: "#fbbf24" }}>FİRMA BİLGİLERİ</span>
           </div>
           <div>
-            <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>FİRMA ADI <span style={{ color: "#ea580c" }}>*</span></label>
+            <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>FİRMA ADI <span style={{ color: "var(--turuncu)" }}>*</span></label>
             <input className="input" placeholder="Örnek Taşımacılık A.Ş." value={form.firmaAdi} onChange={e => set("firmaAdi", e.target.value)} />
             <Hata alan="firmaAdi" />
           </div>
@@ -170,12 +170,12 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
           <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: 1.5, color: "#fbbf24" }}>ŞİFRE BELİRLE</span>
         </div>
         <div style={{ marginBottom: 12 }}>
-          <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>ŞİFRE <span style={{ color: "#ea580c" }}>*</span></label>
+          <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>ŞİFRE <span style={{ color: "var(--turuncu)" }}>*</span></label>
           <input className="input" type="password" placeholder="En az 6 karakter" value={form.sifre} onChange={e => set("sifre", e.target.value)} />
           <Hata alan="sifre" />
         </div>
         <div>
-          <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>ŞİFRE TEKRAR <span style={{ color: "#ea580c" }}>*</span></label>
+          <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>ŞİFRE TEKRAR <span style={{ color: "var(--turuncu)" }}>*</span></label>
           <input className="input" type="password" placeholder="Tekrar girin" value={form.sifre2} onChange={e => set("sifre2", e.target.value)} />
           <Hata alan="sifre2" />
         </div>
@@ -277,12 +277,12 @@ export default function GirisEkrani() {
             <button onClick={() => setEkran("ana")} style={{ color: "var(--text3)", fontSize: 13, marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>← Geri</button>
             <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", marginBottom: 14, textAlign: "center" }}>NASIL KULLANACAKSINIZ?</div>
             <button onClick={() => { setSecRol("kamyoncu"); setEkran("kayit-form"); }} style={{ width: "100%", background: "var(--bg1)", border: "1px solid var(--border2)", borderRadius: "16px", padding: "18px 20px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer", transition: "var(--tr)", marginBottom: 10, color: "var(--text)", textAlign: "left" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "#ea580c"; e.currentTarget.style.background = "var(--bg2)"; }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--turuncu)"; e.currentTarget.style.background = "var(--bg2)"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border2)"; e.currentTarget.style.background = "var(--bg1)"; }}
             >
               <span style={{ fontSize: 36 }}>🚛</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: "var(--font-d)", fontSize: 18, letterSpacing: 0.5, color: "#ea580c" }}>Kamyoncu</div>
+                <div style={{ fontFamily: "var(--font-d)", fontSize: 18, letterSpacing: 0.5, color: "var(--turuncu)" }}>Kamyoncu</div>
                 <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>İlanları gör, teklif ver, sefer yönet</div>
               </div>
               <span style={{ color: "var(--text3)", fontSize: 20 }}>›</span>

@@ -32,8 +32,8 @@ export default function AdminPanel() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 12, marginBottom: 24 }}>
             {[
               { val: ilanlarList.filter(i=>i.durum==="aktif").length, lbl: "Aktif İlan", renk: "#10b981", icon: "file" },
-              { val: seferlerList.filter(s=>s.durum==="yolda"||s.durum==="teslima_bekleniyor").length, lbl: "Aktif Sefer", renk: "#3b82f6", icon: "map" },
-              { val: kullanicilarList.length, lbl: "Toplam Kullanıcı", renk: "#3b82f6", icon: "users" },
+              { val: seferlerList.filter(s=>s.durum==="yolda"||s.durum==="teslima_bekleniyor").length, lbl: "Aktif Sefer", renk: "#1d4ed8", icon: "map" },
+              { val: kullanicilarList.length, lbl: "Toplam Kullanıcı", renk: "#1d4ed8", icon: "users" },
               { val: "₺142K", lbl: "Bu Ay Ciro", renk: "#fbbf24", icon: "creditcard" },
             ].map(s => (
               <div key={s.lbl} style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "16px", padding: 18 }}>
@@ -128,7 +128,7 @@ export default function AdminPanel() {
               return (
               <tr key={k.id}>
                 <td style={tdStyle}>{k.ad}</td>
-                <td style={tdStyle}><div style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.08) 100%)", color: "#3b82f6", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{k.rol}</div></td>
+                <td style={tdStyle}><div style={{ background: "linear-gradient(135deg, rgba(29,78,216,0.15) 0%, rgba(29,78,216,0.08) 100%)", color: "#1d4ed8", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{k.rol}</div></td>
                 <td style={{...tdStyle,color:"#fbbf24",fontWeight:700}}><IconMap.star size={16} /> {k.puan}</td>
                 <td style={tdStyle}>{aktifSeferler.length}</td>
                 <td style={tdStyle}><div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.08) 100%)", color: "#10b981", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{k.durum}</div></td>
@@ -147,7 +147,7 @@ export default function AdminPanel() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
             {[
               { lbl: "Bu Ay Komisyon", val: "₺14.280", renk: "#10b981" },
-              { lbl: "Bu Ay Abonelik", val: "₺8.970", renk: "#3b82f6" },
+              { lbl: "Bu Ay Abonelik", val: "₺8.970", renk: "#1d4ed8" },
               { lbl: "Toplam Ciro", val: "₺142K", renk: "#fbbf24" },
               { lbl: "Bekleyen Ödeme", val: "₺3.200", renk: "#ea580c" },
             ].map(s => (
@@ -171,7 +171,7 @@ export default function AdminPanel() {
                     <td style={tdStyle}>{r.tarih}</td>
                     <td style={tdStyle}>{r.islem}</td>
                     <td style={{...tdStyle,color:"#10b981",fontWeight:600}}>{r.kom}</td>
-                    <td style={{...tdStyle,color:"#3b82f6",fontWeight:600}}>{r.ab}</td>
+                    <td style={{...tdStyle,color:"#1d4ed8",fontWeight:600}}>{r.ab}</td>
                     <td style={tdStyle}><div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.08) 100%)", color: "#10b981", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{r.d}</div></td>
                   </tr>
                 ))}
@@ -238,8 +238,8 @@ export default function AdminPanel() {
             <button key={m.key || `menu-${m.label}`} onClick={() => setAktif(m.key)} style={{
               width: "100%", display: "flex", alignItems: "center", gap: 10,
               padding: "12px 16px", background: "none", border: "none",
-              color: aktif === m.key ? "#fbbf24" : "var(--text3)",
-              borderRight: aktif === m.key ? "3px solid #fbbf24" : "3px solid transparent",
+              color: aktif === m.key ? "#1d4ed8" : "var(--text3)",
+              borderRight: aktif === m.key ? "3px solid #1d4ed8" : "3px solid transparent",
               fontSize: 13, fontWeight: aktif === m.key ? 600 : 400,
               cursor: "pointer", textAlign: "left", transition: "var(--tr)",
             }}>
@@ -254,8 +254,8 @@ export default function AdminPanel() {
 
       {/* Main content */}
       <div style={{ flex: 1, overflow: "auto" }}>
-        <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(251,191,36,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(15,15,15,0.95)", backdropFilter: "blur(14px)", zIndex: 10 }}>
-          <div style={{ fontFamily: "var(--font-d)", fontSize: 18, letterSpacing: 1, color: "#fbbf24" }}>{menu.find(m=>m.key===aktif)?.label?.toUpperCase()}</div>
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(251,191,36,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(14px)", zIndex: 10 }}>
+          <div style={{ fontFamily: "var(--font-d)", fontSize: 18, letterSpacing: 1, color: "#1d4ed8" }}>{menu.find(m=>m.key===aktif)?.label?.toUpperCase()}</div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", color: "#fbbf24", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, border: "1px solid rgba(251,191,36,0.2)" }}>{seferlerList.filter(s=>s.durum==="teslima_bekleniyor").length} teslim bekliyor</div>
             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}><IconMap.settings size={16} className="icon-primary" /></div>

@@ -102,7 +102,7 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Plaka</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#3b82f6" }}>{sefer.plaka || "-"}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#1d4ed8" }}>{sefer.plaka || "-"}</div>
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Ücret</div>
@@ -352,7 +352,7 @@ export function MesajlarSayfasi({ onGeri }) {
               {s && (
                 <div style={{
                   position: "absolute", bottom: -2, right: -2, width: 14, height: 14, borderRadius: "50%",
-                  background: s.durum === "odendi" ? "#10b981" : s.durum === "yolda" ? "#3b82f6" : s.durum === "teslima_bekleniyor" ? "#f59e0b" : "#6b7280",
+                  background: s.durum === "odendi" ? "#10b981" : s.durum === "yolda" ? "#1d4ed8" : s.durum === "teslima_bekleniyor" ? "#f59e0b" : "#6b7280",
                   border: "2px solid var(--bg1)"
                 }} />
               )}
@@ -365,7 +365,7 @@ export function MesajlarSayfasi({ onGeri }) {
             </div>
             {k.okunmamis > 0 && (
               <div style={{
-                background: "#3b82f6",
+                background: "#1d4ed8",
                 color: "#fff",
                 borderRadius: "50%",
                 width: 22,
@@ -375,7 +375,7 @@ export function MesajlarSayfasi({ onGeri }) {
                 alignItems: "center",
                 justifyContent: "center",
                 fontWeight: 700,
-                boxShadow: "0 4px 12px rgba(59,130,246,0.4)"
+                boxShadow: "0 4px 12px rgba(29,78,216,0.4)"
               }}>
                 {k.okunmamis}
               </div>
