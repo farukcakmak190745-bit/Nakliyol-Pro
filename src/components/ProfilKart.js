@@ -244,10 +244,10 @@ export default function ProfilKart({ rol, userId }) {
       fontWeight: 700,
       letterSpacing: 0.5
     }),
-    bolumBaslik: (ikon, text) => ({
+    bolumBaslik: {
       display: "flex", alignItems: "center", gap: 10, marginBottom: 14,
       fontSize: 12, fontWeight: 700, letterSpacing: 1, color: "var(--text3)", textTransform: "uppercase"
-    })
+    }
   };
 
   return (
