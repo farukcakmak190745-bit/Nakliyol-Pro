@@ -13,7 +13,8 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
       konusmaBasliginiGuncelle,
       konusmaTemizle,
       dosyaYukle,
-      yaziyorGoster
+      yaziyorGoster,
+      mesajSil
     } = useMesaj();
 
   console.log("ChatSayfasi rendered - konusmaId:", konusmaId, "oturum:", oturum);
@@ -199,6 +200,12 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
             🖼️ {medyaList.length}
           </button>
         )}
+        <button onClick={() => { if (confirm('Tüm mesajlar silinsin mi?')) { konusmaTemizle(konusmaId); } }} style={{
+          background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)",
+          borderRadius: "10px", padding: "6px 10px", cursor: "pointer", fontSize: 14
+        }} title="Tüm mesajları sil">
+          🗑️
+        </button>
           </div>
 
             {/* İş Kartı */}
@@ -431,7 +438,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                       )}
                       <div style={{ flex: 1 }}></div>
                       <button
-                        onClick={temizle}
+                        onClick={() => mesajSil(konusmaId, m.id)}
                         style={{
                           background: "none",
                           border: "none",
@@ -442,9 +449,9 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                           borderRadius: "6px",
                           transition: "all 0.2s"
                         }}
-                        title="Mesajları sil"
+                        title="Mesajı sil"
                       >
-                        🗑️ Temizle
+                        ✕
                       </button>
                     </div>
                   </div>

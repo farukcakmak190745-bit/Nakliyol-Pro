@@ -428,7 +428,25 @@ export const MesajProvider = ({ children }) => {
   const konusmaSil = useCallback((konusmaId) => {
     setKonusmalar(prev => prev.filter(k => k.id !== konusmaId));
   }, []);
-  const konusmaTemizle = useCallback(() => {}, []);
+  const konusmaTemizle = useCallback(async (konusmaId) => {
+    if (!konusmaId) return;
+    setKonusmalar(prev => prev.map(k =>
+      k.id === konusmaId ? { ...k, mesajlar: [], okunmamis: 0 } : k
+    ));
+    if (supabase) {
+      await supabase.from('messages').delete().eq('conversation_id', konusmaId);
+    }
+  }, []);
+
+  const mesajSil = useCallback(async (konusmaId, mesajId) => {
+    if (!konusmaId || !mesajId) return;
+    setKonusmalar(prev => prev.map(k =>
+      k.id === konusmaId ? { ...k, mesajlar: k.mesajlar.filter(m => m.id !== mesajId) } : k
+    ));
+    if (supabase && !mesajId.startsWith('temp_')) {
+      await supabase.from('messages').delete().eq('id', mesajId);
+    }
+  }, []);
   const konusmaDurumunuGuncelle = useCallback(() => {}, []);
   const konusmaBasliginiGuncelle = useCallback(() => {}, []);
   const konusmaResmiGuncelle = useCallback(() => {}, []);
@@ -508,6 +526,7 @@ export const MesajProvider = ({ children }) => {
       tumMesajlariOkundu,
       konusmaKapat,
       konusmaSil,
+      mesajSil,
       konusmaDurumunuGuncelle,
       konusmaBasliginiGuncelle,
       konusmaResmiGuncelle,
