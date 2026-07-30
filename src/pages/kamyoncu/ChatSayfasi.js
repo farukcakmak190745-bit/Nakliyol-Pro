@@ -200,9 +200,24 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                   )}
                   {m.metin && (
                     <div>
-                      {m.metin.split("\n").map((line, idx) => (
-                        <div key={`line-${idx}`}>{line || <br />}</div>
-                      ))}
+                      {m.metin.split("\n").map((line, idx) => {
+                        const konumRegex = /^([📍🏁])\s*(.+?):\s*(.+)/;
+                        const konumMatch = line.match(konumRegex);
+                        if (konumMatch) {
+                          const adres = encodeURIComponent(konumMatch[3].trim());
+                          return (
+                            <div key={`line-${idx}`} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                              <span>{line}</span>
+                              <a href={`https://www.google.com/maps/search/?api=1&query=${adres}`} target="_blank" rel="noopener noreferrer"
+                                style={{ display: "inline-flex", alignItems: "center", textDecoration: "none", cursor: "pointer", fontSize: 20, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.2))" }}
+                                title="Google Maps'te aç">
+                                🗺️
+                              </a>
+                            </div>
+                          );
+                        }
+                        return <div key={`line-${idx}`}>{line || <br />}</div>;
+                      })}
                     </div>
                   )}
                   <div style={{
