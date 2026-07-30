@@ -265,20 +265,20 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                     {m.metin && (
                       <div>
                         {m.metin.split("\n").map((line, idx) => {
-                          const konumRegex = /^🗺️(YK|BS):(.+)/;
-                          const konumMatch = line.match(konumRegex);
-                          if (konumMatch) {
-                            const adres = encodeURIComponent(konumMatch[2].trim());
-                            const etiket = konumMatch[1] === "YK" ? "Yükleme" : "Boşaltma";
+                          const mapsRegex = /^🔗MAPS:(YÜKLEME|BOŞALTMA):(.+)/;
+                          const mapsMatch = line.match(mapsRegex);
+                          if (mapsMatch) {
+                            const etiket = mapsMatch[1] === "YÜKLEME" ? "Yükleme" : "Boşaltma";
+                            const adres = decodeURIComponent(mapsMatch[2].trim());
                             const arkaRenk = isBen ? "rgba(255,255,255,0.15)" : "rgba(239,68,68,0.1)";
                             const borderRenk = isBen ? "rgba(255,255,255,0.3)" : "rgba(239,68,68,0.3)";
                             const yaziRenk = isBen ? "#fff" : "#dc2626";
                             return (
-                              <a key={`line-${idx}`} href={`https://www.google.com/maps/search/?api=1&query=${adres}`} target="_blank" rel="noopener noreferrer"
+                              <a key={`line-${idx}`} href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adres)}`} target="_blank" rel="noopener noreferrer"
                                 style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", cursor: "pointer", marginTop: 8, marginBottom: 4, padding: "10px 14px", borderRadius: 12, background: arkaRenk, border: `1px solid ${borderRenk}` }}>
-                                <span style={{ fontSize: 28 }}>{konumMatch[1] === "YK" ? "📍" : "🏁"}</span>
+                                <span style={{ fontSize: 28 }}>{etiket === "Yükleme" ? "📍" : "🏁"}</span>
                                 <div style={{ display: "flex", flexDirection: "column" }}>
-                                  <span style={{ fontWeight: 700, fontSize: 13, color: yaziRenk }}>{etiket.toUpperCase()} KONUMU</span>
+                                  <span style={{ fontWeight: 700, fontSize: 14, color: yaziRenk }}>{etiket.toUpperCase()} KONUMU</span>
                                   <span style={{ fontSize: 12, color: yaziRenk, opacity: 0.8 }}>Google Maps'te Aç →</span>
                                 </div>
                               </a>
