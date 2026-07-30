@@ -206,15 +206,18 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                         if (konumMatch) {
                           const adres = encodeURIComponent(konumMatch[2].trim());
                           const etiket = konumMatch[1] === "YK" ? "Yükleme" : "Boşaltma";
-                          const ikon = konumMatch[1] === "YK" ? "📍" : "🏁";
+                          const arkaRenk = isBen ? "rgba(255,255,255,0.15)" : "rgba(239,68,68,0.1)";
+                          const borderRenk = isBen ? "rgba(255,255,255,0.3)" : "rgba(239,68,68,0.3)";
+                          const yaziRenk = isBen ? "#fff" : "#dc2626";
                           return (
-                            <div key={`line-${idx}`} style={{ marginTop: 6, marginBottom: 4 }}>
-                              <a href={`https://www.google.com/maps/search/?api=1&query=${adres}`} target="_blank" rel="noopener noreferrer"
-                                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", textDecoration: "none", cursor: "pointer", fontSize: 40 }}
-                                title={`${etiket} - Google Maps'te yol tarifi al`}>
-                                {ikon}
-                              </a>
-                            </div>
+                            <a key={`line-${idx}`} href={`https://www.google.com/maps/search/?api=1&query=${adres}`} target="_blank" rel="noopener noreferrer"
+                              style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", cursor: "pointer", marginTop: 8, marginBottom: 4, padding: "10px 14px", borderRadius: "var(--r)", background: arkaRenk, border: `1px solid ${borderRenk}` }}>
+                              <span style={{ fontSize: 28 }}>{konumMatch[1] === "YK" ? "📍" : "🏁"}</span>
+                              <div style={{ display: "flex", flexDirection: "column" }}>
+                                <span style={{ fontWeight: 700, fontSize: 13, color: yaziRenk }}>{etiket.toUpperCase()} KONUMU</span>
+                                <span style={{ fontSize: 12, color: yaziRenk, opacity: 0.8 }}>Google Maps'te Aç →</span>
+                              </div>
+                            </a>
                           );
                         }
                         return <div key={`line-${idx}`}>{line || <br />}</div>;
