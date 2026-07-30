@@ -438,8 +438,6 @@ export const MesajProvider = ({ children }) => {
   const konusmaSil = useCallback((konusmaId) => {
     setKonusmalar(prev => prev.filter(k => k.id !== konusmaId));
   }, []);
-  const [silinenIds, setSilinenIds] = useState(new Set());
-
   const konusmaTemizle = useCallback(async (konusmaId) => {
     if (!konusmaId) return;
     // Tüm mesaj ID'lerini silinenler listesine ekle

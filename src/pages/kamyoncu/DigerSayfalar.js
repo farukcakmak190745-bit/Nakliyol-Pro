@@ -381,8 +381,8 @@ export function MesajlarSayfasi({ onGeri }) {
               </div>
             )}
           </div>
-        ))
-      )}
+        )}
+      ))}
     </div>
   );
 }
