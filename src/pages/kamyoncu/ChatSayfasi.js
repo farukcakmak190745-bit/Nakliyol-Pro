@@ -205,12 +205,13 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                         const konumMatch = line.match(konumRegex);
                         if (konumMatch) {
                           const adres = encodeURIComponent(konumMatch[3].trim());
+                          const renk = isBen ? "rgba(255,255,255,0.9)" : "var(--mavi)";
                           return (
-                            <div key={`line-${idx}`} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                              <span>{line}</span>
+                            <div key={`line-${idx}`} style={{ marginBottom: 8 }}>
+                              <div>{line}</div>
                               <a href={`https://www.google.com/maps/search/?api=1&query=${adres}`} target="_blank" rel="noopener noreferrer"
-                                style={{ display: "inline-flex", alignItems: "center", textDecoration: "none", cursor: "pointer", fontSize: 20, filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.2))" }}
-                                title="Google Maps'te aç">
+                                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", textDecoration: "none", cursor: "pointer", fontSize: 36, marginTop: 6, color: renk }}
+                                title="Google Maps'te yol tarifi al">
                                 🗺️
                               </a>
                             </div>
