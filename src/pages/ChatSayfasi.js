@@ -196,9 +196,12 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                     textAlign: isBen ? "right" : "left"
                   }}>
                     {new Date(m.zaman).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
-                    {m.okunduZamani && !isBen && (
-                      <span> ✓</span>
+                    {isBen && (
+                      <span style={{ fontSize: 11, lineHeight: 1 }}>
+                        {m.id?.startsWith("temp_") ? "⏳" : m.okunduZamani ? "✓✓" : "✓"}
+                      </span>
                     )}
+                    {!isBen && m.okunduZamani && <span> ✓</span>}
                   </div>
                 </div>
               );

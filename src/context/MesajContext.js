@@ -149,6 +149,23 @@ export const MesajProvider = ({ children }) => {
           }));
         }
       )
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages' },
+        async (payload) => {
+          const msg = payload.new;
+          setKonusmalar(prev => prev.map(k => {
+            if (k.id !== msg.conversation_id) return k;
+            return {
+              ...k,
+              mesajlar: k.mesajlar.map(m =>
+                m.id === msg.id
+                  ? { ...m, okundu: !!msg.okundu_zamani, okunduZamani: msg.okundu_zamani }
+                  : m
+              )
+            };
+          }));
+        }
+      )
       .subscribe();
 
     return () => {

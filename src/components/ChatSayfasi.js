@@ -298,16 +298,17 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                       textAlign: isBen ? "right" : "left",
                       display: "flex",
                       alignItems: "center",
-                      gap: 4
+                      gap: 4,
+                      justifyContent: isBen ? "flex-end" : "flex-start"
                     }}>
                       {new Date(m.zaman).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
-                      {m.okunduZamani && !isBen && (
-                        <span style={{ color: "#10b981", fontSize: 10 }}> ✓</span>
-                      )}
                       {isBen && (
-                        <span style={{ color: "rgba(255,255,255,0.5)" }}>
-                          {new Date(m.zaman).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+                        <span style={{ fontSize: 11, lineHeight: 1 }}>
+                          {m.id?.startsWith("temp_") ? "⏳" : m.okunduZamani ? "✓✓" : "✓"}
                         </span>
+                      )}
+                      {!isBen && m.okunduZamani && (
+                        <span style={{ color: "#10b981", fontSize: 10 }}> ✓</span>
                       )}
                       <div style={{ flex: 1 }}></div>
                       <button
