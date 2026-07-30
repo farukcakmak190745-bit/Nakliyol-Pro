@@ -19,6 +19,7 @@ export default function ProfilKart({ rol, userId }) {
   const [belgelerim, setBelgelerim] = useState([]);
   const [belgeYukleniyor, setBelgeYukleniyor] = useState(null);
   const [belgeEklendi, setBelgeEklendi] = useState(false);
+  const [fotoUrl, setFotoUrl] = useState(null);
   const dosyaInputRef = useRef();
 
   const kullanici = userId && kullaniciBilgileri ? kullaniciBilgileri.find(u => u.id === userId) || seciliKullanici : seciliKullanici || oturum;
@@ -83,6 +84,13 @@ export default function ProfilKart({ rol, userId }) {
 
   useEffect(() => {
     if (seciliKullanici?.id) belgeleriGetir();
+  }, [seciliKullanici?.id]);
+
+  useEffect(() => {
+    if (!seciliKullanici?.id) return;
+    supabase.from('belgeler').select('url').eq('kullanici_id', seciliKullanici.id).eq('dosya_adi', 'profil_fotografi').order('olusturulma_tarihi', { ascending: false }).limit(1).maybeSingle().then(({ data }) => {
+      if (data?.url) setFotoUrl(data.url);
+    });
   }, [seciliKullanici?.id]);
 
   const gosterMesaj = (tur, metin) => {
@@ -203,6 +211,7 @@ export default function ProfilKart({ rol, userId }) {
 
       await profilGuncelle({ fotograf: publicUrl }).catch(() => {});
       setSeciliKullanici(prev => prev ? { ...prev, fotograf: publicUrl } : prev);
+      setFotoUrl(publicUrl);
       setIlanlar(prev => prev.map(i =>
         i.olusturan_id === oturum.id ? { ...i, profilFoto: publicUrl } : i
       ));
@@ -342,8 +351,8 @@ export default function ProfilKart({ rol, userId }) {
               overflow: "hidden",
               position: "relative"
             }}>
-              {kullanici?.fotograf ? (
-                <img src={kullanici.fotograf} alt="profil" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {(fotoUrl || kullanici?.fotograf) ? (
+                <img src={fotoUrl || kullanici.fotograf} alt="profil" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : (
                 <IconMap.user size={48} style={{ color: "#fff" }} />
               )}
