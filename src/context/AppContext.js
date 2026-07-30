@@ -972,12 +972,16 @@ export const AppProvider = ({ children }) => {
     }
   }, [supabase, seferler]);
 
-  const ibanGuncelle = useCallback((alan, deger) => {
+  const ibanGuncelle = useCallback(async (alan, deger) => {
+    if (!oturum?.id) return { ok: false, error: "Oturum yok" };
     setOturum(prev => {
       if (!prev) return prev;
       return { ...prev, [alan]: deger };
     });
-  }, []);
+    const { error } = await supabase.from('users').update({ [alan]: deger }).eq('id', oturum.id);
+    if (error) console.warn('IBAN güncelleme hatası:', error.message);
+    return { ok: !error };
+  }, [supabase, oturum?.id]);
 
   // Profil güncelleme - hem Supabase hem local state
   const profilGuncelle = useCallback(async (guncellemeler) => {
