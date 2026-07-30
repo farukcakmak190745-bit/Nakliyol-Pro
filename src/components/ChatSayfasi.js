@@ -38,6 +38,15 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   const okunmamis = konusma?.okunmamis || 0;
   const sonGuncelleme = konusma?.sonGuncelleme || new Date().toISOString();
   const ilanId = konusma?.ilan_id;
+
+  const dosyaAc = (veri) => {
+    if (!veri?.veri) return;
+    const win = window.open();
+    if (win) {
+      win.document.write(`<iframe src="${veri.veri}" style="width:100%;height:100%;border:none"></iframe>`);
+      win.document.title = veri.ad || "Dosya";
+    }
+  };
   const sefer = seferler?.find(s => s.ilan_id === ilanId || s.ilanId === ilanId);
 
   if (!konusma) {
@@ -369,7 +378,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                             onClick={() => setLightboxImage(m.veri.veri)}
                             style={{ maxWidth: 200, borderRadius: "8px", cursor: "pointer", border: "1px solid rgba(255,255,255,0.2)" }} />
                         ) : (
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div onClick={() => dosyaAc(m.veri)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
                             <span style={{ fontSize: 20 }}>📄</span>
                             <div>
                               <div style={{ fontWeight: 600 }}>{m.veri.ad}</div>
