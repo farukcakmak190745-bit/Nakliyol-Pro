@@ -58,8 +58,10 @@ export const MesajProvider = ({ children }) => {
     const enriched = convs.map(c => {
       const convMsgs = msgsByConv[c.id] || [];
 
-      // Mesajları map et (okundu statusunu tut)
-      const messagesData = convMsgs.map(m => ({
+      // Mesajları map et — silinen ID'leri atla
+      const messagesData = convMsgs
+        .filter(m => !silinenIdsRef.current.has(m.id))
+        .map(m => ({
         id: m.id,
         metin: m.metin,
         veriTipi: m.veri_tipi || 'metin',
