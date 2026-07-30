@@ -4,7 +4,7 @@ import { useMesaj } from "../context/MesajContext";
 
 export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   try {
-    const { oturum } = useApp();
+    const { oturum, seferler } = useApp();
     const {
       konusmalar,
       mesajGonder,
@@ -23,6 +23,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   const [dosya, setDosya] = useState(null);
   const [konusmaAcildi, setKonusmaAcildi] = useState(false);
   const [konusmaBitti, setKonusmaBitti] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState(null);
   const messageContainerRef = useRef(null);
   const yaziyorTimerRef = useRef(null);
 
@@ -33,6 +34,8 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   const baslik = konusma?.baslik || "";
   const okunmamis = konusma?.okunmamis || 0;
   const sonGuncelleme = konusma?.sonGuncelleme || new Date().toISOString();
+  const ilanId = konusma?.ilan_id;
+  const sefer = seferler?.find(s => s.ilan_id === ilanId || s.ilanId === ilanId);
 
   if (!konusma) {
     return (
@@ -180,9 +183,68 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
         )}
 
         <div style={{ fontSize: 11, color: "var(--text3)" }}>
-          {new Date(sonGuncelleme).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
-        </div>
-      </div>
+                {new Date(sonGuncelleme).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+              </div>
+            </div>
+
+            {/* İş Kartı */}
+            {sefer && (
+              <div style={{
+                margin: "0 12px 8px", padding: "12px 16px",
+                background: "linear-gradient(135deg, rgba(251,191,36,0.1) 0%, rgba(22,22,22,0.8) 100%)",
+                border: "1px solid rgba(251,191,36,0.2)", borderRadius: "14px"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 18 }}>
+                    {sefer.durum === "yolda" ? "🚚" : sefer.durum === "teslima_bekleniyor" ? "📦" : sefer.durum === "odendi" ? "✅" : "⏳"}
+                  </span>
+                  <span style={{ fontWeight: 600, fontSize: 13, color: "#fbbf24" }}>
+                    {sefer.durum === "bekliyor" ? "Başvuru Bekliyor" :
+                     sefer.durum === "yolda" ? "Yolda" :
+                     sefer.durum === "teslima_bekleniyor" ? "Teslim Bekleniyor" :
+                     sefer.durum === "odendi" ? "Ödendi" : sefer.durum}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text2)", marginBottom: 10 }}>
+                  {sefer.yuk} — {sefer.nereden} → {sefer.nereye}
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {sefer.durum === "yolda" && (
+                    <button onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(sefer.nereye || '')}`, '_blank')}
+                      style={{ flex: 1, padding: "8px 12px", background: "var(--bg2)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: "10px", cursor: "pointer", fontSize: 12, color: "var(--text2)" }}>
+                      📍 Konumu Gör
+                    </button>
+                  )}
+                  {sefer.durum === "teslima_bekleniyor" && isBenKamyoncu && (
+                    <button onClick={() => window.location.href = `tel:${sefer.olusturan_tel || ''}`}
+                      style={{ flex: 1, padding: "8px 12px", background: "var(--bg2)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: "10px", cursor: "pointer", fontSize: 12, color: "var(--text2)" }}>
+                      📞 İşvereni Ara
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Lightbox */}
+            {lightboxImage && (
+              <div onClick={() => setLightboxImage(null)} style={{
+                position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+                background: "rgba(0,0,0,0.95)", zIndex: 1000,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "zoom-out"
+              }}>
+                <img src={lightboxImage} style={{
+                  maxWidth: "95%", maxHeight: "95%", objectFit: "contain",
+                  borderRadius: "8px"
+                }} />
+                <button onClick={() => setLightboxImage(null)} style={{
+                  position: "absolute", top: 20, right: 20,
+                  background: "rgba(255,255,255,0.1)", border: "none",
+                  color: "#fff", fontSize: 28, width: 44, height: 44,
+                  borderRadius: "50%", cursor: "pointer"
+                }}>✕</button>
+              </div>
+            )}
 
       {/* Mesajlar */}
       <div ref={messageContainerRef} style={{ flex: 1, overflowY: "auto", padding: 16, background: "var(--bg)" }}>
@@ -252,7 +314,9 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                         border: "1px solid rgba(255,255,255,0.1)"
                       }}>
                         {m.veri.tip === "img" ? (
-                          <img src={m.veri.veri} alt={m.veri.ad} style={{ maxWidth: 200, borderRadius: "8px", cursor: "pointer", border: "1px solid rgba(255,255,255,0.2)" }} />
+                          <img src={m.veri.veri} alt={m.veri.ad}
+                            onClick={() => setLightboxImage(m.veri.veri)}
+                            style={{ maxWidth: 200, borderRadius: "8px", cursor: "pointer", border: "1px solid rgba(255,255,255,0.2)" }} />
                         ) : (
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <span style={{ fontSize: 20 }}>📄</span>
