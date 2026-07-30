@@ -21,6 +21,7 @@ export default function ProfilKart({ rol, userId }) {
   const [belgeEklendi, setBelgeEklendi] = useState(false);
   const [fotoUrl, setFotoUrl] = useState(null);
   const dosyaInputRef = useRef();
+  const fotoPrefix = `profile_photos/${oturum?.id || userId}`;
 
   const kullanici = userId && kullaniciBilgileri ? kullaniciBilgileri.find(u => u.id === userId) || seciliKullanici : seciliKullanici || oturum;
 
@@ -88,9 +89,16 @@ export default function ProfilKart({ rol, userId }) {
 
   useEffect(() => {
     if (!seciliKullanici?.id) return;
-    supabase.from('belgeler').select('url').eq('kullanici_id', seciliKullanici.id).eq('dosya_adi', 'profil_fotografi').order('olusturulma_tarihi', { ascending: false }).limit(1).maybeSingle().then(({ data }) => {
-      if (data?.url) setFotoUrl(data.url);
-    });
+    (async () => {
+      try {
+        const baslangic = `profile_photos/${seciliKullanici.id}`;
+        const { data: listed } = await supabase.storage.from('belgeler').list('profile_photos', { limit: 1, search: seciliKullanici.id });
+        if (listed?.length) {
+          const { data: { publicUrl } } = supabase.storage.from('belgeler').getPublicUrl(`profile_photos/${seciliKullanici.id}`);
+          setFotoUrl(publicUrl);
+        }
+      } catch (_) {}
+    })();
   }, [seciliKullanici?.id]);
 
   const gosterMesaj = (tur, metin) => {
@@ -187,7 +195,7 @@ export default function ProfilKart({ rol, userId }) {
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const userId = authUser?.id || oturum.id;
-      const dosyaAdi = `${userId}/profil_${Date.now()}`;
+      const dosyaAdi = `profile_photos/${userId}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('belgeler')
@@ -199,17 +207,6 @@ export default function ProfilKart({ rol, userId }) {
         .from('belgeler')
         .getPublicUrl(uploadData.path);
 
-      await supabase.from('belgeler').insert([{
-        kullanici_id: userId,
-        rol: oturum.rol,
-        dosya_adi: 'profil_fotografi',
-        dosya_yolu: uploadData.path,
-        url: publicUrl,
-        onaylandi: true,
-        olusturulma_tarihi: new Date().toISOString()
-      }]);
-
-      await profilGuncelle({ fotograf: publicUrl }).catch(() => {});
       setSeciliKullanici(prev => prev ? { ...prev, fotograf: publicUrl } : prev);
       setFotoUrl(publicUrl);
       setIlanlar(prev => prev.map(i =>
