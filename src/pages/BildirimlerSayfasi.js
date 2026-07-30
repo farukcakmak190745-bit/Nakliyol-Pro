@@ -1,5 +1,6 @@
 import { useApp } from "../context/AppContext";
 import { IconMap } from "../components/Icons";
+import { formatTarih } from "../components/UI";
 
 export function BildirimlerSayfasi() {
   const { bildirimler, setGosterenBildirim, setBildirimlerList } = useApp();
@@ -39,7 +40,7 @@ export function BildirimlerSayfasi() {
                     {(b?.icerik || '').substring(0, 80)}...
                   </div>
                   <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 4 }}>
-                    {b?.olusturma_zamani ? new Date(b.olusturma_zamani).toLocaleString('tr-TR') : '—'}
+                    {b?.olusturma_zamani ? formatTarih(b.olusturma_zamani) : '—'}
                   </div>
                 </div>
               </div>

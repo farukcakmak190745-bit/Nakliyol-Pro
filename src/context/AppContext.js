@@ -973,13 +973,17 @@ export const AppProvider = ({ children }) => {
 
       // İşverene teslim bildirimi
       if (sefer?.olusturan_id) {
-        await supabase.from('bildirimler').insert({
-          kullanici_id: sefer.olusturan_id,
-          tur: 'teslim',
-          baslik: 'İş teslim edildi',
-          icerik: `${sefer.yuk || ''} - ${sefer.nereden || ''} → ${sefer.nereye || ''}\n\nKamyoncu işi teslim etti ve ödeme bekliyor.`,
-          sefer_id: seferId
-        }).catch(err => console.error('Teslim bildirimi hatası:', err));
+        try {
+          await supabase.from('bildirimler').insert({
+            kullanici_id: sefer.olusturan_id,
+            tur: 'teslim',
+            baslik: 'İş teslim edildi',
+            icerik: `${sefer.yuk || ''} - ${sefer.nereden || ''} → ${sefer.nereye || ''}\n\nKamyoncu işi teslim etti ve ödeme bekliyor.`,
+            sefer_id: seferId
+          });
+        } catch (err) {
+          console.error('Teslim bildirimi hatası:', err);
+        }
       }
     }
   }, [supabase, seferler]);
@@ -1152,17 +1156,18 @@ export const AppProvider = ({ children }) => {
         baslik: 'Yeni iş başvurusu',
         ilan_id: ilanId
       });
-      await supabase.from('bildirimler').insert({
-        kullanici_id: ilan.olusturan_id,
-        tur: 'basvuru',
-        baslik: 'Yeni iş başvurusu',
-        icerik: `${bilgiler.ad} (${bilgiler.tel})\n\n${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}\n\nÇekici: ${bilgiler.cekiciPlaka}\nDorse: ${bilgiler.dorsePlaka}\nTC: ${bilgiler.tc_kimlik}`,
-        ilan_id: ilanId
-      }).then(() => {
+      try {
+        await supabase.from('bildirimler').insert({
+          kullanici_id: ilan.olusturan_id,
+          tur: 'basvuru',
+          baslik: 'Yeni iş başvurusu',
+          icerik: `${bilgiler.ad} (${bilgiler.tel})\n\n${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}\n\nÇekici: ${bilgiler.cekiciPlaka}\nDorse: ${bilgiler.dorsePlaka}\nTC: ${bilgiler.tc_kimlik}`,
+          ilan_id: ilanId
+        });
         console.log('✅ Bildirim başarıyla oluşturuldu');
-      }).catch(err => {
+      } catch (err) {
         console.error('❌ Bildirim oluşturma hatası:', err);
-      });
+      }
     }
 
     setSeferler(prev => [yeniSefer, ...prev]);
@@ -1343,13 +1348,17 @@ export const AppProvider = ({ children }) => {
     // Bildirim - başvurusu reddedilen kamyoncuya
     if (supabase && mevcutSefer.kamyoncu_user_id) {
       const ilan = ilanlar.find(i => i.id === ilanId || i.id === mevcutSefer.ilan_id);
-      await supabase.from('bildirimler').insert({
-        kullanici_id: mevcutSefer.kamyoncu_user_id,
-        tur: 'red',
-        baslik: 'Başvurunuz reddedildi',
-        icerik: `${ilan?.yuk || ''} - ${ilan?.nereden || ''} → ${ilan?.nereye || ''}`,
-        ilan_id: ilanId
-      }).catch(err => console.error('Red bildirimi hatası:', err));
+      try {
+        await supabase.from('bildirimler').insert({
+          kullanici_id: mevcutSefer.kamyoncu_user_id,
+          tur: 'red',
+          baslik: 'Başvurunuz reddedildi',
+          icerik: `${ilan?.yuk || ''} - ${ilan?.nereden || ''} → ${ilan?.nereye || ''}`,
+          ilan_id: ilanId
+        });
+      } catch (err) {
+        console.error('Red bildirimi hatası:', err);
+      }
     }
   }, [seferler, supabase, ilanlar]);
 

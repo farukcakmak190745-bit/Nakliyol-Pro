@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useMesaj } from "../context/MesajContext";
+import { formatTarih } from "./UI";
 
 export default function TeslimEdildiModal({ sefer, onClose }) {
   const { oturum, islemiTeslimEt, belgeEkle } = useApp();
@@ -153,7 +154,7 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 11, color: "var(--text3)" }}>TARİH</div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{sefer?.tarih}</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{formatTarih(sefer?.tarih)}</div>
             </div>
           </div>
 

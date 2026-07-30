@@ -379,13 +379,17 @@ export const MesajProvider = ({ children }) => {
         const aliciId = gonderenId === konusma.user_id ? konusma.partner_id : konusma.user_id;
         if (aliciId) {
           const bildirimIcerik = metin || (veri?.ad ? `📎 ${veri.ad}` : '📎 Dosya');
-          await supabase.from('bildirimler').insert({
-            kullanici_id: aliciId,
-            tur: 'mesaj',
-            baslik: 'Yeni mesaj',
-            icerik: bildirimIcerik.length > 100 ? bildirimIcerik.substring(0, 100) + '...' : bildirimIcerik,
-            sefer_id: konusma.ilan_id || null
-          }).catch(err => console.error('Mesaj bildirimi hatası:', err));
+          try {
+            await supabase.from('bildirimler').insert({
+              kullanici_id: aliciId,
+              tur: 'mesaj',
+              baslik: 'Yeni mesaj',
+              icerik: bildirimIcerik.length > 100 ? bildirimIcerik.substring(0, 100) + '...' : bildirimIcerik,
+              sefer_id: konusma.ilan_id || null
+            });
+          } catch (err) {
+            console.error('Mesaj bildirimi hatası:', err);
+          }
         }
       }
     }

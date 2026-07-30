@@ -1,4 +1,5 @@
 import { useApp } from "../context/AppContext";
+import { formatTarih } from "./UI";
 
 export function BildirimlerModal() {
   const { gosterenBildirim, setGosterenBildirim, bildirimler: bildirimlerList, setBildirimlerList } = useApp();
@@ -59,7 +60,7 @@ export function BildirimlerModal() {
           </div>
 
           <div style={{ fontSize: 10, color: 'var(--text3)', textAlign: 'center' }}>
-            {gosterenBildirim?.olusturma_zamani ? new Date(gosterenBildirim.olusturma_zamani).toLocaleString('tr-TR') : '—'}
+            {gosterenBildirim?.olusturma_zamani ? formatTarih(gosterenBildirim.olusturma_zamani) : '—'}
           </div>
         </div>
       </div>

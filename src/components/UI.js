@@ -149,14 +149,7 @@ export const EmptyState = ({ icon, text }) => (
  */
 export const formatTarih = (tarih) => {
   if (!tarih) return "—";
-  // Zaten DD.MM.YYYY formatında mı?
-  if (typeof tarih === "string" && /^\d{2}\.\d{2}\.\d{4}$/.test(tarih)) {
-    return tarih;
-  }
   const d = new Date(tarih);
   if (isNaN(d.getTime())) return String(tarih);
-  const gg = String(d.getDate()).padStart(2, "0");
-  const ay = String(d.getMonth() + 1).padStart(2, "0");
-  const yil = d.getFullYear();
-  return `${gg}.${ay}.${yil}`;
+  return d.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
 };
