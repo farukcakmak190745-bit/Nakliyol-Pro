@@ -177,8 +177,11 @@ export default function ProfilKart({ rol, userId }) {
     if (!dosya || !oturum?.id) return;
 
     try {
-      const dosyaAdi = `profil_${oturum.id}_${Date.now()}`;
-      const { error: uploadError } = await supabase.storage
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const userId = authUser?.id || oturum.id;
+      const dosyaAdi = `${userId}/profil_${Date.now()}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('belgeler')
         .upload(dosyaAdi, dosya, { upsert: true });
 
@@ -186,33 +189,24 @@ export default function ProfilKart({ rol, userId }) {
 
       const { data: { publicUrl } } = supabase.storage
         .from('belgeler')
-        .getPublicUrl(dosyaAdi);
+        .getPublicUrl(uploadData.path);
 
-      const { error: dbError } = await supabase.from('belgeler').insert([{
-        kullanici_id: oturum.id,
+      await supabase.from('belgeler').insert([{
+        kullanici_id: userId,
         rol: oturum.rol,
         dosya_adi: 'profil_fotografi',
-        dosya_yolu: dosyaAdi,
+        dosya_yolu: uploadData.path,
         url: publicUrl,
         onaylandi: true,
         olusturulma_tarihi: new Date().toISOString()
       }]);
 
-      if (dbError) throw dbError;
-
-      const sonuc = await profilGuncelle({ fotograf: publicUrl });
-      if (!sonuc?.ok) {
-        const eskiOturum = oturum;
-        setTimeout(() => {
-          if (eskiOturum) {
-            eskiOturum.fotograf = publicUrl;
-          }
-        }, 0);
-      }
+      await profilGuncelle({ fotograf: publicUrl }).catch(() => {});
+      setSeciliKullanici(prev => prev ? { ...prev, fotograf: publicUrl } : prev);
       gosterMesaj("ok", "Profil fotoğrafı güncellendi");
     } catch (err) {
-      console.error('Fotoğraf yükleme hatası:', err);
-      gosterMesaj("hata", "Fotoğraf yüklenemedi");
+      console.error('Fotoğraf hatası:', err);
+      gosterMesaj("hata", "Fotoğraf yüklenemedi: " + (err.message || ""));
     }
   };
 
