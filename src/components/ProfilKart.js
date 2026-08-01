@@ -187,11 +187,12 @@ export default function ProfilKart({ rol, userId }) {
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       const userId = authUser?.id || oturum.id;
-      const dosyaAdi = `${userId}/profil_${Date.now()}`;
+      const uzanti = dosya.name.includes('.') ? dosya.name.split('.').pop().toLowerCase() : (dosya.type.split('/')[1] || 'jpg');
+      const dosyaAdi = `${userId}/profil_${Date.now()}.${uzanti}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('belgeler')
-        .upload(dosyaAdi, dosya, { upsert: true });
+        .upload(dosyaAdi, dosya, { upsert: true, contentType: dosya.type });
 
       if (uploadError) throw uploadError;
 
@@ -215,6 +216,7 @@ export default function ProfilKart({ rol, userId }) {
       setIlanlar(prev => prev.map(i =>
         i.olusturan_id === oturum.id ? { ...i, profilFoto: publicUrl } : i
       ));
+      if (oturum) oturum.fotograf = publicUrl;
       gosterMesaj("ok", "Profil fotoğrafı güncellendi");
     } catch (err) {
       console.error('Fotoğraf hatası:', err);

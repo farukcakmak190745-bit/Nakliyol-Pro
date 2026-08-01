@@ -48,6 +48,19 @@ export const MesajProvider = ({ children }) => {
       console.error('❌ Mesajlar yüklenemedi:', msgErr);
     }
 
+    // Partner kullanıcıların telefon numaralarını çekelim
+    const partnerUserIds = [...new Set(convs.map(c => c.user_id === userId ? c.partner_id : c.user_id).filter(Boolean))];
+    const phoneMap = {};
+    if (partnerUserIds.length > 0) {
+      const { data: usersInfo } = await supabase
+        .from('users')
+        .select('id, telefon')
+        .in('id', partnerUserIds);
+      (usersInfo || []).forEach(u => {
+        if (u.id && u.telefon) phoneMap[u.id] = u.telefon;
+      });
+    }
+
     // Konuşmaları mesajlarla eşleştir
     const msgsByConv = {};
     (msgs || []).forEach(m => {
@@ -75,6 +88,8 @@ export const MesajProvider = ({ children }) => {
 
       // Gönderen kim ise ve okundu_zamani null ise okunmamıs sayısını hesapla
       const okunmamis = messagesData.filter(m => m.gonderen === 'konusmaci' && !m.okundu).length;
+      const partnerUserId = c.user_id === userId ? c.partner_id : c.user_id;
+      const partnerTel = phoneMap[partnerUserId] || c.partner_tel || c.partnerTel || null;
 
       return {
         id: c.id,
@@ -83,6 +98,7 @@ export const MesajProvider = ({ children }) => {
         partner_id: c.partner_id,
         partnerAd: c.partner_adi,
         partnerRol: c.konusma_turu === 'is' ? (c.user_id === userId ? 'kamyoncu' : 'issiz') : 'sohbet',
+        partnerTel,
         baslik: c.baslik || `${c.partner_adi}`,
         ilan_id: c.ilan_id,
         durum: 'aktif',

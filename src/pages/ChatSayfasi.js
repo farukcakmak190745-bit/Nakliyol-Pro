@@ -3,9 +3,10 @@ import { useApp } from "../context/AppContext";
 import { useMesaj } from "../context/MesajContext";
 import { Pill } from "../components/UI";
 import { IconMap } from "../components/Icons";
+import { supabase } from "../supabaseClient";
 
 export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
-  const { oturum } = useApp();
+  const { oturum, seferler } = useApp();
   const {
     konusmalar,
     konusmaAc,
@@ -18,17 +19,39 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   const [mesaj, setMesaj] = useState("");
   const [yukleniyor, setYukleniyor] = useState(false);
   const [dosya, setDosya] = useState(null);
+  const [aramaModalAcik, setAramaModalAcik] = useState(false);
+  const [kopyalandi, setKopyalandi] = useState(false);
+  const [dinamikTel, setDinamikTel] = useState(null);
   const messagesEndRef = useRef(null);
   const messageContainerRef = useRef(null);
   const scrollTimeoutRef = useRef(null);
   const okunduIkaz = useRef(false);
 
   const konusma = konusmalar?.find(k => k.id === konusmaId);
-  const isBenKamyoncu = oturum?.rol === "kamyoncu";
+  const isBenKamyoncu = oturum?.rol === "kamyoncu" || oturum?.role === "kamyoncu";
   const partnerAd = konusma?.partnerAd || "";
   const partnerRol = konusma?.partnerRol || "";
   const baslik = konusma?.baslik || "";
   const okunmamis = konusma?.okunmamis || 0;
+  const ilanId = konusma?.ilan_id;
+
+  const sefer = seferler?.find(s => s.ilan_id === ilanId || s.ilanId === ilanId);
+  const partnerUserId = konusma?.user_id === oturum?.id ? konusma?.partner_id : konusma?.user_id;
+  const partnerTel = dinamikTel ||
+                     konusma?.partnerTel ||
+                     konusma?.partner_tel ||
+                     (isBenKamyoncu ? (sefer?.olusturan_tel || sefer?.olusturanTel) : (sefer?.kamyoncu_tel || sefer?.kamyoncuTel)) ||
+                     null;
+
+  useEffect(() => {
+    if (!partnerTel && partnerUserId && supabase) {
+      supabase.from('users').select('telefon').eq('id', partnerUserId).maybeSingle().then(({ data }) => {
+        if (data?.telefon) {
+          setDinamikTel(data.telefon);
+        }
+      });
+    }
+  }, [partnerUserId, partnerTel]);
 
   const dosyaAc = (veri) => {
     if (!veri?.veri) return;
@@ -139,10 +162,122 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
           </div>
         )}
 
+        {/* Telefon Arama Butonu */}
+        <button onClick={() => setAramaModalAcik(true)} style={{
+          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+          color: "#fff",
+          border: "none",
+          borderRadius: "10px",
+          padding: "6px 12px",
+          cursor: "pointer",
+          fontSize: 13,
+          fontWeight: 600,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          boxShadow: "0 2px 8px rgba(16, 185, 129, 0.3)",
+          transition: "all 0.2s ease"
+        }} title={`${partnerAd} Telefon Et`}>
+          <span>📞</span>
+          <span>Ara</span>
+        </button>
+
         <div style={{ fontSize: 11, color: "var(--text3)" }}>
           {konusma?.sonGuncelleme ? new Date(konusma.sonGuncelleme).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "—"}
         </div>
       </div>
+
+      {/* Telefon Arama Modalı */}
+      {aramaModalAcik && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+          zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 20
+        }} onClick={() => setAramaModalAcik(false)}>
+          <div style={{
+            background: "var(--bg1, #ffffff)", border: "1px solid rgba(251,191,36,0.3)",
+            borderRadius: "20px", padding: "24px", maxWidth: "380px", width: "100%",
+            boxShadow: "0 20px 40px rgba(0,0,0,0.3)", textAlign: "center"
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{
+              width: 60, height: 60, borderRadius: "50%",
+              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+              margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 28, color: "#fff", boxShadow: "0 8px 20px rgba(16,185,129,0.3)"
+            }}>
+              📞
+            </div>
+
+            <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text1, #111)", marginBottom: 4 }}>
+              {partnerAd || "Kullanıcı"}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text2, #666)", marginBottom: 16, fontWeight: 500 }}>
+              {partnerRol === "kamyoncu" ? "🚛 Nakliyeci / Kamyoncu" : "🏢 Müşteri / İşveren"}
+            </div>
+
+            {partnerTel ? (
+              <>
+                <div style={{
+                  background: "rgba(251,191,36,0.1)", border: "1px dashed rgba(251,191,36,0.4)",
+                  borderRadius: "12px", padding: "12px", marginBottom: 20,
+                  fontSize: 20, fontWeight: 800, color: "#d97706", letterSpacing: 1
+                }}>
+                  {partnerTel}
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <a
+                    href={`tel:${partnerTel.replace(/\s+/g, '')}`}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                      color: "#fff", padding: "14px", borderRadius: "12px",
+                      fontWeight: 700, fontSize: 15, textDecoration: "none",
+                      boxShadow: "0 4px 14px rgba(16,185,129,0.35)"
+                    }}
+                  >
+                    <span>📞</span> Hemen Ara
+                  </a>
+
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(partnerTel);
+                      setKopyalandi(true);
+                      setTimeout(() => setKopyalandi(false), 2000);
+                    }}
+                    style={{
+                      background: "var(--bg2, #f3f4f6)", border: "1px solid var(--border, #e5e7eb)",
+                      color: "var(--text1, #374151)", padding: "12px", borderRadius: "12px",
+                      fontWeight: 600, fontSize: 14, cursor: "pointer", display: "flex",
+                      alignItems: "center", justifyContent: "center", gap: 6
+                    }}
+                  >
+                    📋 {kopyalandi ? "Numara Kopyalandı! ✓" : "Numarayı Kopyala"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div style={{
+                background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
+                borderRadius: "12px", padding: "16px", color: "#dc2626", fontSize: 13, marginBottom: 16
+              }}>
+                ⚠️ Bu kullanıcının kayıtlı telefon numarası bulunamadı.
+              </div>
+            )}
+
+            <button
+              onClick={() => setAramaModalAcik(false)}
+              style={{
+                marginTop: 16, background: "none", border: "none",
+                color: "var(--text3, #9ca3af)", fontSize: 13, cursor: "pointer", fontWeight: 500
+              }}
+            >
+              Kapat
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Mesajlar */}
       <div ref={messageContainerRef} style={{ flex: 1, overflowY: "auto", padding: 16, background: "var(--bg0)" }}>
