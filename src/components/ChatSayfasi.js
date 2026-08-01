@@ -104,7 +104,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
     setYukleniyor(true);
     try {
       const yukluDosya = await dosyaYukle(dosya);
-      await mesajGonder(konusmaId, "", yukluDosya.veriTipi, yukluDosya);
+      await mesajGonder(konusmaId, "", yukluDosya.tip, yukluDosya);
       setMesaj("");
       setDosya(null);
     } catch (err) {
@@ -365,7 +365,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                     border: isBen ? "1px solid rgba(29,78,216,0.2)" : "1px solid rgba(245,158,11,0.1)",
                     boxShadow: isBen ? "0 4px 20px rgba(29,78,216,0.15)" : "none"
                   }}>
-                    {m.veriTipi !== "metin" && m.veri && (
+                    {m.veri && m.veri.tip && (
                       <div style={{
                         marginBottom: 8,
                         padding: "10px 14px",

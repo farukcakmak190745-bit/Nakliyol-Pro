@@ -99,7 +99,7 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
       if (konusma?.id) {
         await mesajContext.mesajGonder(konusma.id, mesajMetni);
         if (dosya) {
-          await mesajContext.mesajGonder(konusma.id, "📎 Teslim Evrağı", dosya.veriTipi, dosya);
+          await mesajContext.mesajGonder(konusma.id, "📎 Teslim Evrağı", dosya.tip, dosya);
         }
         console.log('✅ Teslimat mesajı gönderildi');
       } else {
