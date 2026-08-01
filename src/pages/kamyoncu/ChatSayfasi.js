@@ -377,8 +377,22 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
       {/* Input */}
       <div style={{ padding: 12, borderTop: "1px solid var(--border)", background: "var(--bg1)" }}>
         <form onSubmit={gonder} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-          <label style={{ padding: 10, cursor: "pointer", background: "var(--bg2)", borderRadius: "var(--r)", fontSize: 20, transition: "all 0.2s" }} title="Dosya yükle">
-            📎
+          <label
+            style={{
+              padding: "10px 14px",
+              cursor: "pointer",
+              background: "rgba(251, 191, 36, 0.12)",
+              border: "1px solid rgba(251, 191, 36, 0.3)",
+              borderRadius: "12px",
+              fontSize: 18,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.2s ease"
+            }}
+            title="Fotoğraf veya Belge Yükle"
+          >
+            <span style={{ fontSize: 18, display: "inline-block" }}>📎</span>
             <input type="file" accept="image/*,.pdf" onChange={dosyaSecVeGonder} style={{ display: "none" }} />
           </label>
 
