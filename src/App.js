@@ -63,7 +63,7 @@ function MobilApp({ cikisYap }) {
     const issizSayfalar = {
       ilanver:    <IlanVerSayfasi />,
       ilanlarim:  <IssizIlanlarSayfasi />,
-      teklifler:  <TekliflerSayfasi />,
+      teklifler:  <TekliflerSayfasi onChatAc={onChatAc} />,
       mesajlar:   <MesajlarSayfasi />,
       profil:     <IssizProfilSayfasi />,
     };

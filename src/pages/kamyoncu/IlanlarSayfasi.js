@@ -105,9 +105,26 @@ export default function IlanlarSayfasi() {
   const [filtre, setFiltre] = useState("");
   const [secilen, setSecilen] = useState(null);
   const [secilenBasvuru, setSecilenBasvuru] = useState(null);
+  const [simdi, setSimdi] = useState(Date.now());
+
+  // Cooldown sayacı (fazla iptal sonrası başvuru yasağı)
+  useEffect(() => {
+    const timer = setInterval(() => setSimdi(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Debug: ilanları ve oturumu logla
   console.log("IlanlarSayfasi - ilanlar:", ilanlar.length, "oturum:", oturum);
+
+  const cooldownBitisMs = oturum?.iptal_cooldown_bitis ? new Date(oturum.iptal_cooldown_bitis).getTime() : 0;
+  const cooldownAktif = cooldownBitisMs > simdi;
+
+  const formatKalanSure = (ms) => {
+    if (ms <= 0) return "0:00";
+    const dk = Math.floor(ms / 60000);
+    const sn = Math.floor((ms % 60000) / 1000);
+    return `${dk}:${String(sn).padStart(2, "0")}`;
+  };
 
   const liste = ilanlar.filter(i =>
     i.nereden.toLowerCase().includes(filtre.toLowerCase()) ||
@@ -127,6 +144,24 @@ export default function IlanlarSayfasi() {
 
   return (
     <div className="scroll-content">
+      {cooldownAktif && (
+        <div style={{
+          background: "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.08) 100%)",
+          border: "1px solid rgba(239,68,68,0.35)",
+          borderRadius: "12px", padding: "14px 16px", marginBottom: 14,
+          display: "flex", alignItems: "center", gap: 10
+        }}>
+          <span style={{ fontSize: 22 }}>🚫</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#ef4444" }}>
+              Fazla iptal yaptığınız için başvuru yapamıyorsunuz
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>
+              Kalan süre: {formatKalanSure(cooldownBitisMs - simdi)} · {new Date(cooldownBitisMs).toLocaleDateString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="search-bar" style={{ marginBottom: 18 }}>
         <span className="search-icon">🔍</span>
         <input placeholder="Şehir veya yük türü ara..." value={filtre} onChange={e => setFiltre(e.target.value)} />

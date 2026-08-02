@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useApp } from "../../context/AppContext";
 import { IconMap } from "../../components/Icons";
+import { formatTarih, vadeTarihiniBul, vadeGectiMi } from "../../components/UI";
 
 const menu = [
   { key: "ozet", icon: "activity", label: "Özet" },
@@ -8,13 +9,15 @@ const menu = [
   { key: "seferler", icon: "map", label: "Seferler" },
   { key: "kullanicilar", icon: "users", label: "Kullanıcılar" },
   { key: "gelir", icon: "creditcard", label: "Gelir" },
+  { key: "ihtilaflar", icon: "alert", label: "İhtilaflar" },
   { key: "ayarlar", icon: "settings", label: "Ayarlar" },
 ];
 
 export default function AdminPanel() {
-  const { ilanlar, seferler, kullanicilar, ilanSil, odemeYap, cikisYap } = useApp();
+  const { oturum, ilanlar, seferler, kullanicilar, ilanSil, odemeYap, odemeOnayla, cikisYap, ihtilaflar, ihtilafCoz, kullaniciDurumuGuncelle, kullaniciRolunuGuncelle, kullaniciSil, ilanDurumuGuncelle, seferDurumuGuncelle, bildirimGonder, duyuruGonder } = useApp();
   const [aktif, setAktif] = useState("ozet");
   const [mobilMenu, setMobilMenu] = useState(false);
+  const [ilanFiltre, setIlanFiltre] = useState("aktif");
 
   const ilanlarList = ilanlar || [];
   const seferlerList = seferler || [];
@@ -34,7 +37,8 @@ export default function AdminPanel() {
               { val: ilanlarList.filter(i=>i.durum==="aktif").length, lbl: "Aktif İlan", renk: "#10b981", icon: "file" },
               { val: seferlerList.filter(s=>s.durum==="yolda"||s.durum==="teslima_bekleniyor").length, lbl: "Aktif Sefer", renk: "#1d4ed8", icon: "map" },
               { val: kullanicilarList.length, lbl: "Toplam Kullanıcı", renk: "#1d4ed8", icon: "users" },
-              { val: "₺142K", lbl: "Bu Ay Ciro", renk: "#fbbf24", icon: "creditcard" },
+              { val: seferlerList.filter(s => s.durum === "teslima_bekleniyor" && vadeGectiMi(vadeTarihiniBul(s))).length, lbl: "Geciken Ödeme", renk: "#ef4444", icon: "alert" },
+              { val: (ihtilaflar || []).filter(i => i.durum === "acik").length, lbl: "Açık İhtilaf", renk: "#ea580c", icon: "alert" },
             ].map(s => (
               <div key={s.lbl} style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "16px", padding: 18 }}>
                 <div style={{ fontSize: 24, marginBottom: 6 }}>{s.icon}</div>
@@ -64,22 +68,37 @@ export default function AdminPanel() {
       );
 
       case "ilanlar": return (
-        <div style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "16px", overflow: "auto" }}>
-          <table className="tbl">
-            <thead><tr><th style={thStyle}>Yük</th><th style={thStyle}>Güzergah</th><th style={thStyle}>Ücret</th><th style={thStyle}>İstek</th><th style={thStyle}>Durum</th><th style={thStyle}>İşlem</th></tr></thead>
-            <tbody>{ilanlar.filter(i => i.durum === "aktif").map(i => (
-              <tr key={i.id}>
-                <td style={tdStyle}>{i.yuk}</td>
-                <td style={tdStyle}>{i.nereden}→{i.nereye}</td>
-                <td style={{...tdStyle,color:"#fbbf24",fontWeight:700}}>₺{i.ucret.toLocaleString()}</td>
-                <td style={tdStyle}>{i.istekSayisi}</td>
-                <td style={tdStyle}><div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", color: "#fbbf24", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>Aktif</div></td>
-                <td style={tdStyle}>
-                  <button onClick={()=>ilanSil(i.id)} style={{...btnStyle,border:"1px solid rgba(239,68,68,0.3)",background:"rgba(239,68,68,0.08)",color:"#ef4444"}}>Kaldır</button>
-                </td>
-              </tr>
-            ))}</tbody>
-          </table>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            {["aktif", "pasif", "silindi"].map(d => (
+              <button key={d} onClick={() => setIlanFiltre(d)} style={{ padding: "8px 14px", borderRadius: "10px", fontSize: 12, fontWeight: 600, border: "1px solid rgba(251,191,36,0.2)", background: ilanFiltre === d ? "rgba(251,191,36,0.15)" : "none", color: ilanFiltre === d ? "#fbbf24" : "var(--text3)", cursor: "pointer" }}>
+                {d === "aktif" ? "Aktif" : d === "pasif" ? "Pasif" : "Silinen"}
+              </button>
+            ))}
+          </div>
+          <div style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "16px", overflow: "auto" }}>
+            <table className="tbl">
+              <thead><tr><th style={thStyle}>Yük</th><th style={thStyle}>Güzergah</th><th style={thStyle}>Ücret</th><th style={thStyle}>Durum</th><th style={thStyle}>İşlem</th></tr></thead>
+              <tbody>{ilanlar.filter(i => i.durum === ilanFiltre).map(i => (
+                <tr key={i.id}>
+                  <td style={tdStyle}>{i.yuk}</td>
+                  <td style={tdStyle}>{i.nereden}→{i.nereye}</td>
+                  <td style={{...tdStyle,color:"#fbbf24",fontWeight:700}}>₺{Number(i.ucret||0).toLocaleString()}</td>
+                  <td style={tdStyle}><div style={{ background: i.durum === "aktif" ? "rgba(16,185,129,0.1)" : i.durum === "pasif" ? "rgba(245,158,11,0.1)" : "rgba(239,68,68,0.1)", color: i.durum === "aktif" ? "#10b981" : i.durum === "pasif" ? "#f59e0b" : "#ef4444", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{i.durum === "aktif" ? "Aktif" : i.durum === "pasif" ? "Pasif" : "Silindi"}</div></td>
+                  <td style={tdStyle}>
+                    {i.durum === "aktif" ? (
+                      <button onClick={() => { ilanDurumuGuncelle(i.id, "pasif"); alert("⏸ İlan pasife alındı."); }} style={{...btnStyle,border:"1px solid rgba(245,158,11,0.3)",background:"rgba(245,158,11,0.08)",color:"#f59e0b"}}>⏸ Pasif</button>
+                    ) : (
+                      <button onClick={() => { ilanDurumuGuncelle(i.id, "aktif"); alert("✓ İlan aktifleştirildi."); }} style={{...btnStyle,border:"1px solid rgba(16,185,129,0.3)",background:"rgba(16,185,129,0.08)",color:"#10b981"}}>✓ Aktif</button>
+                    )}
+                    {i.durum === "aktif" && (
+                      <button onClick={()=>ilanSil(i.id)} style={{...btnStyle,border:"1px solid rgba(239,68,68,0.3)",background:"rgba(239,68,68,0.08)",color:"#ef4444"}}>Kaldır</button>
+                    )}
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
         </div>
       );
 
@@ -103,15 +122,32 @@ export default function AdminPanel() {
       case "seferler": return (
         <div style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "16px", overflow: "auto" }}>
           <table className="tbl">
-            <thead><tr><th style={thStyle}>Yük</th><th style={thStyle}>Güzergah</th><th style={thStyle}>Kamyoncu</th><th style={thStyle}>Plaka</th><th style={thStyle}>Teslim Tarihi</th><th style={thStyle}>Durum</th></tr></thead>
+            <thead><tr><th style={thStyle}>Yük</th><th style={thStyle}>Güzergah</th><th style={thStyle}>Kamyoncu</th><th style={thStyle}>Ücret</th><th style={thStyle}>Teslim</th><th style={thStyle}>Durum</th><th style={thStyle}>İşlem</th></tr></thead>
             <tbody>{seferler.map(s => (
               <tr key={s.id}>
                 <td style={tdStyle}>{s.yuk}</td>
                 <td style={tdStyle}>{s.nereden}→{s.nereye}</td>
-                <td style={tdStyle}>{s.kamyoncu}</td>
-                <td style={tdStyle}>{s.plaka}</td>
-                <td style={tdStyle}>{s.teslimTarihi || "-"}</td>
-                <td style={tdStyle}><div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.08) 100%)", color: "#10b981", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{s.durum.replace("_", " ")}</div></td>
+                <td style={tdStyle}>{s.kamyoncu} • {s.plaka}</td>
+                <td style={{...tdStyle,color:"#fbbf24",fontWeight:700}}>₺{Number(s.ucret||0).toLocaleString()}</td>
+                <td style={tdStyle}>{formatTarih(s.teslim_tarihi)}</td>
+                <td style={tdStyle}>
+                  <select
+                    value={s.durum}
+                    onChange={(e) => seferDurumuGuncelle(s.id, e.target.value)}
+                    style={{ background: "var(--bg2)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: "8px", padding: "6px 10px", color: "var(--text)", fontSize: 12 }}
+                  >
+                    <option value="bekliyor">Bekliyor</option>
+                    <option value="yolda">Yolda</option>
+                    <option value="teslima_bekleniyor">Teslim Bekleniyor</option>
+                    <option value="odendi">Ödendi</option>
+                  </select>
+                  {s.durum === "teslima_bekleniyor" && vadeGectiMi(vadeTarihiniBul(s)) && <div style={{ fontSize: 11, color: "#ef4444", marginTop: 4 }}>⚠️ Vade geçti</div>}
+                </td>
+                <td style={tdStyle}>
+                  {s.durum === "teslima_bekleniyor" && s.odeme_durumu !== "odendi" && (
+                    <button onClick={() => { odemeOnayla(s.id); alert("✅ Ödeme onaylandı, kamyoncuya bildirildi."); }} style={{...btnStyle,border:"1px solid rgba(16,185,129,0.3)",background:"rgba(16,185,129,0.1)",color:"#10b981"}}>💰 Onayla</button>
+                  )}
+                </td>
               </tr>
             ))}</tbody>
           </table>
@@ -121,20 +157,58 @@ export default function AdminPanel() {
       case "kullanicilar": return (
         <div style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "16px", overflow: "auto" }}>
           <table className="tbl">
-            <thead><tr><th style={thStyle}>Ad</th><th style={thStyle}>Rol</th><th style={thStyle}>Puan</th><th style={thStyle}>Aktif Sefer</th><th style={thStyle}>Durum</th><th style={thStyle}>İşlem</th></tr></thead>
+            <thead><tr><th style={thStyle}>Ad</th><th style={thStyle}>Rol</th><th style={thStyle}>Telefon</th><th style={thStyle}>Durum</th><th style={thStyle}>İşlem</th></tr></thead>
             <tbody>{kullanicilar.map(k => {
-              const seferlerim = seferlerList.filter(s => s.kamyoncu === k.ad);
-              const aktifSeferler = seferlerim.filter(s => s.durum === "yolda" || s.durum === "teslima_bekleniyor");
+              const rol = k.role || k.rol || "—";
+              const pasif = k.durum === "pasif";
               return (
               <tr key={k.id}>
                 <td style={tdStyle}>{k.ad}</td>
-                <td style={tdStyle}><div style={{ background: "linear-gradient(135deg, rgba(29,78,216,0.15) 0%, rgba(29,78,216,0.08) 100%)", color: "#1d4ed8", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{k.rol}</div></td>
-                <td style={{...tdStyle,color:"#fbbf24",fontWeight:700}}><IconMap.star size={16} /> {k.puan}</td>
-                <td style={tdStyle}>{aktifSeferler.length}</td>
-                <td style={tdStyle}><div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.08) 100%)", color: "#10b981", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{k.durum}</div></td>
+                <td style={tdStyle}><div style={{ background: "linear-gradient(135deg, rgba(29,78,216,0.15) 0%, rgba(29,78,216,0.08) 100%)", color: "#1d4ed8", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{rol}</div></td>
+                <td style={tdStyle}>{k.telefon || "-"}</td>
+                <td style={tdStyle}><div style={{ background: pasif ? "rgba(239,68,68,0.1)" : "rgba(16,185,129,0.1)", color: pasif ? "#ef4444" : "#10b981", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{pasif ? "Askıda" : "Aktif"}</div></td>
                 <td style={tdStyle}>
-                  <button style={{...btnStyle,border:"1px solid rgba(251,191,36,0.2)",background:"none",color:"var(--text2)"}}>Profil</button>
-                  <button style={{...btnStyle,border:"1px solid rgba(251,191,36,0.3)",background:"rgba(251,191,36,0.1)",color:"#fbbf24"}}>Askı</button>
+                  <button
+                    onClick={() => {
+                      kullaniciDurumuGuncelle(k.id, pasif ? "aktif" : "pasif");
+                      alert(`${k.ad} ${pasif ? "aktifleştirildi" : "askıya alındı"}. Askıdaki kullanıcı giriş yapamaz.`);
+                    }}
+                    style={{...btnStyle,border: pasif ? "1px solid rgba(16,185,129,0.3)" : "1px solid rgba(239,68,68,0.3)", background: pasif ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)", color: pasif ? "#10b981" : "#ef4444"}}
+                  >{pasif ? "✓ Aktifleştir" : "🚫 Askıya Al"}</button>
+                  {k.id !== oturum?.id && (
+                    <>
+                      <button
+                        onClick={() => {
+                          const yeniRol = prompt("Yeni rol (kamyoncu / issiz / admin):", rol);
+                          if (!yeniRol || !["kamyoncu", "issiz", "admin"].includes(yeniRol.trim())) { alert("Geçersiz rol!"); return; }
+                          kullaniciRolunuGuncelle(k.id, yeniRol.trim());
+                          alert("✅ Rol güncellendi.");
+                        }}
+                        style={{...btnStyle,border:"1px solid rgba(251,191,36,0.3)",background:"rgba(251,191,36,0.1)",color:"#fbbf24"}}
+                      >🔄 Rol</button>
+                      <button
+                        onClick={() => {
+                          const mesaj = prompt(`${k.ad} için gönderilecek mesaj:`);
+                          if (mesaj === null || !mesaj.trim()) return;
+                          bildirimGonder(k.id, "📩 Admin Mesajı", mesaj.trim());
+                          alert("✅ Bildirim gönderildi.");
+                        }}
+                        style={{...btnStyle,border:"1px solid rgba(29,78,216,0.3)",background:"rgba(29,78,216,0.1)",color:"#1d4ed8"}}
+                      >📨 Mesaj</button>
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`${k.ad} adlı kullanıcıyı kalıcı olarak silmek istediğinize emin misiniz?\n\nİlanları, seferleri ve tüm kayıtları silinir.`)) return;
+                          try {
+                            await kullaniciSil(k.id);
+                            alert("🗑 Kullanıcı silindi.");
+                          } catch (e) {
+                            alert("Silme hatası: " + (e.message || e));
+                          }
+                        }}
+                        style={{...btnStyle,border:"1px solid rgba(239,68,68,0.3)",background:"rgba(239,68,68,0.08)",color:"#ef4444"}}
+                      >🗑 Sil</button>
+                    </>
+                  )}
                 </td>
               </tr>
             )})}</tbody>
@@ -142,14 +216,20 @@ export default function AdminPanel() {
         </div>
       );
 
-      case "gelir": return (
+      case "gelir": {
+        const odendiler = seferlerList.filter(s => s.durum === "odendi");
+        const bekleyenler = seferlerList.filter(s => s.durum === "teslima_bekleniyor");
+        const toplam = odendiler.reduce((t, s) => t + Number(s.ucret || 0), 0);
+        const bekleyenToplam = bekleyenler.reduce((t, s) => t + Number(s.ucret || 0), 0);
+        const komisyon = toplam * 0.03;
+        return (
         <div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
             {[
-              { lbl: "Bu Ay Komisyon", val: "₺14.280", renk: "#10b981" },
-              { lbl: "Bu Ay Abonelik", val: "₺8.970", renk: "#1d4ed8" },
-              { lbl: "Toplam Ciro", val: "₺142K", renk: "#fbbf24" },
-              { lbl: "Bekleyen Ödeme", val: "₺3.200", renk: "#ea580c" },
+              { lbl: "Toplam Ciro (Ödenen)", val: `₺${toplam.toLocaleString("tr-TR")}`, renk: "#10b981" },
+              { lbl: "Komisyon (%3)", val: `₺${komisyon.toLocaleString("tr-TR")}`, renk: "#1d4ed8" },
+              { lbl: "Bekleyen Ödeme", val: `₺${bekleyenToplam.toLocaleString("tr-TR")}`, renk: "#ea580c" },
+              { lbl: "Ödenen Sefer", val: odendiler.length, renk: "#fbbf24" },
             ].map(s => (
               <div key={s.lbl} style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "12px", padding: 16 }}>
                 <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 6, letterSpacing: 1 }}>/{s.lbl}</div>
@@ -159,27 +239,73 @@ export default function AdminPanel() {
           </div>
           <div style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "16px", overflow: "auto" }}>
             <table className="tbl">
-              <thead><tr><th style={thStyle}>Tarih</th><th style={thStyle}>İşlem</th><th style={thStyle}>Komisyon</th><th style={thStyle}>Abonelik</th><th style={thStyle}>Durum</th></tr></thead>
+              <thead><tr><th style={thStyle}>Yük</th><th style={thStyle}>Güzergah</th><th style={thStyle}>Kamyoncu</th><th style={thStyle}>Ödeme Tarihi</th><th style={thStyle}>Ücret</th><th style={thStyle}>Komisyon</th></tr></thead>
               <tbody>
-                {[
-                  { tarih:"03 May", islem:"İstanbul→Gaziantep", kom:"₺525", ab:"—", d:"onaylandı" },
-                  { tarih:"02 May", islem:"Pro Üyelik - Mehmet Y.", kom:"—", ab:"₺299", d:"onaylandı" },
-                  { tarih:"01 May", islem:"Antalya→İzmir", kom:"₺410", ab:"—", d:"bekliyor" },
-                  { tarih:"30 Nis", islem:"Pro Üyelik - Ali K.", kom:"—", ab:"₺299", d:"onaylandı" },
-                ].map((r,i)=>(
-                  <tr key={`history-${i}`}>
-                    <td style={tdStyle}>{r.tarih}</td>
-                    <td style={tdStyle}>{r.islem}</td>
-                    <td style={{...tdStyle,color:"#10b981",fontWeight:600}}>{r.kom}</td>
-                    <td style={{...tdStyle,color:"#1d4ed8",fontWeight:600}}>{r.ab}</td>
-                    <td style={tdStyle}><div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.08) 100%)", color: "#10b981", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{r.d}</div></td>
+                {odendiler.map(s => (
+                  <tr key={s.id}>
+                    <td style={tdStyle}>{s.yuk}</td>
+                    <td style={tdStyle}>{s.nereden}→{s.nereye}</td>
+                    <td style={tdStyle}>{s.kamyoncu}</td>
+                    <td style={tdStyle}>{formatTarih(s.odeme_tarihi)}</td>
+                    <td style={{...tdStyle,color:"#fbbf24",fontWeight:700}}>₺{Number(s.ucret||0).toLocaleString("tr-TR")}</td>
+                    <td style={{...tdStyle,color:"#10b981",fontWeight:600}}>₺{(Number(s.ucret||0)*0.03).toLocaleString("tr-TR")}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
-      );
+        );
+      }
+
+      case "ihtilaflar": {
+        const aciklar = (ihtilaflar || []).filter(i => i.durum === "acik");
+        const cozulenler = (ihtilaflar || []).filter(i => i.durum === "cozuldu");
+        const adBul = (uid) => kullanicilarList.find(k => k.id === uid)?.ad || "—";
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.08) 100%)", color: "#ef4444", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, border: "1px solid rgba(239,68,68,0.3)" }}>{aciklar.length} açık ihtilaf</div>
+              <div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.08) 100%)", color: "#10b981", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, border: "1px solid rgba(16,185,129,0.3)" }}>{cozulenler.length} çözüldü</div>
+            </div>
+            <div style={{ background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: "16px", overflow: "auto" }}>
+              <table className="tbl">
+                <thead><tr><th style={thStyle}>Kamyoncu</th><th style={thStyle}>Sefer</th><th style={thStyle}>Sebep</th><th style={thStyle}>Tarih</th><th style={thStyle}>Durum</th><th style={thStyle}>İşlem</th></tr></thead>
+                <tbody>
+                  {(ihtilaflar || []).map(i => {
+                    const sefer = seferlerList.find(s => s.id === i.sefer_id);
+                    return (
+                      <tr key={i.id}>
+                        <td style={tdStyle}>{adBul(i.acan_id)}</td>
+                        <td style={tdStyle}>{sefer ? `${sefer.yuk} - ${sefer.nereden}→${sefer.nereye}` : "—"}</td>
+                        <td style={tdStyle}>{i.sebep}</td>
+                        <td style={tdStyle}>{formatTarih(i.olusturma_zamani)}</td>
+                        <td style={tdStyle}>
+                          <div style={{ background: i.durum === "acik" ? "rgba(239,68,68,0.1)" : "rgba(16,185,129,0.1)", color: i.durum === "acik" ? "#ef4444" : "#10b981", padding: "4px 10px", borderRadius: "12px", fontSize: 11, fontWeight: 600, display: "inline-block" }}>{i.durum === "acik" ? "Açık" : "Çözüldü"}</div>
+                          {i.admin_notu && <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 4 }}>📝 {i.admin_notu}</div>}
+                        </td>
+                        <td style={tdStyle}>
+                          {i.durum === "acik" && (
+                            <button
+                              onClick={() => {
+                                const not = prompt("Çözüm notu (açan kullanıcıya gönderilecek):");
+                                if (not === null) return;
+                                ihtilafCoz(i.id, not || "");
+                                alert("✅ İhtilaf çözüldü ve taraflara bildirildi.");
+                              }}
+                              style={{ ...btnStyle, border: "1px solid rgba(16,185,129,0.3)", background: "rgba(16,185,129,0.1)", color: "#10b981" }}
+                            >Çöz</button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      }
 
       case "ayarlar": return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -257,7 +383,18 @@ export default function AdminPanel() {
         <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(251,191,36,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(14px)", zIndex: 10 }}>
           <div style={{ fontFamily: "var(--font-d)", fontSize: 18, letterSpacing: 1, color: "#1d4ed8" }}>{menu.find(m=>m.key===aktif)?.label?.toUpperCase()}</div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", color: "#fbbf24", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, border: "1px solid rgba(251,191,36,0.2)" }}>{seferlerList.filter(s=>s.durum==="teslima_bekleniyor").length} teslim bekliyor</div>
+            <button
+              onClick={() => {
+                const baslik = prompt("Duyuru başlığı:");
+                if (baslik === null) return;
+                const icerik = prompt("Duyuru içeriği:");
+                if (icerik === null || !icerik.trim()) return;
+                duyuruGonder(baslik.trim() || "Duyuru", icerik.trim());
+                alert("✅ Duyuru tüm kullanıcılara gönderildi.");
+              }}
+              style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", color: "#fbbf24", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, border: "1px solid rgba(251,191,36,0.2)", cursor: "pointer" }}
+            >📢 Duyuru Gönder</button>
+            <div style={{ background: "linear-gradient(135deg, rgba(29,78,216,0.15) 0%, rgba(29,78,216,0.08) 100%)", color: "#1d4ed8", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, border: "1px solid rgba(29,78,216,0.2)" }}>{seferlerList.filter(s=>s.durum==="teslima_bekleniyor").length} teslim bekliyor</div>
             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}><IconMap.settings size={16} className="icon-primary" /></div>
           </div>
         </div>

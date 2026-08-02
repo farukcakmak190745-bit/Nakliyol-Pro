@@ -153,3 +153,24 @@ export const formatTarih = (tarih) => {
   if (isNaN(d.getTime())) return String(tarih);
   return d.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
 };
+
+// Seferin vade tarihi: teslim tarihi + ödeme günü. Peşin/seferlik yoksa null.
+export const vadeTarihiniBul = (sefer) => {
+  if (!sefer) return null;
+  const gun = Number(sefer?.odeme_gun ?? sefer?.odemeGun ?? 0);
+  if (gun <= 0) return null;
+  const taban = sefer?.teslim_tarihi || new Date().toISOString().split("T")[0];
+  const d = new Date(taban);
+  if (isNaN(d.getTime())) return null;
+  d.setDate(d.getDate() + gun);
+  return d.toISOString().split("T")[0];
+};
+
+// Vade tarihi geçmiş mi? (bugün > vade)
+export const vadeGectiMi = (vadeTarihi) => {
+  if (!vadeTarihi) return false;
+  const vade = new Date(vadeTarihi + "T00:00:00");
+  const bugun = new Date();
+  bugun.setHours(0, 0, 0, 0);
+  return vade.getTime() < bugun.getTime();
+};

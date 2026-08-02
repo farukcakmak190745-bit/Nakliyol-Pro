@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import ChatSayfasi from "../../components/ChatSayfasi";
 import { useApp } from "../../context/AppContext";
 import { useMesaj } from "../../context/MesajContext";
-import { EmptyState, formatTarih } from "../../components/UI";
+import { EmptyState, formatTarih, vadeTarihiniBul, vadeGectiMi } from "../../components/UI";
 import ProfilKart from "../../components/ProfilKart";
 import IlIlceSecici from "../../components/IlIlceSecici";
 import { IconMap } from "../../components/Icons";
 
 export function IlanVerSayfasi() {
   const { ilanEkle, ilanSil } = useApp();
+  const { dosyaYukle } = useMesaj();
   const [form, setForm] = useState({
     nereden: "", nereye: "", yuk: "",
     tonaj: "20",
@@ -21,7 +22,7 @@ export function IlanVerSayfasi() {
     yuklemeKonum: "", bosaltmaKonum: "",
     yuklemeSaatBas: "", yuklemeSaatBit: "",
     bosaltmaSaatBas: "", bosaltmaSaatBit: "",
-    faturaBaslik: ""
+    faturaBaslik: "", faturaDosya: null
   });
   const [tamam, setTamam] = useState(false);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -33,7 +34,7 @@ export function IlanVerSayfasi() {
     }
     const ucret = Number(form.ucret);
 
-    console.log(`📤 Yeni ilan gönderiliyor:`, { ...form, ton: 0, ucret: ucret, odemeTuru: form.odemeTuru, odemeGun: Number(form.odemeGun) });
+    console.log(`📤 Yeni ilan gönderiliyor:`, { ...form, faturaDosya: form.faturaDosya ? { tip: form.faturaDosya.tip, ad: form.faturaDosya.ad } : null, ton: 0, ucret: ucret, odemeTuru: form.odemeTuru, odemeGun: Number(form.odemeGun) });
 
     ilanEkle({
       ...form,
@@ -54,9 +55,25 @@ export function IlanVerSayfasi() {
         yuklemeKonum: "", bosaltmaKonum: "",
         yuklemeSaatBas: "", yuklemeSaatBit: "",
         bosaltmaSaatBas: "", bosaltmaSaatBit: "",
-        faturaBaslik: ""
+        faturaBaslik: "", faturaDosya: null
       });
     }, 2000);
+  };
+
+  const faturaSec = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      alert("Fatura dosyası en fazla 3MB olabilir.");
+      return;
+    }
+    try {
+      const dosya = await dosyaYukle(file);
+      set("faturaDosya", dosya);
+    } catch (err) {
+      alert("Dosya okunamadı: " + err.message);
+    }
   };
 
   const inputStyle = "input";
@@ -177,19 +194,46 @@ export function IlanVerSayfasi() {
             )}
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 10 }}>
-          <div className="input-group">
-            <Label>Yükleme Saati</Label>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input className={inputStyle} type="time" value={form.yuklemeSaatBas} onChange={e => set("yuklemeSaatBas", e.target.value)} style={{ flex: 1 }} />
-              <span style={{ color: "var(--text3)", fontSize: 12 }}>—</span>
-              <input className={inputStyle} type="time" value={form.yuklemeSaatBit} onChange={e => set("yuklemeSaatBit", e.target.value)} style={{ flex: 1 }} />
+        <div className="input-group" style={{ marginTop: 10 }}>
+          <Label>Yükleme Saati</Label>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input className={inputStyle} type="time" value={form.yuklemeSaatBas} onChange={e => set("yuklemeSaatBas", e.target.value)} style={{ flex: 1 }} />
+            <span style={{ color: "var(--text3)", fontSize: 12 }}>—</span>
+            <input className={inputStyle} type="time" value={form.yuklemeSaatBit} onChange={e => set("yuklemeSaatBit", e.target.value)} style={{ flex: 1 }} />
+          </div>
+        </div>
+        <div className="input-group" style={{ marginTop: 10 }}>
+          <Label>Fatura (Fotoğraf veya PDF)</Label>
+          {form.faturaDosya ? (
+            <div style={{ border: "1px solid var(--border2)", borderRadius: 12, padding: 10, background: "var(--bg3)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {form.faturaDosya.tip === "img" ? (
+                  <img src={form.faturaDosya.veri} alt="Fatura" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8 }} />
+                ) : (
+                  <div style={{ fontSize: 26 }}>📄</div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{form.faturaDosya.ad}</div>
+                  <div style={{ fontSize: 11, color: "var(--text3)" }}>{(form.faturaDosya.boyut / 1024).toFixed(0)} KB</div>
+                </div>
+                <button type="button" onClick={() => set("faturaDosya", null)} style={{ padding: "8px 10px", borderRadius: 8, background: "#fee2e2", color: "#b91c1c", border: "none", fontWeight: 600, fontSize: 12 }}>✕ Kaldır</button>
+              </div>
             </div>
-          </div>
-          <div className="input-group">
-            <Label>Fatura Başlığı</Label>
-            <input className={inputStyle} placeholder="Firma adı..." value={form.faturaBaslik} onChange={e => set("faturaBaslik", e.target.value)} />
-          </div>
+          ) : (
+            <div style={{ display: "flex", gap: 8 }}>
+              <label style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "14px 8px", borderRadius: 12, border: "1.5px dashed var(--border2)", background: "var(--bg3)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                📷 Fotoğraf Çek
+                <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text3)" }}>Kamera ile</span>
+                <input type="file" accept="image/*" capture="environment" onChange={faturaSec} style={{ display: "none" }} />
+              </label>
+              <label style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "14px 8px", borderRadius: 12, border: "1.5px dashed var(--border2)", background: "var(--bg3)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                📎 Dosya Seç
+                <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text3)" }}>Galeri / PDF</span>
+                <input type="file" accept="image/*,application/pdf,.pdf" onChange={faturaSec} style={{ display: "none" }} />
+              </label>
+            </div>
+          )}
+          <span style={{ fontSize: 11, color: "var(--text3)" }}>Fatura, iş onaylanınca kamyoncuya otomatik gönderilir.</span>
         </div>
         <div className="input-group" style={{ marginTop: 10 }}>
           <Label>Boşaltma Yeri (Adres)</Label>
@@ -350,13 +394,30 @@ export function IlanlarSayfasi() {
   );
 }
 
-export function TekliflerSayfasi() {
-  const { oturum, konusmaOluştur, ilkMesajiGonder, seferler, bekleyenOnaylariGetir, kamyoncuBasvuruBekleyenleriGetir, ilaniOnayla, ilaniReddet, ilanlar } = useApp();
+export function TekliflerSayfasi({ onChatAc }) {
+  const { oturum, konusmaOluştur, ilkMesajiGonder, seferler, bekleyenOnaylariGetir, kamyoncuBasvuruBekleyenleriGetir, ilaniOnayla, ilaniReddet, ilaniptalEt, odemeOnayla, ilanlar } = useApp();
   const [kabulEdilen, setKabulEdilen] = useState(new Set());
   const [seciliSefer, setSeciliSefer] = useState(null);
   const [konusmaIdMap, setKonusmaIdMap] = useState({});
   const [bekleyenOnaylar, setBekleyenOnaylar] = useState([]);
   const [yeniBekleyenler, setYeniBekleyenler] = useState([]);
+  const [simdi, setSimdi] = useState(Date.now());
+
+  // Onay iptal süresi: 10 dakika
+  const ONEY_IPTAL_SURE_MS = 10 * 60 * 1000;
+
+  // Geri sayım: iptal süresinin dolduğunu canlı göstermek için
+  useEffect(() => {
+    const timer = setInterval(() => setSimdi(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatKalanSure = (ms) => {
+    if (ms <= 0) return "0:00";
+    const dk = Math.floor(ms / 60000);
+    const sn = Math.floor((ms % 60000) / 1000);
+    return `${dk}:${String(sn).padStart(2, "0")}`;
+  };
 
   // İşverenin kendi ilanlarını filtrele
   const kendiIlanlar = ilanlar ? ilanlar.filter(i => i.olusturan_id === oturum?.id) : [];
@@ -410,25 +471,64 @@ export function TekliflerSayfasi() {
 
   const kabulEt = (sefer) => {
     setKabulEdilen(prev => new Set([...prev, sefer.id]));
-    const newConversation = konusmaOluştur({
-      partnerId: sefer.kamyoncu || sefer.kamyoncu_tc || String(sefer.id),
-      partnerAd: sefer.kamyoncu || sefer.kamyoncu_tc || "Kamyoncu",
-      partnerRol: "kamyoncu",
-      baslik: `${sefer.yuk} - ${sefer.nereden} → ${sefer.nereye}`,
-      resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + String(sefer.kamyoncu || sefer.kamyoncu_tc || "K").substring(0, 2).toUpperCase()
-    });
-    setKonusmaIdMap(prev => ({ ...prev, [sefer.id]: newConversation }));
 
     // Bekleyen onay listesini kaldır
     setBekleyenOnaylar(prev => prev.filter(o => o.ilanId !== sefer.ilanId));
 
+    const mesaj = `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${sefer.kamyoncu || sefer.kamyoncu_tc || "Belirtilmedi"}\n📞 Tel: ${sefer.kamyoncuTel || sefer.kamyoncu_tel || "Belirtilmedi"}\n🚚 Çekici Plaka: ${sefer.plaka || "Belirtilmedi"}\n🚐 Dorse Plaka: ${sefer.dorsePlaka || "Belirtilmedi"}\n🆔 TC Kimlik: ${sefer.kamyoncu_tc || "Belirtilmedi"}\n\nŞimdi mesajlaşma üzerinden konuşabiliriz.`;
+    mesajlas(sefer, mesaj);
+  };
+
+  // Kamyoncu ile konuşma aç (mevcut konuşma varsa onu bulur, yoksa oluşturur)
+  const mesajlas = async (sefer, ilkMesaj) => {
+    if (!sefer || !oturum?.id) return;
+
+    const konusmaId = await konusmaOluştur({
+      userId: oturum.id,
+      partnerId: sefer.kamyoncu_user_id || sefer.kamyoncu || sefer.kamyoncu_tc || String(sefer.id),
+      partnerAd: sefer.kamyoncu || sefer.kamyoncu_tc || "Kamyoncu",
+      partnerRol: "kamyoncu",
+      isTrucker: false,
+      konusmaTuru: "is",
+      ilanId: sefer.ilan_id,
+      baslik: `${sefer.yuk} - ${sefer.nereden} → ${sefer.nereye}`,
+      resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + String(sefer.kamyoncu || sefer.kamyoncu_tc || "K").substring(0, 2).toUpperCase(),
+      bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+    });
+
+    if (!konusmaId) {
+      console.error('Konuşma açılamadı:', sefer);
+      alert('Konuşma açılamadı. Lütfen tekrar deneyin.');
+      return;
+    }
+
+    setKonusmaIdMap(prev => ({ ...prev, [sefer.id]: konusmaId }));
+
+    if (ilkMesaj) {
+      ilkMesajiGonder(konusmaId, ilkMesaj);
+    }
+
+    // Konuşmanın listeye yüklenmesi için kısa bir bekleme sonrası chat ekranını aç
     setTimeout(() => {
-      ilkMesajiGonder(
-        newConversation,
-        `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${sefer.kamyoncu || sefer.kamyoncu_tc || "Belirtilmedi"}\n📞 Tel: ${sefer.kamyoncuTel || "Belirtilmedi"}\n🚚 Çekici Plaka: ${sefer.plaka || "Belirtilmedi"}\n🚐 Dorse Plaka: ${sefer.dorsePlaka || "Belirtilmedi"}\n🆔 TC Kimlik: ${sefer.kamyoncu_tc || "Belirtilmedi"}\n\nŞimdi convo üzerinden konuşabiliriz.`
-      );
+      if (onChatAc) {
+        onChatAc(konusmaId);
+      }
     }, 500);
-    return newConversation;
+  };
+
+  // Onayı iptal et: sefer tekrar başvuru listesine döner
+  const iptalEt = async (sefer) => {
+    if (!sefer?.ilan_id) return;
+    if (!confirm("Bu onayı iptal etmek istediğinize emin misiniz?\n\nBaşvuru tekrar 'Başvuru Bekleniyor' listesine dönecek.")) return;
+    const ok = await ilaniptalEt(sefer.ilan_id);
+    if (ok) {
+      setKabulEdilen(prev => {
+        const yeni = new Set(prev);
+        yeni.delete(sefer.id);
+        return yeni;
+      });
+      alert("✅ Onay iptal edildi. Başvuru tekrar listeye döndü.");
+    }
   };
 
   return (
@@ -515,17 +615,7 @@ export function TekliflerSayfasi() {
         <>
           <div className="section-title">AKTİF İŞLER ({aktifSeferler.length})</div>
           {aktifSeferler.map(s => (
-            <div key={s?.id} className="card" style={{ marginBottom: 14 }} onClick={() => {
-              const newConversationId = konusmaOluştur({
-                partnerId: s?.kamyoncu || s?.kamyoncu_tc || String(s?.id),
-                partnerAd: s?.kamyoncu || s?.kamyoncu_tc || "Kamyoncu",
-                partnerRol: "kamyoncu",
-                baslik: `${s?.yuk} - ${s?.nereden} → ${s?.nereye}`,
-                resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + String(s?.kamyoncu || s?.kamyoncu_tc || "K").substring(0, 2).toUpperCase(),
-                bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-              });
-              setKonusmaIdMap(prev => ({ ...prev, [s?.id]: newConversationId }));
-            }}>
+            <div key={s?.id} className="card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ fontSize: 32 }}>🚛</div>
@@ -534,8 +624,8 @@ export function TekliflerSayfasi() {
                     <div style={{ fontSize: 10, color: "var(--text3)", letterSpacing: 1.5 }}>Yük Tipi</div>
                   </div>
                 </div>
-                <div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)", color: "#10b981", padding: "6px 12px", borderRadius: "20px", fontSize: 11, fontWeight: 600, border: "1px solid rgba(16,185,129,0.3)" }}>
-                  ✓ Yolda
+                <div style={{ background: s?.durum === "teslima_bekleniyor" ? "linear-gradient(135deg, rgba(245,158,11,0.2) 0%, rgba(245,158,11,0.1) 100%)" : "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)", color: s?.durum === "teslima_bekleniyor" ? "#f59e0b" : "#10b981", padding: "6px 12px", borderRadius: "20px", fontSize: 11, fontWeight: 600, border: `1px solid ${s?.durum === "teslima_bekleniyor" ? "rgba(245,158,11,0.3)" : "rgba(16,185,129,0.3)"}` }}>
+                  {s?.durum === "teslima_bekleniyor" ? "⏳ Teslim Bekl." : "✓ Yolda"}
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
@@ -559,13 +649,62 @@ export function TekliflerSayfasi() {
                   <div style={{ fontSize: 16, fontWeight: 700 }}>{s?.ton > 0 ? `${s?.ton} Ton` : "🔥 Serbest"}</div>
                 </div>
               </div>
-              <button
-                onClick={() => kabulEt(s)}
-                className="btn btn-primary"
-                style={{ padding: "12px", fontSize: 13 }}
-              >
-                💬 Mesajlaş
-              </button>
+              {s?.durum === "teslima_bekleniyor" && (() => {
+                const vade = vadeTarihiniBul(s);
+                if (!vade) {
+                  return (
+                    <div style={{ marginBottom: 10, padding: "10px 12px", borderRadius: "10px", fontSize: 12, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", color: "#f59e0b", display: "flex", alignItems: "center", gap: 6 }}>
+                      ⏳ Kamyoncu işi teslim etti, ödeme bekleniyor.
+                    </div>
+                  );
+                }
+                const gecti = vadeGectiMi(vade);
+                return (
+                  <div style={{ marginBottom: 10, padding: "10px 12px", borderRadius: "10px", fontSize: 12, background: gecti ? "rgba(239,68,68,0.08)" : "rgba(245,158,11,0.08)", border: `1px solid ${gecti ? "rgba(239,68,68,0.3)" : "rgba(245,158,11,0.25)"}`, color: gecti ? "#ef4444" : "#f59e0b", display: "flex", alignItems: "center", gap: 6 }}>
+                    {gecti ? "⚠️ Ödeme vadesi geçti" : "⏳ Ödeme vadesi"} — {formatTarih(vade)}
+                  </div>
+                );
+              })()}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => mesajlas(s)}
+                  className="btn btn-primary"
+                  style={{ flex: 1, padding: "12px", fontSize: 13 }}
+                >
+                  💬 Mesajlaş
+                </button>
+                {s?.durum === "teslima_bekleniyor" && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`${s?.yuk || "Bu iş"} için ödemeyi onaylıyor musunuz?`)) return;
+                      await odemeOnayla(s?.id);
+                      alert("✅ Ödeme onaylandı! Kamyoncuya bildirim gönderildi.");
+                    }}
+                    className="btn btn-success"
+                    style={{ flex: 1, padding: "12px", fontSize: 13 }}
+                  >
+                    💰 Ödemeyi Onayla
+                  </button>
+                )}
+                {(() => {
+                  const onayZamaniMs = s?.onay_zamani ? new Date(s.onay_zamani).getTime() : null;
+                  const kalanMs = onayZamaniMs ? ONEY_IPTAL_SURE_MS - (simdi - onayZamaniMs) : 0;
+                  if (!onayZamaniMs || kalanMs <= 0) return null;
+                  return (
+                    <button
+                      onClick={() => iptalEt(s)}
+                      style={{
+                        flex: 1, padding: "12px",
+                        background: "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.08) 100%)",
+                        color: "#ef4444", border: "1px solid rgba(239,68,68,0.35)",
+                        borderRadius: "12px", fontSize: 13, fontWeight: 700, cursor: "pointer"
+                      }}
+                    >
+                      ↩ İptal Et ({formatKalanSure(kalanMs)})
+                    </button>
+                  );
+                })()}
+              </div>
             </div>
           ))}
         </>
@@ -584,18 +723,7 @@ export function TekliflerSayfasi() {
                   <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>₺{s?.ucret.toLocaleString()} • {formatTarih(s.tarih)}</div>
                 </div>
                 <button
-                  onClick={() => {
-                    const newConversationId = konusmaOluştur({
-                      partnerId: s?.kamyoncu || s?.kamyoncu_tc || String(s?.id),
-                      partnerAd: s?.kamyoncu || s?.kamyoncu_tc || "Kamyoncu",
-                      partnerRol: "kamyoncu",
-                      baslik: `${s?.yuk} - ${s?.nereden} → ${s?.nereye}`,
-                      resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + String(s?.kamyoncu || s?.kamyoncu_tc || "K").substring(0, 2).toUpperCase(),
-                      bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                    });
-                    setKonusmaIdMap(prev => ({ ...prev, [s?.id]: newConversationId }));
-                    ilkMesajiGonder(newConversationId, `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${s?.kamyoncu || s?.kamyoncu_tc || "Belirtilmedi"}\n📞 Tel: ${s?.kamyoncuTel || "Belirtilmedi"}\n🚚 Çekici Plaka: ${s?.plaka || "Belirtilmedi"}\n🚐 Dorse Plaka: ${s?.dorsePlaka || "Belirtilmedi"}\n🆔 TC Kimlik: ${s?.kamyoncu_tc || "Belirtilmedi"}\n\nŞimdi convo üzerinden konuşabiliriz.`);
-                  }}
+                  onClick={() => mesajlas(s, `✓ İş başvurunuz kabul edildi. Gelen bilgiler:\n\n👤 Ad: ${s?.kamyoncu || s?.kamyoncu_tc || "Belirtilmedi"}\n📞 Tel: ${s?.kamyoncuTel || s?.kamyoncu_tel || "Belirtilmedi"}\n🚚 Çekici Plaka: ${s?.plaka || "Belirtilmedi"}\n🚐 Dorse Plaka: ${s?.dorsePlaka || "Belirtilmedi"}\n🆔 TC Kimlik: ${s?.kamyoncu_tc || "Belirtilmedi"}\n\nŞimdi mesajlaşma üzerinden konuşabiliriz.`)}
                   className="btn btn-primary"
                   style={{ padding: "10px 18px", fontSize: 12 }}
                 >

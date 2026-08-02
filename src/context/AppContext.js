@@ -20,6 +20,7 @@ let ilanlarData = null;
 let seferlerData = null;
 let tekliflerData = null;
 let usersData = null;
+let ihtilaflarData = null;
 
 export const AppProvider = ({ children }) => {
   const { konusmaAc, mesajGonder, loadConversations, subscribeRealtime } = useMesaj();
@@ -89,6 +90,19 @@ export const AppProvider = ({ children }) => {
           console.error('❌ Kullanıcılar yüklenemedi');
         }
 
+        // Fetch ihtilaflar
+        const { data: ihtilaflarRes, error: ihtilaflarError } = await supabase
+          .from('ihtilaflar')
+          .select('*')
+          .order('olusturma_zamani', { ascending: false });
+
+        if (!ihtilaflarError && ihtilaflarRes) {
+          console.log(`✅ ${ihtilaflarRes.length} ihtilaf yüklendi`);
+          ihtilaflarData = ihtilaflarRes;
+        } else {
+          console.error('❌ İhtilaflar yüklenemedi');
+        }
+
         // Set the fetched data
         if (ilanlarData) {
           // Fetch profile photos from belgeler table
@@ -122,6 +136,7 @@ export const AppProvider = ({ children }) => {
               bosaltmaSaatBas: ilan.bosaltma_saat_bas || "",
               bosaltmaSaatBit: ilan.bosaltma_saat_bit || "",
               faturaBaslik: ilan.fatura_baslik || "",
+              faturaDosya: ilan.fatura_dosya || null,
               firmaAdi: olusturanUser?.firma_adi || null,
               profilFoto: olusturanUser?.fotograf || fotoMap[String(ilan.olusturan_id)] || null,
               telefon: olusturanUser?.telefon || null,
@@ -133,6 +148,7 @@ export const AppProvider = ({ children }) => {
         if (seferlerData) setSeferler(seferlerData);
         if (tekliflerData) setTeklifler(tekliflerData);
         if (usersData) setKullanicilar(usersData);
+        if (ihtilaflarData) setIhtilaflar(ihtilaflarData);
 
       } catch (error) {
         console.error('❌ Veri yüklenemedi:', error);
@@ -214,6 +230,7 @@ export const AppProvider = ({ children }) => {
 
   const [kamyoncuBasvuru, setKamyoncuBasvuru] = useState(null);
   const [seferOnayDurumu, setSeferOnayDurumu] = useState(() => ({}));
+  const [ihtilaflar, setIhtilaflar] = useState([]);
 
   const kayitOl = useCallback(async (bilgiler) => {
     console.log("📥 kayitOl fonksiyonuna gelen bilgiler:", bilgiler);
@@ -520,6 +537,11 @@ export const AppProvider = ({ children }) => {
         throw new Error("Telefon numarası kayıtlı değil. Önce kayıt olun.");
       }
 
+      // Askıya alınmış kullanıcı giriş yapamaz
+      if (userData.durum === "pasif") {
+        throw new Error("Hesabınız askıya alınmış. Destek ekibiyle iletişime geçin.");
+      }
+
       const email = userData.email;
 
       // Supabase Auth ile giriş yap
@@ -648,6 +670,7 @@ export const AppProvider = ({ children }) => {
       bosaltma_saat_bas: yeni.bosaltmaSaatBas || "",
       bosaltma_saat_bit: yeni.bosaltmaSaatBit || "",
       fatura_baslik: yeni.faturaBaslik || "",
+      fatura_dosya: yeni.faturaDosya || null,
       durum: "aktif",
       istek_sayisi: 0,
       belgeler: [],
@@ -688,6 +711,7 @@ export const AppProvider = ({ children }) => {
         bosaltmaSaatBas: data.bosaltma_saat_bas || "",
         bosaltmaSaatBit: data.bosaltma_saat_bit || "",
         faturaBaslik: data.fatura_baslik || "",
+        faturaDosya: data.fatura_dosya || null,
         olusturanPuan: data.olusturan?.puan || 5.0
       };
       setIlanlar(prev => [normalizedData, ...prev]);
@@ -779,12 +803,14 @@ export const AppProvider = ({ children }) => {
     const baslik = `${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}`;
 
     konusmaAc({
-      partnerId: ilanId,
+      userId: oturum?.id,
+      partnerId: ilan.olusturan_id || ilanId,
       partnerAd,
       partnerRol: "issiz",
       isTrucker: true,
-      baslik,
       konusmaTuru: "is",
+      ilanId,
+      baslik,
       resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + partnerAd.substring(0, 2).toUpperCase(),
       bg: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
     });
@@ -951,13 +977,24 @@ export const AppProvider = ({ children }) => {
 
   const islemiTeslimEt = useCallback(async (seferId) => {
     const sefer = seferler.find(s => s.id === seferId);
+    const teslimTarihi = new Date().toISOString().split("T")[0];
+    // Vadeli ödeme: teslim tarihi + ödeme günü → vade tarihi
+    const odemeGun = Number(sefer?.odeme_gun || sefer?.odemeGun || 0);
+    const vadeli = sefer?.odeme_turu !== "pesin" && odemeGun > 0;
+    let vadeTarihi = null;
+    if (vadeli) {
+      const v = new Date(teslimTarihi);
+      v.setDate(v.getDate() + odemeGun);
+      vadeTarihi = v.toISOString().split("T")[0];
+    }
 
     setSeferler(prev => prev.map(s => {
       if (s.id === seferId) {
         return {
           ...s,
           durum: "teslima_bekleniyor",
-          teslim_tarihi: new Date().toISOString().split("T")[0],
+          teslim_tarihi: teslimTarihi,
+          vade_tarihi: vadeTarihi,
           odeme_durumu: "beklemede"
         };
       }
@@ -967,7 +1004,8 @@ export const AppProvider = ({ children }) => {
     if (supabase) {
       await supabase.from('seferler').update({
         durum: "teslima_bekleniyor",
-        teslim_tarihi: new Date().toISOString().split("T")[0],
+        teslim_tarihi: teslimTarihi,
+        vade_tarihi: vadeTarihi,
         odeme_durumu: "beklemede"
       }).eq('id', seferId);
 
@@ -987,6 +1025,195 @@ export const AppProvider = ({ children }) => {
       }
     }
   }, [supabase, seferler]);
+
+  const odemeOnayla = useCallback(async (seferId) => {
+    const sefer = seferler.find(s => s.id === seferId);
+    if (!sefer) return;
+    const odemeTarihi = new Date().toISOString().split("T")[0];
+    setSeferler(prev => prev.map(s => s.id === seferId ? { ...s, durum: "odendi", odeme_durumu: "odendi", odeme_tarihi: odemeTarihi } : s));
+
+    if (supabase) {
+      try {
+        await supabase.from('seferler').update({
+          durum: "odendi",
+          odeme_durumu: "odendi",
+          odeme_tarihi: odemeTarihi
+        }).eq('id', seferId);
+
+        // Açık ihtilaf varsa otomatik kapat
+        await supabase.from('ihtilaflar')
+          .update({ durum: "cozuldu", admin_notu: "Ödeme onaylandı" })
+          .eq('sefer_id', seferId)
+          .eq('durum', 'acik');
+
+        // Kamyoncuya bildirim
+        if (sefer.kamyoncu_user_id) {
+          await supabase.from('bildirimler').insert({
+            kullanici_id: sefer.kamyoncu_user_id,
+            tur: 'odeme',
+            baslik: '💰 Ödemeniz onaylandı',
+            icerik: `${sefer.yuk || ''} - ${sefer.nereden || ''} → ${sefer.nereye || ''}\n\nİşveren ödemeyi onayladı, iş tamamlandı.`,
+            sefer_id: seferId
+          });
+        }
+      } catch (err) {
+        console.error('Ödeme onaylama hatası:', err);
+      }
+    }
+  }, [seferler, supabase]);
+
+  const ihtilafAc = useCallback(async (seferId, sebep) => {
+    const sefer = seferler.find(s => s.id === seferId);
+    if (!sefer || !sebep || !sebep.trim()) return;
+    const yeni = {
+      sefer_id: seferId,
+      acan_id: oturum?.id,
+      acan_rol: oturum?.rol || "kamyoncu",
+      sebep: sebep.trim(),
+      durum: "acik",
+      admin_notu: null,
+      olusturma_zamani: new Date().toISOString()
+    };
+    setIhtilaflar(prev => [yeni, ...prev]);
+
+    if (supabase) {
+      try {
+        const { error } = await supabase.from('ihtilaflar').insert([yeni]);
+        if (error) {
+          console.error('İhtilaf ekleme hatası:', error);
+          return;
+        }
+      } catch (err) {
+        console.error('İhtilaf açma hatası:', err);
+        return;
+      }
+
+      // İşverene bildirim
+      if (sefer.olusturan_id) {
+        try {
+          await supabase.from('bildirimler').insert({
+            kullanici_id: sefer.olusturan_id,
+            tur: 'ihtilaf',
+            baslik: '⚠️ Ödeme ihtilafı açıldı',
+            icerik: `Kamyoncu ödemeyle ilgili itiraz bildirdi:\n\n"${sebep.trim()}"\n\n${sefer.yuk || ''} - ${sefer.nereden || ''} → ${sefer.nereye || ''}`,
+            sefer_id: seferId
+          });
+        } catch (err) { console.error('İhtilaf işveren bildirimi hatası:', err); }
+      }
+
+      // Admin'lere bildirim
+      const adminler = (kullanicilar || []).filter(u => u.rol === 'admin');
+      for (const admin of adminler) {
+        try {
+          await supabase.from('bildirimler').insert({
+            kullanici_id: admin.id,
+            tur: 'ihtilaf',
+            baslik: '⚠️ Yeni ödeme ihtilafı',
+            icerik: `${oturum?.ad || 'Kamyoncu'}: "${sebep.trim()}"\n\n${sefer.yuk || ''} - ${sefer.nereden || ''} → ${sefer.nereye || ''}`,
+            sefer_id: seferId
+          });
+        } catch (err) { console.error('İhtilaf admin bildirimi hatası:', err); }
+      }
+    }
+  }, [seferler, supabase, oturum, kullanicilar]);
+
+  const ihtilafCoz = useCallback(async (ihtilafId, not) => {
+    setIhtilaflar(prev => prev.map(i => i.id === ihtilafId ? { ...i, durum: "cozuldu", admin_notu: not || "" } : i));
+    if (supabase) {
+      try {
+        await supabase.from('ihtilaflar').update({ durum: "cozuldu", admin_notu: not || "" }).eq('id', ihtilafId);
+        const ihtilaf = ihtilaflar.find(i => i.id === ihtilafId);
+        const sefer = ihtilaf ? seferler.find(s => s.id === ihtilaf.sefer_id) : null;
+
+        if (ihtilaf?.acan_id) {
+          await supabase.from('bildirimler').insert({
+            kullanici_id: ihtilaf.acan_id,
+            tur: 'ihtilaf',
+            baslik: '✅ İhtilafınız değerlendirildi',
+            icerik: not || 'İhtilafınız destek ekibi tarafından incelendi.',
+            sefer_id: ihtilaf.sefer_id
+          });
+        }
+        if (sefer?.olusturan_id && ihtilaf?.acan_id !== sefer.olusturan_id) {
+          await supabase.from('bildirimler').insert({
+            kullanici_id: sefer.olusturan_id,
+            tur: 'ihtilaf',
+            baslik: '⚠️ İhtilaf değerlendirildi',
+            icerik: not || 'İlgili ihtilaf destek ekibi tarafından incelendi.',
+            sefer_id: sefer.id
+          });
+        }
+      } catch (err) {
+        console.error('İhtilaf çözme hatası:', err);
+      }
+    }
+  }, [ihtilaflar, seferler, supabase]);
+
+  // --- ADMIN YÖNETİM FONKSİYONLARI ---
+  const kullaniciDurumuGuncelle = useCallback(async (userId, durum) => {
+    setKullanicilar(prev => prev.map(k => k.id === userId ? { ...k, durum } : k));
+    if (supabase) {
+      const { error } = await supabase.from('users').update({ durum }).eq('id', userId);
+      if (error) console.error('Kullanıcı durumu güncelleme hatası:', error.message);
+    }
+  }, [supabase]);
+
+  const kullaniciRolunuGuncelle = useCallback(async (userId, rol) => {
+    setKullanicilar(prev => prev.map(k => k.id === userId ? { ...k, role: rol, rol } : k));
+    if (supabase) {
+      const { error } = await supabase.from('users').update({ role: rol }).eq('id', userId);
+      if (error) console.error('Kullanıcı rolü güncelleme hatası:', error.message);
+    }
+  }, [supabase]);
+
+  const kullaniciSil = useCallback(async (userId) => {
+    setKullanicilar(prev => prev.filter(k => k.id !== userId));
+    if (supabase) {
+      const { error } = await supabase.from('users').delete().eq('id', userId);
+      if (error) throw error;
+    }
+  }, [supabase]);
+
+  const ilanDurumuGuncelle = useCallback(async (ilanId, durum) => {
+    setIlanlar(prev => prev.map(i => i.id === ilanId ? { ...i, durum } : i));
+    if (supabase) {
+      const { error } = await supabase.from('ilanlar').update({ durum }).eq('id', ilanId);
+      if (error) console.error('İlan durumu güncelleme hatası:', error.message);
+    }
+  }, [supabase]);
+
+  const seferDurumuGuncelle = useCallback(async (seferId, durum) => {
+    setSeferler(prev => prev.map(s => s.id === seferId ? { ...s, durum } : s));
+    if (supabase) {
+      const { error } = await supabase.from('seferler').update({ durum }).eq('id', seferId);
+      if (error) console.error('Sefer durumu güncelleme hatası:', error.message);
+    }
+  }, [supabase]);
+
+  const bildirimGonder = useCallback(async (kullaniciId, baslik, icerik) => {
+    if (!supabase) return;
+    await supabase.from('bildirimler').insert({
+      kullanici_id: kullaniciId,
+      tur: 'yönetim',
+      baslik: baslik || 'Admin Mesajı',
+      icerik
+    });
+  }, [supabase]);
+
+  const duyuruGonder = useCallback(async (baslik, icerik) => {
+    if (!supabase) return;
+    const hedefler = (kullanicilar || []).filter(k => k.id && k.id !== oturum?.id);
+    for (const k of hedefler) {
+      try {
+        await supabase.from('bildirimler').insert({
+          kullanici_id: k.id,
+          tur: 'duyuru',
+          baslik: baslik || 'Duyuru',
+          icerik
+        });
+      } catch (err) { console.error('Duyuru gönderme hatası:', err.message); }
+    }
+  }, [supabase, kullanicilar, oturum]);
 
   const ibanGuncelle = useCallback(async (alan, deger) => {
     if (!oturum?.id) return { ok: false, error: "Oturum yok" };
@@ -1030,10 +1257,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [supabase, oturum?.id]);
 
-  const adminKullanicilar = [...kullanicilar,
-    { id: 9001, ad: "Mehmet Yılmaz", rol: "kamyoncu", puan: 4.9, durum: "aktif", kayitTarihi: "2024-01-15", plaka: "34 TYK 421", aracTip: "TIR", iban: "TR 0000 0000 0000 0000 0000 00", ibanSahibi: "Mehmet Yılmaz" },
-    { id: 9002, ad: "Metro Gıda Lojistik", rol: "issiz", puan: 4.9, durum: "aktif", kayitTarihi: "2024-02-10", iban: "TR 0000 0000 0000 0000 0000 00", ibanSahibi: "Metro Gıda Lojistik" },
-  ];
+  const adminKullanicilar = kullanicilar;
 
   const konusmaOluştur = useCallback((params) => {
     try {
@@ -1102,6 +1326,26 @@ export const AppProvider = ({ children }) => {
       console.error('❌ Oturum yok - başvuru reddedildi');
       alert('Oturum bulunamadı. Lütfen çıkış yapıp tekrar giriş yapın.');
       return;
+    }
+
+    // COOLDOWN KONTROLÜ: Fazla iptal yapan kamyoncu geçici süre başvuru yapamaz
+    if (supabase) {
+      try {
+        const { data: kullanici } = await supabase
+          .from('users')
+          .select('iptal_cooldown_bitis')
+          .eq('id', kamyoncuUserId)
+          .maybeSingle();
+        const cooldownBitis = kullanici?.iptal_cooldown_bitis;
+        if (cooldownBitis && new Date(cooldownBitis).getTime() > Date.now()) {
+          const kalanSaat = Math.ceil((new Date(cooldownBitis).getTime() - Date.now()) / 3600000);
+          console.warn('🚫 Cooldown aktif - başvuru engellendi:', { kalanSaat });
+          alert(`⚠️ Fazla iptal yaptığınız için geçici olarak başvuru yapamıyorsunuz.\n\n⏳ Kalan süre: ${kalanSaat} saat.\n\nBu süre sonunda tekrar başvuru yapabilirsiniz.`);
+          return;
+        }
+      } catch (err) {
+        console.error('Cooldown kontrolü hatası:', err);
+      }
     }
 
     const yeniSefer = {
@@ -1207,6 +1451,7 @@ export const AppProvider = ({ children }) => {
       kamyoncu_tel: kamyoncuTel,
       kamyoncu_tc: tc,
       durum: "yolda",
+      onay_zamani: new Date().toISOString(),
       teslim_tarihi: null,
       belgeler: [],
       odeme_tarihi: null,
@@ -1314,6 +1559,12 @@ export const AppProvider = ({ children }) => {
       detayMesaji += `\nDetaylar için konuşma üzerinden iletişime geçin.`;
       console.log('📤 mesajGonder çağrılıyor:', { konusmaId: yeniKonusma, mesaj: detayMesaji });
       await mesajGonder(yeniKonusma, detayMesaji);
+      // Fatura dosyası (fotoğraf/PDF) ayrı mesaj olarak gönder
+      if (ilan.faturaDosya && ilan.faturaDosya.veri) {
+        const faturaTipi = ilan.faturaDosya.tip === "pdf" ? "pdf" : "img";
+        console.log('📎 Fatura dosyası gönderiliyor:', ilan.faturaDosya.ad);
+        await mesajGonder(yeniKonusma, "🧾 Fatura dosyası", faturaTipi, ilan.faturaDosya);
+      }
       console.log('✅ mesajGonder tamamlandı');
     }
   }, [ilanlar, seferler, konusmaAc, mesajGonder, supabase, oturum]);
@@ -1361,6 +1612,127 @@ export const AppProvider = ({ children }) => {
       }
     }
   }, [seferler, supabase, ilanlar]);
+
+  // Onayı iptal et: seferi tekrar 'bekliyor' durumuna döndür (başvuru listesine geri gelir)
+  const ilaniptalEt = useCallback(async (ilanId) => {
+    const mevcutSefer = seferler.find(s => (s.ilan_id === ilanId || s.ilanId === ilanId) && s.durum === "yolda");
+    if (!mevcutSefer) {
+      console.warn('ilaniptalEt: yolda durumunda sefer bulunamadı', { ilanId });
+      return false;
+    }
+
+    const geriDondur = {
+      durum: 'bekliyor',
+      onay_zamani: null
+    };
+
+    if (supabase) {
+      const { error } = await supabase
+        .from('seferler')
+        .update(geriDondur)
+        .eq('id', mevcutSefer.id);
+      if (error) {
+        console.error('Onay iptal hatası:', error);
+        alert(`Onay iptal edilemedi: ${error.message}`);
+        return false;
+      }
+      console.log('✅ Onay iptal edildi (sefer bekliyor durumuna döndü):', mevcutSefer.id);
+    }
+
+    setSeferler(prev => prev.map(s =>
+      s.id === mevcutSefer.id ? { ...s, ...geriDondur } : s
+    ));
+
+    // Bildirim - onayı iptal edilen kamyoncuya
+    if (supabase && mevcutSefer.kamyoncu_user_id) {
+      const ilan = ilanlar.find(i => i.id === ilanId || i.id === mevcutSefer.ilan_id);
+      try {
+        await supabase.from('bildirimler').insert({
+          kullanici_id: mevcutSefer.kamyoncu_user_id,
+          tur: 'onay_iptal',
+          baslik: 'Onayınız iptal edildi',
+          icerik: `${ilan?.yuk || ''} - ${ilan?.nereden || ''} → ${ilan?.nereye || ''} işiniz için onay iptal edildi.`,
+          sefer_id: mevcutSefer.id,
+          ilan_id: ilanId
+        });
+      } catch (err) {
+        console.error('Onay iptal bildirimi hatası:', err);
+      }
+    }
+
+    return true;
+  }, [seferler, supabase, ilanlar]);
+
+  // Kamyoncu aktif seferini iptal eder (10 dk içinde). Fazla iptal ederse cooldown'a girer.
+  const kamyoncuIptalEt = useCallback(async (seferId, sebep) => {
+    const sefer = seferler.find(s => s.id === seferId);
+    if (!sefer || !oturum?.id) {
+      console.warn('kamyoncuIptalEt: sefer veya oturum yok', { seferId });
+      return { ok: false };
+    }
+    const kamyoncuUserId = oturum.id;
+    const geriDondur = { durum: 'bekliyor', onay_zamani: null };
+    let iptalSayisi = 0;
+
+    if (supabase) {
+      const { error } = await supabase
+        .from('seferler')
+        .update(geriDondur)
+        .eq('id', seferId);
+      if (error) {
+        console.error('Kamyoncu iptal (sefer) hatası:', error);
+        alert(`İptal edilemedi: ${error.message}`);
+        return { ok: false };
+      }
+      console.log('✅ Kamyoncu seferi iptal etti (bekliyor durumuna döndü):', seferId);
+
+      // İptal kaydını ekle (abuse takibi)
+      const { error: iptalErr } = await supabase
+        .from('kamyoncu_iptaller')
+        .insert({ kullanici_id: kamyoncuUserId, sefer_id: seferId, sebep: sebep || '' });
+      if (iptalErr) console.error('İptal kaydı hatası:', iptalErr);
+
+      // Son 24 saatteki iptal sayısını hesapla
+      const son24Saat = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: iptaller } = await supabase
+        .from('kamyoncu_iptaller')
+        .select('id')
+        .eq('kullanici_id', kamyoncuUserId)
+        .gte('zaman', son24Saat);
+      iptalSayisi = iptaller?.length || 0;
+
+      // 24 saatte 3+ iptal → 24 saat cooldown
+      if (iptalSayisi >= 3) {
+        const cooldownBitis = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        await supabase
+          .from('users')
+          .update({ iptal_cooldown_bitis: cooldownBitis })
+          .eq('id', kamyoncuUserId);
+        setOturum(prev => prev ? { ...prev, iptal_cooldown_bitis: cooldownBitis } : prev);
+        console.warn('🚨 Kamyoncu cooldown\'a girdi:', { kamyoncuUserId, iptalSayisi });
+      }
+
+      // İşverene bildirim
+      if (sefer.olusturan_id) {
+        try {
+          await supabase.from('bildirimler').insert({
+            kullanici_id: sefer.olusturan_id,
+            tur: 'kamyoncu_iptal',
+            baslik: 'Kamyoncu işi iptal etti',
+            icerik: `${sefer.yuk} - ${sefer.nereden} → ${sefer.nereye}\n\nSebep: ${sebep || 'Belirtilmedi'}\n\nBaşvuru tekrar listeye döndü.`,
+            sefer_id: seferId,
+            ilan_id: sefer.ilan_id
+          });
+        } catch (err) {
+          console.error('İptal bildirimi hatası:', err);
+        }
+      }
+    }
+
+    setSeferler(prev => prev.map(s => s.id === seferId ? { ...s, ...geriDondur } : s));
+
+    return { ok: true, iptalSayisi, cooldown: iptalSayisi >= 3 };
+  }, [seferler, oturum, supabase]);
 
   const bekleyenOnaylariGetir = useCallback(() => {
     const onayBekleyenler = [];
@@ -1452,6 +1824,7 @@ export const AppProvider = ({ children }) => {
           bosaltmaSaatBas: ilan.bosaltma_saat_bas || "",
           bosaltmaSaatBit: ilan.bosaltma_saat_bit || "",
           faturaBaslik: ilan.fatura_baslik || "",
+          faturaDosya: ilan.fatura_dosya || null,
         })));
       }
     });
@@ -1537,9 +1910,12 @@ export const AppProvider = ({ children }) => {
       konusmaOluştur, ilkMesajiGonder,
       bildirimler: bildirimlerList, bildirimGoster, bildirimGuncelle, setBildirimlerList, gosterenBildirim, setGosterenBildirim,
       kamyoncuBasvuru, setKamyoncuBasvuru,
-      seferOnayDurumu, ilaniOnayla, ilaniReddet,
+      seferOnayDurumu, ilaniOnayla, ilaniReddet, ilaniptalEt, kamyoncuIptalEt,
       bekleyenOnaylariGetir,
       kamyoncuBasvuruBekleyenleriGetir, başvuruGonder,
+      ihtilaflar, odemeOnayla, ihtilafAc, ihtilafCoz,
+      kullaniciDurumuGuncelle, kullaniciRolunuGuncelle, kullaniciSil,
+      ilanDurumuGuncelle, seferDurumuGuncelle, bildirimGonder, duyuruGonder,
     }}>
       {children}
     </Ctx.Provider>

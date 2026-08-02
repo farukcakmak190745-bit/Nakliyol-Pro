@@ -1,18 +1,72 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../../context/AppContext";
 import { useMesaj } from "../../context/MesajContext";
-import { EmptyState, formatTarih } from "../../components/UI";
+import { EmptyState, formatTarih, vadeTarihiniBul, vadeGectiMi } from "../../components/UI";
 import ChatSayfasi from "../../components/ChatSayfasi";
 import TeslimEdildiModal from "../../components/TeslimEdildiModal";
 import { BildirimlerSayfasi } from "../../pages/BildirimlerSayfasi";
 import { MessageSquare } from "lucide-react";
 
 export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
-  const { seferler, konusmaOluştur, oturum, islemiTeslimEt } = useApp();
+  const { seferler, konusmaOluştur, oturum, islemiTeslimEt, kamyoncuIptalEt, ihtilafAc, ihtilaflar } = useApp();
   const [seciliSefer, setSeciliSefer] = useState(null);
   const [konusmaIdMap, setKonusmaIdMap] = useState({});
   const [teslimEdildiModal, setTeslimEdildiModal] = useState(null);
   const [seciliKonusma, setSeciliKonusma] = useState(null);
+  const [simdi, setSimdi] = useState(Date.now());
+
+  // Kamyoncu onay iptal süresi: 10 dakika (işverenle aynı)
+  const IPTAL_SURE_MS = 10 * 60 * 1000;
+
+  // Geri sayım: iptal süresinin dolduğunu canlı göstermek için
+  useEffect(() => {
+    const timer = setInterval(() => setSimdi(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatKalanSure = (ms) => {
+    if (ms <= 0) return "0:00";
+    const dk = Math.floor(ms / 60000);
+    const sn = Math.floor((ms % 60000) / 1000);
+    return `${dk}:${String(sn).padStart(2, "0")}`;
+  };
+
+  // Kamyoncu seferini iptal et (10 dk içinde) - sebep isteyerek
+  const kamyoncuIptal = async (sefer) => {
+    if (!sefer?.id) return;
+    const sebep = prompt(
+      `İptal sebebinizi belirtin:\n\n"${sefer.yuk}" - ${sefer.nereden} → ${sefer.nereye}\n\nİşvereninize gönderilecek.` +
+      "\n\nNot: 24 saat içinde 3+ iptal yaparsanız 24 saat ilanlara başvuru yapamazsınız."
+    );
+    if (sebep === null) return; // kullanıcı iptal etti
+    if (!sebep.trim()) {
+      alert("İptal için bir sebep belirtmeniz gerekiyor.");
+      return;
+    }
+    const sonuc = await kamyoncuIptalEt(sefer.id, sebep.trim());
+    if (sonuc?.ok) {
+      if (sonuc.cooldown) {
+        alert("⚠️ İşiniz iptal edildi.\n\n24 saat içinde 3. iptalinizi yaptınız. Artık 24 saat boyunca ilanlara başvuru yapamayacaksınız.");
+      } else {
+        alert(`✅ İş iptal edildi. Başvuru tekrar işverenin listesine döndü.`);
+      }
+    }
+  };
+
+  // Teslim edildi ama ödeme alınmadıysa ihtilaf (itiraz) aç
+  const ihtilafAcma = async (sefer) => {
+    if (!sefer?.id) return;
+    const sebep = prompt(
+      `Ödeme ihtilafı (itiraz) açıyorsunuz:\n\n"${sefer.yuk}" - ${sefer.nereden} → ${sefer.nereye}\n\nÖdemenin alınamaması ile ilgili sebebi yazın.\n\nDestek ekibi inceleyecek.`
+    );
+    if (sebep === null) return;
+    if (!sebep.trim()) {
+      alert("İhtilaf için bir sebep belirtmeniz gerekiyor.");
+      return;
+    }
+    await ihtilafAc(sefer.id, sebep.trim());
+    alert("⚠️ İhtilafınız açıldı. İşveren ve destek ekibine bildirildi.");
+  };
 
   // Kamyoncu sadece KENDİ (giriş yaptığı hesabın) seferlerini görmeli.
   // Filtre: kamyoncu_user_id === oturum.id (giriş yapan kullanıcının id'si)
@@ -28,7 +82,7 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
     return false;
   });
   const aktifSeferler = (seferlerList || []).filter(s => s && (s.durum === "yolda" || s.durum === "teslima_bekleniyor"));
-  const bitmisSeferler = (seferlerList || []).filter(s => s && s.durum === "tamamlandı");
+  const bitmisSeferler = (seferlerList || []).filter(s => s && (s.durum === "tamamlandı" || s.durum === "odendi"));
 
   const konusmaAc = (sefer) => {
     if (!sefer || !sefer.olusturan || !sefer.yuk || !sefer.nereden || !sefer.nereye) {
@@ -36,9 +90,13 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
       return;
     }
     const newConversationId = konusmaOluştur({
-      partnerId: sefer.olusturan,
+      userId: oturum?.id,
+      partnerId: sefer.olusturan_id || sefer.olusturan,
       partnerAd: sefer.olusturan,
       partnerRol: "issiz",
+      isTrucker: true,
+      konusmaTuru: "is",
+      ilanId: sefer.ilan_id,
       baslik: `${sefer.yuk} - ${sefer.nereden} → ${sefer.nereye}`,
       resim: "https://api.dicebear.com/7.x/initials/svg?seed=" + sefer.olusturan.substring(0, 2).toUpperCase()
     });
@@ -70,8 +128,30 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
     );
   }
 
+  // Cooldown durumu (fazla iptal sonrası başvuru yasağı)
+  const cooldownBitisMs = oturum?.iptal_cooldown_bitis ? new Date(oturum.iptal_cooldown_bitis).getTime() : 0;
+  const cooldownAktif = cooldownBitisMs > simdi;
+
   return (
     <div className="scroll-content">
+      {cooldownAktif && (
+        <div style={{
+          background: "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.08) 100%)",
+          border: "1px solid rgba(239,68,68,0.35)",
+          borderRadius: "12px", padding: "14px 16px", marginBottom: 14,
+          display: "flex", alignItems: "center", gap: 10
+        }}>
+          <span style={{ fontSize: 22 }}>🚫</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#ef4444" }}>
+              Fazla iptal yaptığınız için ilanlara başvuru yapamıyorsunuz
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2 }}>
+              Kalan süre: {formatKalanSure(cooldownBitisMs - simdi)} · {new Date(cooldownBitisMs).toLocaleDateString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
+            </div>
+          </div>
+        </div>
+      )}
       {aktifSeferler && Array.isArray(aktifSeferler) && aktifSeferler.length > 0 && (
         <>
           <div className="section-title">AKTİF SEFERLER ({aktifSeferler.length})</div>
@@ -123,15 +203,62 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
                   >
                     🎉 İşi Teslim Et
                   </button>
-                  <button
-                    onClick={() => konusmaAc(sefer)}
-                    className="btn btn-primary"
-                    style={{ padding: "12px", fontSize: 13 }}
-                  >
-                    💬 Konuş
-                  </button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => konusmaAc(sefer)}
+                      className="btn btn-primary"
+                      style={{ flex: 1, padding: "12px", fontSize: 13 }}
+                    >
+                      💬 Konuş
+                    </button>
+                    {(() => {
+                      const onayZamaniMs = sefer.onay_zamani ? new Date(sefer.onay_zamani).getTime() : null;
+                      const kalanMs = onayZamaniMs ? IPTAL_SURE_MS - (simdi - onayZamaniMs) : 0;
+                      if (!onayZamaniMs || kalanMs <= 0) return null;
+                      return (
+                        <button
+                          onClick={() => kamyoncuIptal(sefer)}
+                          style={{
+                            flex: 1, padding: "12px",
+                            background: "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.08) 100%)",
+                            color: "#ef4444", border: "1px solid rgba(239,68,68,0.35)",
+                            borderRadius: "12px", fontSize: 13, fontWeight: 700, cursor: "pointer"
+                          }}
+                        >
+                          ↩ İptal Et ({formatKalanSure(kalanMs)})
+                        </button>
+                      );
+                    })()}
+                  </div>
                 </>
               )}
+
+              {sefer.durum === "teslima_bekleniyor" && (() => {
+                const vade = vadeTarihiniBul(sefer);
+                const acikIhtilaf = (ihtilaflar || []).find(i => i.sefer_id === sefer.id && i.durum === "acik");
+                const vadeGecti = vade ? vadeGectiMi(vade) : false;
+                return (
+                  <>
+                    <div style={{ marginBottom: 10, padding: "10px 12px", borderRadius: "10px", fontSize: 12, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", color: "#f59e0b", lineHeight: 1.5 }}>
+                      ⏳ İş teslim edildi — ödeme bekleniyor.
+                      {vade && <div style={{ marginTop: 4, color: vadeGecti ? "#ef4444" : "inherit" }}>{vadeGecti ? `⚠️ Ödeme vadesi geçti (${formatTarih(vade)})` : `📅 Vade: ${formatTarih(vade)}`}</div>}
+                      {!vade && <div style={{ marginTop: 4 }}>💵 Peşin ödeme</div>}
+                    </div>
+                    {acikIhtilaf ? (
+                      <div style={{ padding: "10px 12px", borderRadius: "10px", fontSize: 12, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444" }}>
+                        ⚠️ İhtilafınız açık — destek ekibi incelemekte.
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => ihtilafAcma(sefer)}
+                        style={{ width: "100%", padding: "12px", background: "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.08) 100%)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.35)", borderRadius: "12px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                      >
+                        ⚠️ Ödeme Alınmadı — İhtilaf Aç
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
             </div>
             );
           })}
@@ -158,7 +285,7 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ color: "#fbbf24", fontWeight: 700, fontSize: 16 }}>₺{sefer.ucret ? sefer.ucret.toLocaleString() : "0"}</div>
-                  <div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)", color: "#10b981", padding: "4px 10px", borderRadius: "20px", fontSize: 10, fontWeight: 600, marginTop: 4 }}>✓ Tamamlandı</div>
+                  <div style={{ background: sefer.durum === "odendi" ? "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)" : "linear-gradient(135deg, rgba(245,158,11,0.2) 0%, rgba(245,158,11,0.1) 100%)", color: sefer.durum === "odendi" ? "#10b981" : "#f59e0b", padding: "4px 10px", borderRadius: "20px", fontSize: 10, fontWeight: 600, marginTop: 4 }}>{sefer.durum === "odendi" ? "💰 Ödendi" : "✓ Tamamlandı"}</div>
                 </div>
               </div>
               {sefer.belgeler && sefer.belgeler.length > 0 && (
@@ -173,9 +300,9 @@ export function SeferlerSayfasi({ onMesajGoster, onChatAc }) {
                   })}
                 </div>
               )}
-              {sefer.odemeDurumu === "odendi" && sefer.odemeTarihi && (
+              {sefer.odeme_durumu === "odendi" && sefer.odeme_tarihi && (
                 <div style={{ marginTop: 8, fontSize: 11, color: "#10b981", display: "flex", alignItems: "center", gap: 6 }}>
-                  💰 Ödeme tamamlandı - {formatTarih(sefer.odemeTarihi)}
+                  💰 Ödeme tamamlandı - {formatTarih(sefer.odeme_tarihi)}
                 </div>
               )}
             </div>
