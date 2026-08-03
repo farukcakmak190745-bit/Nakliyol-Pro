@@ -208,6 +208,18 @@ export const MesajProvider = ({ children }) => {
           }));
         }
       )
+      .on('postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'messages' },
+        (payload) => {
+          // Mesaj başka taraftan silindiğinde (ör. red sonrası konum bilgisi) listeden kaldır
+          const eski = payload.old;
+          if (!eski?.id) return;
+          setKonusmalar(prev => prev.map(k => ({
+            ...k,
+            mesajlar: k.mesajlar.filter(m => m.id !== eski.id)
+          })));
+        }
+      )
       .subscribe();
 
     return () => {

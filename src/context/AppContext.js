@@ -1226,6 +1226,42 @@ export const AppProvider = ({ children }) => {
     }
   }, [ilanlar, seferler, konusmaAc, mesajGonder, supabase, oturum]);
 
+  // Red/iptal halinde konuşmadaki konum bilgilerini sil + bilgi mesajı gönder.
+  // Kamyoncu, işin reddedildiğini görmeden yola çıkmasın diye konumlar mesajlardan kaldırılır.
+  const konumBilgileriniTemizle = useCallback(async (ilanId, ilan) => {
+    if (!supabase || !ilanId) return null;
+    try {
+      const { data: konusma } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('ilan_id', ilanId)
+        .maybeSingle();
+      if (!konusma) return null;
+
+      const { data: silinecekler } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('conversation_id', konusma.id)
+        .or('metin.like.%MAPS:YÜKLEME:%,metin.like.%MAPS:BOŞALTMA:%');
+
+      if (silinecekler && silinecekler.length > 0) {
+        await supabase.from('messages').delete().in('id', silinecekler.map(m => m.id));
+        console.log('✅ Konum bilgileri mesajlardan silindi:', silinecekler.length);
+      }
+
+      const redMesaji =
+        '❌ Başvurunuz reddedildi\n\n' +
+        'Bu iş için gönderilen yükleme/boşaltma konumu bilgileri mesajlardan kaldırıldı. ' +
+        'Lütfen yola çıkmayın.\n\n' +
+        `📦 ${ilan?.yuk || ''} · ${ilan?.nereden || ''} → ${ilan?.nereye || ''}`;
+      await mesajGonder(konusma.id, redMesaji);
+      return true;
+    } catch (err) {
+      console.error('Konum bilgisi temizleme hatası:', err);
+      return null;
+    }
+  }, [supabase, mesajGonder]);
+
   const ilaniReddet = useCallback(async (ilanId) => {
     setSeferOnayDurumu(prev => ({ ...prev, [ilanId]: "reddedildi" }));
 
@@ -1268,7 +1304,11 @@ export const AppProvider = ({ children }) => {
         console.error('Red bildirimi hatası:', err);
       }
     }
-  }, [seferler, supabase, ilanlar]);
+
+    // Konuşmada gönderilen konum bilgilerini temizle + bilgi mesajı gönder
+    const redIlan = ilanlar.find(i => i.id === ilanId || i.id === mevcutSefer.ilan_id);
+    await konumBilgileriniTemizle(ilanId, redIlan);
+  }, [seferler, supabase, ilanlar, konumBilgileriniTemizle]);
 
   // Onayı iptal et: seferi tekrar 'bekliyor' durumuna döndür (başvuru listesine geri gelir)
   const ilaniptalEt = useCallback(async (ilanId) => {
@@ -1317,8 +1357,12 @@ export const AppProvider = ({ children }) => {
       }
     }
 
+    // Konuşmada gönderilen konum bilgilerini temizle + bilgi mesajı gönder
+    const iptalIlan = ilanlar.find(i => i.id === ilanId || i.id === mevcutSefer.ilan_id);
+    await konumBilgileriniTemizle(ilanId, iptalIlan);
+
     return true;
-  }, [seferler, supabase, ilanlar]);
+  }, [seferler, supabase, ilanlar, konumBilgileriniTemizle]);
 
   // Kamyoncu aktif seferini iptal eder (10 dk içinde). Fazla iptal ederse cooldown'a girer.
   const kamyoncuIptalEt = useCallback(async (seferId, sebep) => {

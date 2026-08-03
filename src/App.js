@@ -25,7 +25,7 @@ import { Header, BottomNav } from "./components/UI";
 import AyarlarSayfasi from "./pages/AyarlarSayfasi";
 import YasalSayfa from "./pages/YasalSayfa";
 import "./index.css";
-import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingScreen from "./components/LoadingScreen";
 
@@ -34,18 +34,18 @@ function MobilApp({ cikisYap }) {
   const { konusmalar, loadConversations } = useMesaj();
   const [sekme, setSekme] = useState("ilanlar");
   const [seciliKonusma, setSeciliKonusma] = useState(null);
+  const location = useLocation();
 
   // URL'den sekme parametresini oku (hash-based navigation)
+  // URL değişince (push bildirimi, "Başvurular" linki vb.) yeniden okunur
   const urlSekmeKullanildi = useRef(false);
   useEffect(() => {
-    const hash = window.location.hash;
-    const params = new URLSearchParams(hash.split('?')[1] || '');
-    const urlSekme = params.get('sekme');
+    const urlSekme = new URLSearchParams(location.search || "").get("sekme");
     if (urlSekme) {
       setSekme(urlSekme);
       urlSekmeKullanildi.current = true;
     }
-  }, []);
+  }, [location.search]);
 
   // ChatSayfasi açma handler
   const onChatAc = (konusmaId, seferBilgileri) => {
