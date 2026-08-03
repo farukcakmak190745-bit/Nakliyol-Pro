@@ -917,9 +917,6 @@ export function IssizIlanlarSayfasi() {
 
   const tamamlananSayi = gecmisIsler.filter(s => s.durum === "tamamlandı" || s.durum === "tamamlandi" || s.durum === "odendi").length;
   const devamEdenSayi = gecmisIsler.filter(s => s.durum !== "tamamlandı" && s.durum !== "tamamlandi" && s.durum !== "odendi").length;
-  const toplamHasalat = gecmisIsler
-    .filter(s => s.durum === "tamamlandı" || s.durum === "tamamlandi" || s.durum === "odendi")
-    .reduce((top, s) => top + Number(s.ucret || 0), 0);
 
   const gorunenIlanlar = filtre === "hepsi"
     ? mevcutIlanlar
@@ -1001,7 +998,7 @@ export function IssizIlanlarSayfasi() {
       </div>
 
       {/* ====== İSTATİSTİK KARTLARI ====== */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
         <div className="stat-box" style={{ borderRadius: 16 }}>
           <div className="stat-val" style={{ color: "#10b981" }}>{aktifSayi}</div>
           <div className="stat-lbl">Aktif İlan</div>
@@ -1009,10 +1006,6 @@ export function IssizIlanlarSayfasi() {
         <div className="stat-box" style={{ borderRadius: 16 }}>
           <div className="stat-val" style={{ color: "#8b5cf6" }}>{tamamlananSayi}</div>
           <div className="stat-lbl">Tamamlanan</div>
-        </div>
-        <div className="stat-box" style={{ borderRadius: 16 }}>
-          <div className="stat-val" style={{ fontSize: 22, color: "#f59e0b" }}>₺{toplamHasalat >= 1000 ? `${(toplamHasalat / 1000).toFixed(1)}K` : toplamHasalat.toLocaleString("tr-TR")}</div>
-          <div className="stat-lbl">Hasılat</div>
         </div>
       </div>
 
