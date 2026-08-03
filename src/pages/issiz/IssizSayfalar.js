@@ -890,27 +890,40 @@ export function IssizProfilSayfasi() {
 
 
 export function IssizIlanlarSayfasi() {
-  const { oturum, ilanlar, ilanSil, seferler, profiliGoster, benimDegerlendirdiklerim } = useApp();
+  const { oturum, ilanlar, ilanSil, seferler, teklifler, profiliGoster, benimDegerlendirdiklerim } = useApp();
   const [silinenId, setSilinenId] = useState(null);
   const [toast, setToast] = useState(null);
   const [gosterGeçmiş, setGosterGeçmiş] = useState(false);
   const [degerlendirilecek, setDegerlendirilecek] = useState(null);
+  const [filtre, setFiltre] = useState("hepsi"); // hepsi | aktif | alindi
 
   // Sadece aktif ve alindi olanları ana listede göster; silindi olanı gizle.
-  // (Geçmiş bölümünde ayrıca gösterilecek.)
   const mevcutIlanlar = ilanlar.filter(i =>
     i.olusturan_id === oturum?.id && i.durum !== "silindi"
   );
   const aktifSayi = mevcutIlanlar.filter(i => i.durum === "aktif").length;
+  const alindiSayi = mevcutIlanlar.filter(i => i.durum === "alindi").length;
+
+  // Her ilan -> kaç kamyoncu başvurdu / bekleyen teklif
+  const ilanBasvuruSayisi = (ilanId) =>
+    (seferler || []).filter(s => (s.ilan_id === ilanId || s.ilanId === ilanId) && s.durum === "bekliyor").length;
+  const ilanTeklifSayisi = (ilanId) =>
+    (teklifler || []).filter(t => t.ilan_id === ilanId || t.ilanId === ilanId).length;
 
   // GEÇMİŞ İŞLER: Bu işverenin verdiği tüm işler (seferler tablosundan)
-  // - Kamyonçunun adı, plakası, telefonu, teslim durumu, ücret, teslim tarihi
   const gecmisIsler = (seferler || [])
     .filter(s => s.olusturan_id === oturum?.id)
     .sort((a, b) => new Date(b.olusturma_zamani || b.tarih || 0) - new Date(a.olusturma_zamani || a.tarih || 0));
 
   const tamamlananSayi = gecmisIsler.filter(s => s.durum === "tamamlandı" || s.durum === "tamamlandi" || s.durum === "odendi").length;
   const devamEdenSayi = gecmisIsler.filter(s => s.durum !== "tamamlandı" && s.durum !== "tamamlandi" && s.durum !== "odendi").length;
+  const toplamHasalat = gecmisIsler
+    .filter(s => s.durum === "tamamlandı" || s.durum === "tamamlandi" || s.durum === "odendi")
+    .reduce((top, s) => top + Number(s.ucret || 0), 0);
+
+  const gorunenIlanlar = filtre === "hepsi"
+    ? mevcutIlanlar
+    : mevcutIlanlar.filter(i => i.durum === filtre);
 
   const gosterToast = (tur, metin) => {
     setToast({ tur, metin });
@@ -928,6 +941,17 @@ export function IssizIlanlarSayfasi() {
     } finally {
       setTimeout(() => setSilinenId(null), 600);
     }
+  };
+
+  const filtreler = [
+    { id: "hepsi", etiket: `Tümü (${mevcutIlanlar.length})`, aktifBagcik: "#f59e0b" },
+    { id: "aktif", etiket: `Aktif (${aktifSayi})`, aktifBagcik: "#10b981" },
+    { id: "alindi", etiket: `Alındı (${alindiSayi})`, aktifBagcik: "#8b5cf6" }
+  ];
+
+  const odemeBilgi = (ilan) => {
+    if (!ilan.odemeGun || ilan.odemeGun === 0) return { rozet: "Peşin", renk: "#10b981", ikon: "💰" };
+    return { rozet: `${ilan.odemeGun} Gün Vadeli`, renk: "var(--text2)", ikon: "⏰" };
   };
 
   return (
@@ -948,140 +972,213 @@ export function IssizIlanlarSayfasi() {
 
       {/* Header */}
       <div className="section-title">
-        İLANLARIM ({mevcutIlanlar.length})
+        PORTFÖY
       </div>
 
-      <div className="card" style={{ marginBottom: 14, padding: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {/* ====== HERO BANNER ====== */}
+      <div style={{
+        position: "relative", overflow: "hidden", marginBottom: 16,
+        padding: "22px 20px", borderRadius: "20px",
+        background: "linear-gradient(135deg, #b45309 0%, #f59e0b 55%, #ea580c 100%)",
+        color: "#0a0a0a"
+      }}>
+        <div style={{
+          position: "absolute", top: -40, right: -30, width: 170, height: 170,
+          background: "radial-gradient(circle, rgba(255,255,255,0.28) 0%, transparent 70%)"
+        }} />
+        <div style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "#fbbf24", fontFamily: "var(--font-d)" }}>
-              {aktifSayi} <span style={{ fontSize: 13, color: "var(--text3)" }}>aktif</span>
+            <div style={{ fontFamily: "var(--font-d)", fontSize: 15, letterSpacing: 3, opacity: 0.8 }}>İLANLARIM</div>
+            <div style={{ fontFamily: "var(--font-d)", fontSize: 44, letterSpacing: 1, lineHeight: 1, fontWeight: 700 }}>
+              {mevcutIlanlar.length} <span style={{ fontSize: 18 }}>İlan</span>
             </div>
-            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>
-              Toplam {mevcutIlanlar.length} ilan
+            <div style={{ fontSize: 12, opacity: 0.85, marginTop: 4 }}>
+              {aktifSayi} aktif · {alindiSayi} alındı
             </div>
           </div>
-          <div style={{ fontSize: 40 }}>📋</div>
+          <div style={{ fontSize: 58, filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.2))" }}>📋</div>
         </div>
       </div>
 
+      {/* ====== İSTATİSTİK KARTLARI ====== */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+        <div className="stat-box" style={{ borderRadius: 16 }}>
+          <div className="stat-val" style={{ color: "#10b981" }}>{aktifSayi}</div>
+          <div className="stat-lbl">Aktif İlan</div>
+        </div>
+        <div className="stat-box" style={{ borderRadius: 16 }}>
+          <div className="stat-val" style={{ color: "#8b5cf6" }}>{tamamlananSayi}</div>
+          <div className="stat-lbl">Tamamlanan</div>
+        </div>
+        <div className="stat-box" style={{ borderRadius: 16 }}>
+          <div className="stat-val" style={{ fontSize: 22, color: "#f59e0b" }}>₺{toplamHasalat >= 1000 ? `${(toplamHasalat / 1000).toFixed(1)}K` : toplamHasalat.toLocaleString("tr-TR")}</div>
+          <div className="stat-lbl">Hasılat</div>
+        </div>
+      </div>
+
+      {/* ====== FİLTRE SEKMELERİ ====== */}
+      {mevcutIlanlar.length > 0 && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, overflowX: "auto", paddingBottom: 2 }}>
+          {filtreler.map(f => {
+            const secili = filtre === f.id;
+            return (
+              <button
+                key={f.id}
+                onClick={() => setFiltre(f.id)}
+                style={{
+                  flexShrink: 0, padding: "9px 16px", borderRadius: "20px", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                  whiteSpace: "nowrap", transition: "all 0.2s",
+                  background: secili ? `linear-gradient(135deg, ${f.aktifBagcik} 0%, ${f.aktifBagcik}99 100%)` : "var(--bg2)",
+                  color: secili ? "#fff" : "var(--text2)",
+                  border: secili ? "none" : "1px solid var(--border2)"
+                }}
+              >
+                {f.etiket}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ====== İLAN LİSTESİ ====== */}
       {mevcutIlanlar.length === 0 ? (
         <EmptyState icon="📭" title="Henüz ilanın yok" alt="'İlan Ver' sekmesinden yeni ilan oluştur." />
+      ) : gorunenIlanlar.length === 0 ? (
+        <EmptyState icon="🗃️" title="Bu grupta ilan yok" alt="Farklı bir filtre seç." />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {mevcutIlanlar.map(ilan => {
+          {gorunenIlanlar.map(ilan => {
             const siliniyor = silinenId === ilan.id;
+            const basvuruSayisi = ilanBasvuruSayisi(ilan.id);
+            const teklifSayisi = ilanTeklifSayisi(ilan.id);
+            const odeme = odemeBilgi(ilan);
+            const aktif = ilan.durum === "aktif";
+            const basvuruVar = basvuruSayisi > 0 || teklifSayisi > 0;
             return (
               <div key={ilan.id} className="card" style={{
-                marginBottom: 0,
-                padding: 16,
-                border: ilan.durum === "aktif"
-                  ? "1px solid rgba(251,191,36,0.3)"
-                  : "1px solid rgba(139,92,246,0.3)",
-                opacity: siliniyor ? 0.5 : 1,
-                transform: siliniyor ? "scale(0.95)" : "scale(1)",
-                transition: "all 0.3s ease",
-                position: "relative",
-                overflow: "hidden"
+                padding: 0, overflow: "hidden",
+                border: aktif ? "1px solid rgba(251,191,36,0.35)" : "1px solid rgba(139,92,246,0.35)",
+                opacity: siliniyor ? 0.5 : 1, transform: siliniyor ? "scale(0.97)" : "scale(1)",
+                transition: "all 0.3s ease", position: "relative"
               }}>
-                {/* Sol renk şeridi */}
+                {/* Üst renkli baner */}
                 <div style={{
-                  position: "absolute", left: 0, top: 0, bottom: 0, width: 4,
-                  background: ilan.durum === "aktif"
-                    ? "linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%)"
-                    : "linear-gradient(180deg, #8b5cf6 0%, #6366f1 100%)"
-                }} />
-
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                  background: aktif
+                    ? "linear-gradient(135deg, rgba(251,191,36,0.16) 0%, rgba(245,158,11,0.04) 100%)"
+                    : "linear-gradient(135deg, rgba(139,92,246,0.16) 0%, rgba(99,102,241,0.04) 100%)",
+                  padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10
+                }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="display" style={{ fontSize: 18, color: "#fbbf24" }}>{ilan.yuk}</div>
-                    <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
-                      <span>📍 {ilan.nereden}</span>
-                      <span style={{ color: "var(--text3)" }}>→</span>
-                      <span>🎯 {ilan.nereye}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 22 }}>{aktif ? "🆕" : "🤝"}</span>
+                      <div className="display" style={{ fontSize: 20, color: aktif ? "#f59e0b" : "#8b5cf6", letterSpacing: 0.5 }}>
+                        {ilan.yuk}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                      <span style={{ fontWeight: 600, color: "var(--text)" }}>📍 {ilan.nereden}</span>
+                      <span style={{ color: "#fbbf24", fontWeight: 700 }}>→</span>
+                      <span style={{ fontWeight: 600, color: "var(--text)" }}>🎯 {ilan.nereye}</span>
                     </div>
                   </div>
                   <span style={{
-                    padding: "5px 12px",
-                    borderRadius: "20px",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                    whiteSpace: "nowrap",
-                    background: ilan.durum === "aktif"
+                    padding: "5px 12px", borderRadius: "20px", fontSize: 10, fontWeight: 700,
+                    textTransform: "uppercase", letterSpacing: 1, whiteSpace: "nowrap",
+                    background: aktif
                       ? "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)"
                       : "linear-gradient(135deg, rgba(139,92,246,0.2) 0%, rgba(139,92,246,0.1) 100%)",
-                    color: ilan.durum === "aktif" ? "#10b981" : "#a78bfa",
-                    border: `1px solid ${ilan.durum === "aktif" ? "rgba(16,185,129,0.3)" : "rgba(139,92,246,0.3)"}`
+                    color: aktif ? "#10b981" : "#a78bfa",
+                    border: `1px solid ${aktif ? "rgba(16,185,129,0.3)" : "rgba(139,92,246,0.3)"}`
                   }}>
-                    {ilan.durum === "aktif" ? "✓ Aktif" : "● Alındı"}
+                    {aktif ? "✓ Aktif" : "● Alındı"}
                   </span>
                 </div>
 
-                <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
-                    📅 {formatTarih(ilan.tarih)}
-                  </span>
-                  <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
-                    🚛 {ilan.aracTip || "Belirtilmedi"}
-                  </span>
-                  {!ilan.odemeGun || ilan.odemeGun === 0 ? (
-                    <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "#10b981" }}>
-                      💰 Peşin
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
-                      ⏰ {ilan.odemeGun} Gün Vadeli
-                    </span>
-                  )}
-                </div>
-
-                {/* Açıklama — yanlışlıkla boş kaydedilenler için fallback */}
-                {ilan.aciklama && (
-                  <div style={{
-                    fontSize: 12,
-                    color: "var(--text2)",
-                    lineHeight: 1.5,
-                    background: "var(--bg3)",
-                    padding: "8px 10px",
-                    borderRadius: 8,
-                    marginBottom: 12,
-                    border: "1px solid var(--border)",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden"
-                  }}>
-                    📝 {ilan.aciklama}
+                {/* Detay alanı */}
+                <div style={{ padding: "14px 16px" }}>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+                    <span className="chip">📅 {formatTarih(ilan.tarih)}</span>
+                    <span className="chip">🚛 {ilan.aracTip || "Belirtilmedi"}</span>
+                    <span className="chip" style={{ color: odeme.renk }}>{odeme.ikon} {odeme.rozet}</span>
+                    {ilan.kdvOrani > 0 && <span className="chip" style={{ color: "#10b981" }}>🧾 +KDV</span>}
                   </div>
-                )}
 
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "1px solid var(--border)" }}>
-                  <div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: "#fbbf24", fontFamily: "var(--font-d)" }}>
-                      ₺{Number(ilan.ucret || 0).toLocaleString("tr-TR")}
+                  {/* Rota + saat detayları */}
+                  {(ilan.yuklemeKonum || ilan.bosaltmaKonum) && (
+                    <div style={{
+                      background: "var(--bg2)", borderRadius: 10, padding: "10px 12px", marginBottom: 12,
+                      display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--text2)"
+                    }}>
+                      {ilan.yuklemeKonum && <div>🔺 Yükleme: <strong style={{ color: "var(--text)" }}>{ilan.yuklemeKonum}</strong>{ilan.yuklemeSaatBas ? ` · ${ilan.yuklemeSaatBas}${ilan.yuklemeSaatBit ? `-${ilan.yuklemeSaatBit}` : ""}` : ""}</div>}
+                      {ilan.bosaltmaKonum && <div>🔻 Boşaltma: <strong style={{ color: "var(--text)" }}>{ilan.bosaltmaKonum}</strong>{ilan.bosaltmaSaatBas ? ` · ${ilan.bosaltmaSaatBas}${ilan.bosaltmaSaatBit ? `-${ilan.bosaltmaSaatBit}` : ""}` : ""}</div>}
                     </div>
-                    {ilan.kdvOrani > 0 && <div style={{ fontSize: 10, color: "#10b981", marginTop: 2 }}>+KDV</div>}
-                  </div>
+                  )}
 
-                  <button
-                    onClick={() => handleSil(ilan)}
-                    disabled={siliniyor}
-                    style={{
-                      padding: "10px 18px",
-                      background: "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.08) 100%)",
-                      color: "#ef4444",
-                      border: "1px solid rgba(239,68,68,0.3)",
-                      borderRadius: "10px",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: siliniyor ? "not-allowed" : "pointer",
-                      opacity: siliniyor ? 0.6 : 1
-                    }}
-                  >
-                    {siliniyor ? "Siliniyor..." : "🗑️ Sil"}
-                  </button>
+                  {ilan.aciklama && (
+                    <div style={{
+                      fontSize: 12, color: "var(--text2)", lineHeight: 1.5, background: "var(--bg3)",
+                      padding: "8px 10px", borderRadius: 8, marginBottom: 12, border: "1px solid var(--border)",
+                      display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden"
+                    }}>
+                      📝 {ilan.aciklama}
+                    </div>
+                  )}
+
+                  {/* Başvuru durumu */}
+                  {aktif && (
+                    <div style={{ marginBottom: 12 }}>
+                      {basvuruVar ? (
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 10,
+                          background: "linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.05) 100%)",
+                          border: "1px solid rgba(16,185,129,0.25)", fontSize: 12, color: "#059669", fontWeight: 600
+                        }}>
+                          <span style={{ fontSize: 16 }}>📥</span>
+                          <span>Bu ilana <b>{basvuruSayisi}</b> kamyoncu başvuru bekliyor — "Teklifler" sekmesinden onaylayın.</span>
+                        </div>
+                      ) : (
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 10,
+                          background: "var(--bg2)", border: "1px dashed var(--border2)", fontSize: 12, color: "var(--text3)"
+                        }}>
+                          <span style={{ fontSize: 16 }}>👀</span>
+                          <span>Henüz başvuru yok, kamyoncular ilanını görüyor.</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Fiyat + İşlemler */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+                    <div>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: "#f59e0b", fontFamily: "var(--font-d)" }}>
+                        ₺{Number(ilan.ucret || 0).toLocaleString("tr-TR")}
+                      </div>
+                      <div style={{ fontSize: 10, color: "var(--text3)" }}>Gönderim ücreti</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {aktif && basvuruVar && (
+                        <a href="/#/app?sekme=teklifler" style={{
+                          padding: "10px 14px", background: "var(--guldum-gradient)", color: "#0a0a0a",
+                          borderRadius: "10px", fontSize: 12, fontWeight: 700, textDecoration: "none"
+                        }}>
+                          Başvurular
+                        </a>
+                      )}
+                      <button
+                        onClick={() => handleSil(ilan)}
+                        disabled={siliniyor}
+                        style={{
+                          padding: "10px 16px", cursor: siliniyor ? "not-allowed" : "pointer", borderRadius: "10px",
+                          background: "linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(239,68,68,0.05) 100%)",
+                          color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", fontSize: 12, fontWeight: 700,
+                          opacity: siliniyor ? 0.6 : 1, whiteSpace: "nowrap"
+                        }}
+                      >
+                        {siliniyor ? "Siliniyor..." : "🗑️ Sil"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
@@ -1113,8 +1210,10 @@ export function IssizIlanlarSayfasi() {
           }}
         >
           <span>📚 GEÇMİŞ İŞLER ({gecmisIsler.length})</span>
-          <span style={{ fontSize: 11, color: "var(--text3)", fontWeight: 600 }}>
-            {tamamlananSayi} tamamlandı · {devamEdenSayi} devam ediyor
+          <span style={{ fontSize: 11, fontWeight: 700, display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ color: "#10b981" }}>{tamamlananSayi} ✓</span>
+            <span style={{ color: "#fbbf24" }}>{devamEdenSayi} 🚛</span>
+            <span style={{ color: "#a78bfa" }}>{gosterGeçmiş ? "▲" : "▼"}</span>
           </span>
         </button>
 
@@ -1125,7 +1224,7 @@ export function IssizIlanlarSayfasi() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {gecmisIsler.map(sefer => {
-                  const tamamlandi = sefer.durum === "tamamlandı";
+                  const tamamlandi = sefer.durum === "tamamlandı" || sefer.durum === "tamamlandi" || sefer.durum === "odendi";
                   return (
                     <div key={sefer.id} className="card" style={{
                       padding: 14,
