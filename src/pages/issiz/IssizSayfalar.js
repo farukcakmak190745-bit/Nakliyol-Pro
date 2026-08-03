@@ -922,6 +922,51 @@ export function IssizIlanlarSayfasi() {
     ? mevcutIlanlar
     : mevcutIlanlar.filter(i => i.durum === filtre);
 
+  // ====== ÖDEME TAKİBİ ======
+  // İşverenin teslim edilmiş ama ödemesi henüz alınmamış işleri.
+  // Vadeli işlerde vade tarihine kalan gün hesaplanır, işveren unutmasın.
+  const odeBekleyen = gecmisIsler.filter(s =>
+    s.odeme_durumu === "beklemede" &&
+    (s.durum === "teslima_bekleniyor" || s.durum === "tamamlandı" || s.durum === "tamamlandi")
+  );
+  const gecikenOdemeSayisi = odeBekleyen.filter(s => {
+    const vade = vadeTarihiniBul(s);
+    return vade ? vadeGectiMi(vade) : false;
+  }).length;
+
+  // Vade tarihine kalan tam gün sayısı (negatif = vade geçti)
+  const vadeKalanGun = (vade) => {
+    if (!vade) return null;
+    const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+    const v = new Date(vade + "T00:00:00"); v.setHours(0, 0, 0, 0);
+    return Math.round((v.getTime() - bugun.getTime()) / 86400000);
+  };
+
+  // Kalan güne göre rozet görseli/metni
+  const vadeRozeti = (sefer) => {
+    const vade = vadeTarihiniBul(sefer);
+    const kalan = vadeKalanGun(vade);
+    if (!vade) {
+      // Peşin ödeme — teslimden sonra alınmalı
+      const gun = vadeKalanGun(sefer.teslim_tarihi);
+      if (gun === null || gun === 0) return { tip: "bekliyor", ikon: "⏳", metin: "Teslim oldu, ödeme bekleniyor" };
+      if (gun < 0) return { tip: "uvari", ikon: "⏰", metin: `Ödemesi ${Math.abs(gun)} gündür bekleniyor` };
+      return { tip: "pozitif", ikon: "📅", metin: `Teslim ${formatTarih(sefer.teslim_tarihi)}` };
+    }
+    if (kalan > 3) return { tip: "pozitif", ikon: "📅", metin: `${kalan} gün kaldı ödemeye · ${formatTarih(vade)}` };
+    if (kalan === 3 || kalan === 2) return { tip: "uvari", ikon: "⏰", metin: `${kalan} gün kaldı ödemeye · ${formatTarih(vade)}` };
+    if (kalan === 1) return { tip: "uvari", ikon: "🌅", metin: `Yarın ödenecek · ${formatTarih(vade)}` };
+    if (kalan === 0) return { tip: "bugun", ikon: "💸", metin: `Bugün ödeme günü! · ${formatTarih(vade)}` };
+    return { tip: "gecti", ikon: "⚠️", metin: `Vadesi ${Math.abs(kalan)} gün geçti · ${formatTarih(vade)}` };
+  };
+
+  const vadeTipRenk = {
+    pozitif: { bg: "rgba(100,116,139,0.1)", border: "rgba(100,116,139,0.25)", renk: "#64748b" },
+    uvari: { bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.35)", renk: "#d97706" },
+    bugun: { bg: "rgba(234,88,12,0.12)", border: "rgba(234,88,12,0.4)", renk: "#ea580c" },
+    gecti: { bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.4)", renk: "#dc2626" }
+  };
+
   const gosterToast = (tur, metin) => {
     setToast({ tur, metin });
     setTimeout(() => setToast(null), 2500);
@@ -1008,6 +1053,88 @@ export function IssizIlanlarSayfasi() {
           <div className="stat-lbl">Tamamlanan</div>
         </div>
       </div>
+
+      {/* ====== ÖDEME TAKİBİ ====== */}
+      {odeBekleyen.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div className="section-title" style={{ marginBottom: 0 }}>💰 ÖDEME TAKİBİ ({odeBekleyen.length})</div>
+            {gecikenOdemeSayisi > 0 && (
+              <span style={{
+                padding: "5px 10px", borderRadius: "20px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap",
+                background: "rgba(239,68,68,0.12)", color: "#dc2626", border: "1px solid rgba(239,68,68,0.3)"
+              }}>
+                ⚠️ {gecikenOdemeSayisi} vadesi geçti
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {odeBekleyen
+              .sort((a, b) => {
+                const va = vadeTarihiniBul(a) || a.teslim_tarihi || "";
+                const vb = vadeTarihiniBul(b) || b.teslim_tarihi || "";
+                return new Date(va) - new Date(vb);
+              })
+              .map(sefer => {
+                const rozet = vadeRozeti(sefer);
+                const renkler = vadeTipRenk[rozet.tip];
+                const vade = vadeTarihiniBul(sefer);
+                return (
+                  <div key={sefer.id} className="card" style={{
+                    padding: 14, overflow: "hidden", position: "relative",
+                    border: `1px solid ${renkler.border}`
+                  }}>
+                    <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: renkler.renk }} />
+                    <div style={{ paddingLeft: 6 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>{sefer.yuk}</div>
+                          <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 3 }}>
+                            📍 {sefer.nereden} → 🎯 {sefer.nereye}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div style={{ fontSize: 18, fontWeight: 700, color: "#f59e0b", fontFamily: "var(--font-d)" }}>
+                            ₺{Number(sefer.ucret || 0).toLocaleString("tr-TR")}
+                          </div>
+                          <div style={{ fontSize: 10, color: "var(--text3)" }}>
+                            {sefer.odeme_gun && sefer.odeme_gun > 0 ? `${sefer.odeme_gun} gün vadeli` : "Peşin"}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{
+                        display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 10,
+                        background: renkler.bg, border: `1px solid ${renkler.border}`, fontSize: 12, fontWeight: 700, color: renkler.renk
+                      }}>
+                        <span style={{ fontSize: 15 }}>{rozet.ikon}</span>
+                        <span>{rozet.metin}</span>
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, fontSize: 12 }}>
+                        <div style={{ color: "var(--text3)", display: "flex", alignItems: "center", gap: 6 }}>
+                          {sefer.kamyoncu_user_id ? (
+                            <span style={{ cursor: "pointer", color: "var(--text2)" }} onClick={() => profiliGoster(sefer.kamyoncu_user_id)}>
+                              🚛 {sefer.kamyoncu || "—"} <span style={{ color: "#fbbf24", fontWeight: 600 }}>• Profili</span>
+                            </span>
+                          ) : (
+                            <span>🚛 {sefer.kamyoncu || "—"}</span>
+                          )}
+                          <span style={{ color: "var(--text3)" }}>·</span>
+                          <span>📌 {sefer.plaka || "—"}</span>
+                        </div>
+                        <div style={{ color: "var(--text3)" }}>
+                          {vade ? `Vade: ${formatTarih(vade)}` : `Teslim: ${formatTarih(sefer.teslim_tarihi)}`}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       {/* ====== FİLTRE SEKMELERİ ====== */}
       {mevcutIlanlar.length > 0 && (
