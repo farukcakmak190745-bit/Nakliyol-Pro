@@ -54,8 +54,11 @@ BEGIN
 END $$;
 
 -- =============================================
--- 2) users: oy sayısı (ortalama puan `puan` sütununda)
+-- 2) users: oy sayısı + ortalama puan
 -- =============================================
+ALTER TABLE public.users
+  ADD COLUMN IF NOT EXISTS puan numeric DEFAULT 0;
+
 ALTER TABLE public.users
   ADD COLUMN IF NOT EXISTS oy_sayisi integer NOT NULL DEFAULT 0;
 
