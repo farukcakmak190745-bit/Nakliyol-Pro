@@ -1030,7 +1030,7 @@ export const AppProvider = ({ children }) => {
           kullanici_id: ilan.olusturan_id,
           tur: 'basvuru',
           baslik: 'Yeni iş başvurusu',
-          icerik: `${bilgiler.ad} (${bilgiler.tel})\n\n${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}\n\nÇekici: ${bilgiler.cekiciPlaka}\nDorse: ${bilgiler.dorsePlaka}\nTC: ${bilgiler.tc_kimlik}`,
+          icerik: `${bilgiler.ad} (${bilgiler.tel})\n\n${ilan.yuk} - ${ilan.nereden} → ${ilan.nereye}\n\nÇekici: ${bilgiler.cekiciPlaka}\nDorse: ${bilgiler.dorsePlaka}`,
           ilan_id: ilanId
         });
         console.log('✅ Bildirim başarıyla oluşturuldu');

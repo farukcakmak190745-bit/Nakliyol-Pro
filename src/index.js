@@ -6,8 +6,7 @@ import App from "./App";
 if (process.env.NODE_ENV === 'production') {
   window.console = Object.assign(window.console, {
     log: () => {},
-    info: () => {},
-    warn: () => {}
+    info: () => {}
   });
 }
 

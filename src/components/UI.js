@@ -1,9 +1,15 @@
+import { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { useMesaj } from "../context/MesajContext";
 import { IconMap } from "./Icons";
 
 export const Header = ({ baslik, geri, sag, cikisYap: handleCikisYap }) => {
   const { oturum, cikisYap } = useApp();
+  const [cikisOnayi, setCikisOnayi] = useState(false);
+  const cikisHandler = async () => {
+    const fn = handleCikisYap || cikisYap;
+    try { await fn(); } catch (e) { console.error(e); }
+  };
   try {
     return (
       <div className="header">
@@ -18,15 +24,30 @@ export const Header = ({ baslik, geri, sag, cikisYap: handleCikisYap }) => {
           {sag}
           {oturum && (
             <>
-              <button
-                onClick={async () => {
-                  const fn = handleCikisYap || cikisYap;
-                  try { await fn(); } catch (e) { console.error(e); }
-                }}
-                style={{ color: "var(--text3)", fontSize: 13, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-              >
-                Çıkış
-              </button>
+              {cikisOnayi ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "var(--kirmizi)" }}>Çık?</span>
+                  <button
+                    onClick={cikisHandler}
+                    style={{ color: "var(--kirmizi)", fontSize: 13, fontWeight: 700, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  >
+                    Evet
+                  </button>
+                  <button
+                    onClick={() => setCikisOnayi(false)}
+                    style={{ color: "var(--text3)", fontSize: 13, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  >
+                    İptal
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setCikisOnayi(true)}
+                  style={{ color: "var(--text3)", fontSize: 13, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
+                  Çıkış
+                </button>
+              )}
               <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--bg3)", border: "1px solid var(--border2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <IconMap.kamyon size={16} className="icon-primary" />
               </div>

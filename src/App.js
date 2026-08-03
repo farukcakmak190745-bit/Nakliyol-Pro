@@ -23,6 +23,7 @@ import ChatSayfasi from "./components/ChatSayfasi";
 import HalkaAcikProfil from "./components/HalkaAcikProfil";
 import { Header, BottomNav } from "./components/UI";
 import AyarlarSayfasi from "./pages/AyarlarSayfasi";
+import YasalSayfa from "./pages/YasalSayfa";
 import "./index.css";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -235,6 +236,8 @@ export default function App() {
               <Route path="/" element={<GirisEkrani />} />
               <Route path="/app" element={<AppIceriki />} />
               <Route path="/ayarlar" element={<AyarlarSayfasi />} />
+              <Route path="/kosullar" element={<YasalSayfa tur="kosullar" />} />
+              <Route path="/gizlilik" element={<YasalSayfa tur="gizlilik" />} />
             </Routes>
           </AppProvider>
         </MesajProvider>

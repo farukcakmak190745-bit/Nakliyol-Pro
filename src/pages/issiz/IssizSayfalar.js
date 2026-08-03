@@ -27,9 +27,11 @@ export function IlanVerSayfasi() {
     faturaBaslik: "", faturaDosya: null
   });
   const [tamam, setTamam] = useState(false);
+  const [gonderiliyor, setGonderiliyor] = useState(false);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const gonder = () => {
+  const gonder = async () => {
+    if (gonderiliyor) return;
     if (!form.nereden || !form.nereye || !form.yuk || !form.ucret) {
       alert("Lütfen zorunlu alanları doldurun!");
       return;
@@ -38,27 +40,35 @@ export function IlanVerSayfasi() {
 
     console.log(`📤 Yeni ilan gönderiliyor:`, { ...form, faturaDosya: form.faturaDosya ? { tip: form.faturaDosya.tip, ad: form.faturaDosya.ad } : null, ucret: ucret, odemeTuru: form.odemeTuru, odemeGun: Number(form.odemeGun) });
 
-    ilanEkle({
-      ...form,
-      ucret: ucret,
-      odemeTuru: form.odemeTuru,
-      odemeGun: Number(form.odemeGun)
-    });
-    setTamam(true);
-    setTimeout(() => {
-      setTamam(false);
-      setForm({
-        nereden: "", nereye: "", yuk: "",
-        ucret: "",
-        kdvEkle: false,
-        tarih: "",
-        aracTip: "", aciklama: "", odemeTuru: "pesin", odemeGun: 0,
-        yuklemeKonum: "", bosaltmaKonum: "",
-        yuklemeSaatBas: "", yuklemeSaatBit: "",
-        bosaltmaSaatBas: "", bosaltmaSaatBit: "",
-        faturaBaslik: "", faturaDosya: null
+    setGonderiliyor(true);
+    try {
+      await ilanEkle({
+        ...form,
+        ucret: ucret,
+        odemeTuru: form.odemeTuru,
+        odemeGun: Number(form.odemeGun)
       });
-    }, 2000);
+      setTamam(true);
+      setTimeout(() => {
+        setTamam(false);
+        setForm({
+          nereden: "", nereye: "", yuk: "",
+          ucret: "",
+          kdvEkle: false,
+          tarih: "",
+          aracTip: "", aciklama: "", odemeTuru: "pesin", odemeGun: 0,
+          yuklemeKonum: "", bosaltmaKonum: "",
+          yuklemeSaatBas: "", yuklemeSaatBit: "",
+          bosaltmaSaatBas: "", bosaltmaSaatBit: "",
+          faturaBaslik: "", faturaDosya: null
+        });
+      }, 2000);
+    } catch (err) {
+      console.error("İlan gönderilemedi:", err);
+      alert("İlan gönderilemedi, tekrar deneyin.");
+    } finally {
+      setGonderiliyor(false);
+    }
   };
 
   const faturaSec = async (e) => {
@@ -298,8 +308,8 @@ export function IlanVerSayfasi() {
         </div>
       </div>
 
-      <button onClick={gonder} className="btn btn-display-gold btn-full" style={{ padding: "18px", letterSpacing: 3 }}>
-        📢 İLANI YAYINLA
+      <button onClick={gonder} disabled={gonderiliyor} className="btn btn-display-gold btn-full" style={{ padding: "18px", letterSpacing: 3 }}>
+        📢 {gonderiliyor ? "YAYINLANIYOR..." : "İLANI YAYINLA"}
       </button>
     </div>
   );
@@ -575,7 +585,7 @@ export function TekliflerSayfasi({ onChatAc }) {
                 </div>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>TC Kimlik</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4 }}>{typeof o.bilgiler?.tc_kimlik === 'string' ? o.bilgiler.tc_kimlik : '—'}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4 }}>{typeof o.bilgiler?.tc_kimlik === 'string' && o.bilgiler.tc_kimlik ? `${o.bilgiler.tc_kimlik.slice(0,3)}***${o.bilgiler.tc_kimlik.slice(-2)}` : '—'}</div>
                 </div>
               </div>
 

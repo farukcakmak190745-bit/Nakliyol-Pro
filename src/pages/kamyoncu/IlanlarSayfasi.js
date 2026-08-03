@@ -4,6 +4,7 @@ import { EmptyState, formatTarih } from "../../components/UI";
 import { IconMap } from "../../components/Icons";
 import IlIlceSecici from "../../components/IlIlceSecici";
 import { harfFiltre, plakaFiltre, rakamFiltre } from "../../utils/inputFilters";
+import { kullaniciSeferOzeti } from "../../utils/istatistik";
 
 const ilAdiniAl = (sehir) => {
   if (!sehir) return "";
@@ -11,7 +12,8 @@ const ilAdiniAl = (sehir) => {
 };
 
 const IlanKart = ({ ilan, onClick, donus = false }) => {
-  const { profiliGoster } = useApp();
+  const { profiliGoster, seferler } = useApp();
+  const ilanSahibiOzeti = kullaniciSeferOzeti(seferler, ilan.olusturan_id, false);
   const getYukIcon = (yuk) => {
     if (yuk.includes("kömür")) return "fire";
     if (yuk.includes("çelik") || yuk.includes("boru")) return "wrench";
@@ -110,6 +112,9 @@ const IlanKart = ({ ilan, onClick, donus = false }) => {
                 </>
               ) : (
                 <span style={{ fontSize: 10, color: "var(--text3)" }}>{ilan.istekSayisi} istek aldı</span>
+              )}
+              {ilanSahibiOzeti.tamamlanan > 0 && (
+                <span style={{ fontSize: 10, color: "var(--text3)" }}>• {ilanSahibiOzeti.tamamlanan} tamamlanan sefer</span>
               )}
             </div>
           </div>

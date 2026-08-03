@@ -60,8 +60,8 @@ const SMSDogrula = ({ telefon, onDogrulandi, onGeri }) => {
 };
 
 // Kayıt formu
-const KayitFormu = ({ rol, onGeri, onTamam }) => {
-  const [adim, setAdim] = useState(1);
+const KayitFormu = ({ rol, hata, onGeri, onTamam, yukleniyor }) => {
+  const navigate = useNavigate();
   const [form, setForm] = useState({ ad: "", soyad: "", telefon: "", tc: "", sifre: "", sifre2: "", aracTip: "", plaka: "", firmaAdi: "", vergiNo: "" });
   const [hatalar, setHatalar] = useState({});
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -83,11 +83,22 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
   const Hata = ({ alan }) => hatalar[alan] ? <div style={{ color: "#ef4444", fontSize: 11, marginTop: 2 }}>{hatalar[alan]}</div> : null;
 
   if (adim === 2) return (
-    <SMSDogrula
-      telefon={form.telefon}
-      onDogrulandi={() => onTamam({ ...form, rol })}
-      onGeri={() => setAdim(1)}
-    />
+    <div>
+      {hata && (
+        <div style={{
+          marginBottom: 14, padding: "12px 14px", borderRadius: "10px",
+          background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)",
+          color: "#ef4444", fontSize: 12, fontWeight: 600
+        }}>
+          ⚠️ {hata}
+        </div>
+      )}
+      <SMSDogrula
+        telefon={form.telefon}
+        onDogrulandi={() => onTamam({ ...form, rol })}
+        onGeri={() => setAdim(1)}
+      />
+    </div>
   );
 
   return (
@@ -183,11 +194,21 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
       </div>
 
       <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 14, lineHeight: 1.6 }}>
-        Devam ederek <span style={{ color: "#fbbf24" }}>Kullanım Koşulları</span>'nı ve <span style={{ color: "#fbbf24" }}>Gizlilik Politikası</span>'nı kabul etmiş olursunuz.
+        Devam ederek <button onClick={() => navigate("/kosullar")} style={{ color: "#fbbf24", background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Kullanım Koşulları</button>'nı ve <button onClick={() => navigate("/gizlilik")} style={{ color: "#fbbf24", background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>Gizlilik Politikası</button>'nı kabul etmiş olursunuz.
       </div>
 
-      <button onClick={dogrula} className="btn btn-primary btn-full" style={{ padding: "16px", letterSpacing: 3, fontWeight: 700 }}>
-        DEVAM ET → SMS DOĞRULAMA
+      {hata && (
+        <div style={{
+          marginBottom: 14, padding: "12px 14px", borderRadius: "10px",
+          background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)",
+          color: "#ef4444", fontSize: 12, fontWeight: 600
+        }}>
+          ⚠️ {hata}
+        </div>
+      )}
+
+      <button onClick={dogrula} disabled={yukleniyor} className="btn btn-primary btn-full" style={{ padding: "16px", letterSpacing: 3, fontWeight: 700 }}>
+        {yukleniyor ? "KAYIT OLUŞTURULUYOR..." : "DEVAM ET → SMS DOĞRULAMA"}
       </button>
     </div>
   );
@@ -199,6 +220,12 @@ export default function GirisEkrani() {
   const [ekran, setEkran] = useState("ana");
   const [secRol, setSecRol] = useState(null);
   const [girisForm, setGirisForm] = useState({ telefon: "", sifre: "" });
+  const [girisHata, setGirisHata] = useState("");
+  const [kayitHata, setKayitHata] = useState("");
+  const [girisYukleniyor, setGirisYukleniyor] = useState(false);
+  const [kayitYukleniyor, setKayitYukleniyor] = useState(false);
+  const [gosterSifre, setGosterSifre] = useState(false);
+  const [sifreUnuttum, setSifreUnuttum] = useState(false);
 
   // Oturum varsa (örn. F5 sonrası session restore olduysa) otomatik /app'e git
   useEffect(() => {
@@ -214,44 +241,51 @@ export default function GirisEkrani() {
       plaka: bilgiler.plaka || "34 ABC 123",
       aracTip: bilgiler.aracTip || "TIR / Kapalı Kasa",
     };
+    setKayitYukleniyor(true);
     kayitOl(kayitBilgileri).then(() => {
-      // Kayıt başarılı olursa ekranı ana ekrana dön
       setEkran("ana");
     }).catch(error => {
       console.error("Kayıt hatası:", error);
-      alert("Kayıt başarısız: " + error.message);
+      setKayitHata(error?.message || "Kayıt başarısız, tekrar deneyin.");
+    }).finally(() => {
+      setKayitYukleniyor(false);
     });
   };
 
   const handleGiris = async () => {
-    if (girisForm.telefon && girisForm.sifre) {
-      try {
-        // Supabase ile giriş yap - sadece telefon ve şifre
-        await girisYap(girisForm.telefon, girisForm.sifre);
-        navigate("/app");
-      } catch (error) {
-        console.error("Giriş hatası:", error);
-        alert("Giriş başarısız: " + error.message);
-      }
+    setGirisHata("");
+    if (!girisForm.telefon || !girisForm.sifre) {
+      setGirisHata("Telefon ve şifre gerekli.");
+      return;
+    }
+    setGirisYukleniyor(true);
+    try {
+      await girisYap(girisForm.telefon, girisForm.sifre);
+      navigate("/app");
+    } catch (error) {
+      console.error("Giriş hatası:", error);
+      setGirisHata(error?.message || "Giriş başarısız, bilgilerinizi kontrol edin.");
+    } finally {
+      setGirisYukleniyor(false);
     }
   };
 
   if (ekran === "kayit-form") return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", padding: 20, overflowY: "auto" }}>
       <div style={{ maxWidth: 440, margin: "0 auto", paddingTop: 20 }}>
-        <KayitFormu rol={secRol} onGeri={() => setEkran("kayit-rol")} onTamam={handleKayit} />
+        <KayitFormu rol={secRol} hata={kayitHata} yukleniyor={kayitYukleniyor} onGeri={() => { setKayitHata(""); setEkran("kayit-rol"); }} onTamam={handleKayit} />
       </div>
     </div>
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, position: "relative", overflow: "hidden" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 24px 40px", position: "relative", overflowX: "hidden", overflowY: "auto" }}>
       <div style={{ position: "absolute", top: -120, left: -120, width: 400, height: 400, background: "radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", bottom: -80, right: -80, width: 300, height: 300, background: "radial-gradient(circle, rgba(251,191,36,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />
 
-      <div style={{ width: "100%", maxWidth: 440, animation: "slideDown 0.35s ease" }}>
+      <div style={{ width: "100%", maxWidth: 440, margin: "auto", animation: "slideDown 0.35s ease" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <div style={{ fontFamily: "var(--font-d)", fontSize: 56, letterSpacing: 5, lineHeight: 1, marginBottom: 8, color: "#fff" }}>
+          <div style={{ fontFamily: "var(--font-d)", fontSize: 56, letterSpacing: 5, lineHeight: 1, marginBottom: 8, color: "var(--navy)" }}>
             NAKLI<span style={{ background: "var(--guldum-gradient)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>YOL</span>
           </div>
           <div style={{ fontSize: 10, color: "var(--text3)", letterSpacing: 2 }}>TÜRKİYE'NİN KAMYON PLATFORMU</div>
@@ -299,7 +333,7 @@ export default function GirisEkrani() {
 
         {ekran === "giris" && (
           <div style={{ animation: "slideDown 0.25s ease" }}>
-            <button onClick={() => setEkran("ana")} style={{ color: "var(--text3)", fontSize: 13, marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>← Geri</button>
+            <button onClick={() => { setGirisHata(""); setEkran("ana"); }} style={{ color: "var(--text3)", fontSize: 13, marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>← Geri</button>
             <div className="card" style={{ padding: 24 }}>
               <div style={{ fontSize: 20, fontWeight: 600, color: "#fbbf24", marginBottom: 4, letterSpacing: 1 }}>GİRİŞ YAP</div>
               <div style={{ fontSize: 10, color: "var(--text3)", marginBottom: 20, letterSpacing: 1.5 }}>HESABINIZA ERİŞİN</div>
@@ -307,20 +341,64 @@ export default function GirisEkrani() {
                 <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 8 }}>TELEFON</label>
                 <div style={{ display: "flex", gap: 8 }}>
                   <div style={{ background: "var(--bg2)", border: "1px solid rgba(251,191,36,0.1)", borderRadius: "12px", padding: "12px 16px", fontSize: 14, display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>🇹🇷 +90</div>
-                  <input className="input" placeholder="5xx xxx xx xx" value={girisForm.telefon} onChange={e => setGirisForm(f => ({ ...f, telefon: e.target.value }))} />
+                  <input
+                    className="input"
+                    placeholder="5xx xxx xx xx"
+                    inputMode="numeric"
+                    maxLength={10}
+                    value={girisForm.telefon}
+                    onChange={e => { setGirisHata(""); setGirisForm(f => ({ ...f, telefon: e.target.value.replace(/\D/g, "") })); }}
+                  />
                 </div>
               </div>
               <div style={{ marginBottom: 16 }}>
                 <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 8 }}>ŞİFRE</label>
-                <input className="input" type="password" placeholder="••••••" value={girisForm.sifre} onChange={e => setGirisForm(f => ({ ...f, sifre: e.target.value }))} onKeyDown={e => e.key === "Enter" && handleGiris()} />
+                <div style={{ position: "relative" }}>
+                  <input
+                    className="input"
+                    type={gosterSifre ? "text" : "password"}
+                    placeholder="••••••"
+                    value={girisForm.sifre}
+                    onChange={e => { setGirisHata(""); setGirisForm(f => ({ ...f, sifre: e.target.value })); }}
+                    onKeyDown={e => e.key === "Enter" && handleGiris()}
+                    style={{ paddingRight: 46 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setGosterSifre(g => !g)}
+                    aria-label={gosterSifre ? "Şifreyi gizle" : "Şifreyi göster"}
+                    style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 18, cursor: "pointer", padding: 4 }}
+                  >
+                    {gosterSifre ? "🙈" : "👁️"}
+                  </button>
+                </div>
               </div>
-              <button style={{ fontSize: 11, color: "#fbbf24", marginBottom: 16, cursor: "pointer" }}>Şifremi unuttum</button>
-              <button onClick={handleGiris} disabled={!girisForm.telefon || !girisForm.sifre} className="btn btn-primary btn-full" style={{ padding: "14px", letterSpacing: 2 }}>
-                GİRİŞ YAP
+
+              {girisHata && (
+                <div style={{
+                  marginBottom: 14, padding: "12px 14px", borderRadius: "10px",
+                  background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)",
+                  color: "#ef4444", fontSize: 12, fontWeight: 600
+                }}>
+                  ⚠️ {girisHata}
+                </div>
+              )}
+
+              <button onClick={handleGiris} disabled={!girisForm.telefon || !girisForm.sifre || girisYukleniyor} className="btn btn-primary btn-full" style={{ padding: "14px", letterSpacing: 2 }}>
+                {girisYukleniyor ? "GİRİŞ YAPILIYOR..." : "GİRİŞ YAP"}
               </button>
-              <button onClick={() => alert("Şifremi unuttum butonu yakında eklenecek")} style={{ width: "100%", marginTop: 12, fontSize: 11, color: "var(--text3)", background: "none", border: "none", cursor: "pointer" }}>
+
+              <button
+                onClick={() => setSifreUnuttum(u => !u)}
+                style={{ width: "100%", marginTop: 14, fontSize: 12, color: "var(--text3)", background: "none", border: "none", cursor: "pointer", textAlign: "center" }}
+              >
                 🔑 Şifremi Unuttum
               </button>
+              {sifreUnuttum && (
+                <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: "10px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.25)", fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>
+                  Şifre sıfırlama: destek ekibi telefonunuza geçici bir şifre gönderecektir. Kısa süre içinde bu özellik aktif olacak.
+                </div>
+              )}
             </div>
           </div>
         )}
