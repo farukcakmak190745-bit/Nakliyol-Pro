@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useNavigate } from "react-router-dom";
+import { harfFiltre, plakaFiltre, rakamFiltre } from "../utils/inputFilters";
 
 // SMS doğrulama simülasyonu
 const SMSDogrula = ({ telefon, onDogrulandi, onGeri }) => {
@@ -101,13 +102,13 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>
             <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>AD <span style={{ color: "var(--turuncu)" }}>*</span></label>
-            <input className="input" placeholder="Mehmet" value={form.ad} onChange={e => set("ad", e.target.value)} />
+            <input className="input" placeholder="Mehmet" value={form.ad} onChange={e => set("ad", harfFiltre(e.target.value, 60))} />
             <Hata alan="ad" />
             <Hata alan="soyad" />
           </div>
           <div>
             <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>SOYAD <span style={{ color: "var(--turuncu)" }}>*</span></label>
-            <input className="input" placeholder="Yılmaz" value={form.soyad} onChange={e => set("soyad", e.target.value)} />
+            <input className="input" placeholder="Yılmaz" value={form.soyad} onChange={e => set("soyad", harfFiltre(e.target.value, 40))} />
             <Hata alan="soyad" />
           </div>
         </div>
@@ -140,7 +141,7 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
           </div>
           <div style={{ marginTop: 12 }}>
             <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>PLAKA <span style={{ color: "var(--turuncu)" }}>*</span></label>
-            <input className="input" placeholder="34 ABC 123" value={form.plaka} onChange={e => set("plaka", e.target.value.toUpperCase())} />
+            <input className="input" placeholder="34 ABC 123" value={form.plaka} onChange={e => set("plaka", plakaFiltre(e.target.value))} />
             <Hata alan="plaka" />
           </div>
         </div>
@@ -154,7 +155,7 @@ const KayitFormu = ({ rol, onGeri, onTamam }) => {
           </div>
           <div>
             <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1.5, color: "var(--text3)", display: "block", marginBottom: 6 }}>FİRMA ADI <span style={{ color: "var(--turuncu)" }}>*</span></label>
-            <input className="input" placeholder="Örnek Taşımacılık A.Ş." value={form.firmaAdi} onChange={e => set("firmaAdi", e.target.value)} />
+            <input className="input" placeholder="Örnek Taşımacılık A.Ş." value={form.firmaAdi} onChange={e => set("firmaAdi", harfFiltre(e.target.value, 60))} />
             <Hata alan="firmaAdi" />
           </div>
           <div style={{ marginTop: 12 }}>
@@ -208,16 +209,11 @@ export default function GirisEkrani() {
   }, [oturum, loading, navigate]);
 
   const handleKayit = (bilgiler) => {
-    console.log("🔍 Kayıt bilgileri:", bilgiler);
-    console.log("🔍 Rol:", bilgiler.rol);
-    // Demo kullanıcı için tonaj varsayılan değer
     const kayitBilgileri = {
       ...bilgiler,
       plaka: bilgiler.plaka || "34 ABC 123",
       aracTip: bilgiler.aracTip || "TIR / Kapalı Kasa",
-      secilenTonaj: "20",
     };
-    console.log("🔍 Gönderilen bilgiler:", kayitBilgileri);
     kayitOl(kayitBilgileri).then(() => {
       // Kayıt başarılı olursa ekranı ana ekrana dön
       setEkran("ana");

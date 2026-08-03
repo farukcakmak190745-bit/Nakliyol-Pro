@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { useMesaj } from "../context/MesajContext";
 import { supabase } from "../supabaseClient";
+import { Avatar, seferDurumBilgi } from "./MesajListesi";
 
 export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
-  const { oturum, seferler } = useApp();
+  const { oturum, seferler, profiliGoster } = useApp();
   const {
     konusmalar,
     mesajGonder,
@@ -40,11 +41,26 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
   const partnerRol = konusma?.partnerRol || "";
   const baslik = konusma?.baslik || "";
   const okunmamis = konusma?.okunmamis || 0;
-  const sonGuncelleme = konusma?.sonGuncelleme || new Date().toISOString();
   const ilanId = konusma?.ilan_id;
 
   const sefer = seferler?.find(s => s.ilan_id === ilanId || s.ilanId === ilanId);
   const partnerUserId = konusma?.user_id === oturum?.id ? konusma?.partner_id : konusma?.user_id;
+
+  // Telefon yalnızca gerçek bir iş ilişkisi varsa gösterilir.
+  // "bekliyor" = henüz başvuru (onaylanmamış) → gizli.
+  // Onaylanan/tamamlanan seferde biri işveren, diğeri taşıyıcı olmalı.
+  const AKTIF_DURUMLAR = ["yolda", "teslima_bekleniyor", "tamamlandı", "odendi"];
+  const konusmaPartnerTel = konusma?.partner_tel || konusma?.partnerTel || null;
+  const iliskiliSefer = seferler?.find(s => {
+    if (!AKTIF_DURUMLAR.includes(s.durum)) return false;
+    const benKamyoncu = s.kamyoncu_user_id === oturum?.id || (s.kamyoncu_tel && s.kamyoncu_tel === oturum?.telefon);
+    const benIsveren = s.olusturan_id === oturum?.id || (s.olusturan_tel && s.olusturan_tel === oturum?.telefon);
+    const partnerKamyoncu = s.kamyoncu_user_id === partnerUserId || (s.kamyoncu_tel && s.kamyoncu_tel === konusmaPartnerTel);
+    const partnerIsveren = s.olusturan_id === partnerUserId || (s.olusturan_tel && s.olusturan_tel === konusmaPartnerTel);
+    return (benKamyoncu && partnerIsveren) || (benIsveren && partnerKamyoncu);
+  });
+  const aramaErisimi = Boolean(iliskiliSefer);
+
   const partnerTel = dinamikTel ||
                      konusma?.partnerTel ||
                      konusma?.partner_tel ||
@@ -52,6 +68,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                      null;
 
   useEffect(() => {
+    if (!aramaErisimi) return;
     if (!partnerTel && partnerUserId && supabase) {
       supabase.from('users').select('telefon').eq('id', partnerUserId).maybeSingle().then(({ data }) => {
         if (data?.telefon) {
@@ -59,7 +76,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
         }
       });
     }
-  }, [partnerUserId, partnerTel]);
+  }, [partnerUserId, partnerTel, aramaErisimi]);
 
   const dosyaAc = (veri) => {
     if (!veri?.veri) return;
@@ -68,6 +85,22 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
       win.document.write(`<iframe src="${veri.veri}" style="width:100%;height:100%;border:none"></iframe>`);
       win.document.title = veri.ad || "Dosya";
     }
+  };
+
+  const ayniGun = (a, b) => {
+    const da = new Date(a), db = new Date(b);
+    return da.getDate() === db.getDate() && da.getMonth() === db.getMonth() && da.getFullYear() === db.getFullYear();
+  };
+
+  const gunEtiketi = (zaman) => {
+    const d = new Date(zaman);
+    if (isNaN(d.getTime())) return "";
+    const bugun = new Date();
+    if (ayniGun(d, bugun)) return "Bugün";
+    const dun = new Date(bugun);
+    dun.setDate(bugun.getDate() - 1);
+    if (ayniGun(d, dun)) return "Dün";
+    return d.toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
   };
 
   if (!konusma) {
@@ -167,72 +200,103 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
       <div className="scroll-content" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 140px)" }}>
       {/* Header */}
       <div style={{
-        display: "flex", alignItems: "center", gap: 12, padding: "14px 18px",
+        display: "flex", alignItems: "center", gap: 12, padding: "12px 18px",
         borderBottom: "1px solid rgba(251,191,36,0.2)",
         background: "linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(248,247,244,0.95) 100%)",
         backdropFilter: "blur(10px)"
       }}>
-        <button onClick={onGeri} style={{ fontSize: 24, background: "none", border: "none", cursor: "pointer", transition: "var(--tr)" }}>‹</button>
+        <button onClick={onGeri} style={{ fontSize: 26, background: "none", border: "none", cursor: "pointer", transition: "var(--tr)", padding: "4px 8px 4px 0", color: "var(--text2)" }}>‹</button>
 
-        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#fff" }}>
-            {partnerRol === "kamyoncu" ? "🚛" : "🏢"}
-          </div>
-          <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+          <Avatar ad={partnerAd} boyut={44} rol={partnerRol} />
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ fontWeight: 600, fontSize: 16, color: "#fbbf24" }}>{partnerAd}</div>
+              <div style={{ fontWeight: 700, fontSize: 16, color: "#fbbf24", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{partnerAd}</div>
+              <span style={{
+                fontSize: 10,
+                padding: "2px 8px",
+                borderRadius: 10,
+                background: partnerRol === "kamyoncu" ? "rgba(16,185,129,0.12)" : "rgba(139,92,246,0.12)",
+                color: partnerRol === "kamyoncu" ? "#059669" : "#7c3aed",
+                whiteSpace: "nowrap",
+                fontWeight: 700
+              }}>
+                {partnerRol === "kamyoncu" ? "🚛 Taşıyıcı" : "🏢 İşveren"}
+              </span>
             </div>
             {baslik && (
-              <div style={{ fontSize: 12, color: "var(--text2)", fontWeight: 500 }}>
+              <div style={{ fontSize: 12, color: "var(--text2)", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {baslik}
               </div>
             )}
           </div>
         </div>
 
-        {okunmamis > 0 && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 4,
-            background: "linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)",
+        {sefer && (() => {
+          const sd = seferDurumBilgi(sefer);
+          return (
+            <span style={{
+              fontSize: 10.5,
+              fontWeight: 700,
+              color: sd.renk,
+              background: `${sd.renk}1a`,
+              border: `1px solid ${sd.renk}33`,
+              padding: "4px 10px",
+              borderRadius: "20px",
+              whiteSpace: "nowrap",
+              display: "flex",
+              alignItems: "center",
+              gap: 4
+            }}>
+              {sd.ikon} {sd.label}
+            </span>
+          );
+        })()}
+
+        {/* Profil Gör Butonu */}
+        {partnerUserId && (
+          <button onClick={() => profiliGoster(partnerUserId)} style={{
+            background: "linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%)",
             color: "#fff",
-            padding: "5px 12px",
-            borderRadius: "20px",
-            fontSize: 11,
-            fontWeight: 700,
-            boxShadow: "0 4px 12px rgba(251,191,36,0.3)"
+            border: "none",
+            borderRadius: "10px",
+            padding: "7px 12px",
+            cursor: "pointer",
+            fontSize: 13,
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: 5
           }}>
-            <span>{okunmamis}</span>
-            <span>Yeni</span>
-          </div>
+            👤 Profil
+          </button>
         )}
 
-        <div style={{ fontSize: 11, color: "var(--text3)" }}>
-                {new Date(sonGuncelleme).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}
-              </div>
-
-        {/* Telefon Arama Butonu */}
-        <button onClick={() => setAramaModalAcik(true)} style={{
-          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-          color: "#fff",
-          border: "none",
-          borderRadius: "10px",
-          padding: "6px 12px",
-          cursor: "pointer",
-          fontSize: 13,
-          fontWeight: 600,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          boxShadow: "0 2px 8px rgba(16, 185, 129, 0.3)",
-          transition: "all 0.2s ease"
-        }} title={`${partnerAd} Telefon Et`}>
-          <span>📞</span>
-          <span>Ara</span>
-        </button>
+        {/* Telefon Arama Butonu — yalnızca gerçek iş ilişkisi varsa */}
+        {aramaErisimi && (
+          <button onClick={() => setAramaModalAcik(true)} style={{
+            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+            color: "#fff",
+            border: "none",
+            borderRadius: "10px",
+            padding: "7px 12px",
+            cursor: "pointer",
+            fontSize: 13,
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            boxShadow: "0 2px 8px rgba(16, 185, 129, 0.3)",
+            transition: "all 0.2s ease"
+          }} title={`${partnerAd} Telefon Et`}>
+            <span>📞</span>
+            <span>Ara</span>
+          </button>
+        )}
 
         <button onClick={() => { if (confirm('Tüm mesajlar silinsin mi?')) { konusmaTemizle(konusmaId); } }} style={{
           background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)",
-          borderRadius: "10px", padding: "6px 10px", cursor: "pointer", fontSize: 14
+          borderRadius: "10px", padding: "7px 10px", cursor: "pointer", fontSize: 14
         }} title="Tüm mesajları sil">
           🗑️
         </button>
@@ -266,7 +330,7 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                       📍 Konumu Gör
                     </button>
                   )}
-                  {partnerTel && (
+                  {aramaErisimi && partnerTel && (
                     <button onClick={() => window.location.href = `tel:${partnerTel.replace(/\s+/g, '')}`}
                       style={{ flex: 1, padding: "8px 12px", background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "10px", cursor: "pointer", fontSize: 12, color: "#10b981", fontWeight: 700 }}>
                       📞 {isBenKamyoncu ? "İşvereni Ara" : "Taşıyıcıyı Ara"}
@@ -470,25 +534,47 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
               </div>
             )}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {konusma.mesajlar.map((m, i) => {
                 if (!m) return null;
                 const isBen = m.gonderen === "ben";
+                const onceki = konusma.mesajlar[i - 1];
+                const gunDegisti = !onceki || !ayniGun(m.zaman, onceki.zaman);
                 return (
-                  <div key={m.id || `msg-${i}`} style={{
-                    maxWidth: "80%",
-                    padding: "12px 16px",
-                    borderRadius: "16px",
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    position: "relative",
-                    alignSelf: isBen ? "flex-end" : "flex-start",
-                    background: isBen ? "var(--satin-gradient)" : "var(--bg2)",
-                    color: isBen ? "#fff" : "var(--text2)",
-                    animation: "fadeIn 0.3s ease",
-                    border: isBen ? "1px solid rgba(29,78,216,0.2)" : "1px solid rgba(245,158,11,0.1)",
-                    boxShadow: isBen ? "0 4px 20px rgba(29,78,216,0.15)" : "none"
-                  }}>
+                  <div key={m.id || `msg-${i}`}>
+                    {gunDegisti && (
+                      <div style={{ textAlign: "center", margin: "8px 0 12px" }}>
+                        <div style={{
+                          display: "inline-block",
+                          fontSize: 11,
+                          color: "var(--text3)",
+                          background: "var(--bg1)",
+                          padding: "4px 14px",
+                          borderRadius: 12,
+                          border: "1px solid rgba(251,191,36,0.15)",
+                          fontWeight: 600,
+                          letterSpacing: 0.5,
+                          textTransform: "uppercase"
+                        }}>
+                          {gunEtiketi(m.zaman)}
+                        </div>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 8, flexDirection: isBen ? "row-reverse" : "row" }}>
+                      {!isBen && <Avatar ad={partnerAd} boyut={30} />}
+                      <div style={{
+                        maxWidth: "75%",
+                        padding: "10px 14px",
+                        borderRadius: isBen ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        position: "relative",
+                        background: isBen ? "var(--satin-gradient)" : "var(--bg1)",
+                        color: isBen ? "#fff" : "var(--text2)",
+                        animation: "fadeIn 0.3s ease",
+                        border: isBen ? "1px solid rgba(29,78,216,0.2)" : "1px solid rgba(245,158,11,0.15)",
+                        boxShadow: isBen ? "0 4px 20px rgba(29,78,216,0.15)" : "0 2px 10px rgba(0,0,0,0.06)"
+                      }}>
                     {m.veri && m.veri.tip && (
                       <div style={{
                         marginBottom: 8,
@@ -575,6 +661,8 @@ export default function ChatSayfasi({ konusmaId, onGeri, isKamyoncu }) {
                       >
                         ✕
                       </button>
+                    </div>
+                      </div>
                     </div>
                   </div>
                 );

@@ -2,14 +2,40 @@ import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { supabase } from "../supabaseClient";
 import { IconMap } from "./Icons";
+import { Yildizlar } from "./Yildizlar";
+import { formatTarih } from "./UI";
+import { harfFiltre, plakaFiltre, rakamFiltre } from "../utils/inputFilters";
+
+// TC Kimlik No doğrulama: 11 hane + algoritma (ilk 10 hane toplamı vs 11. hane)
+const tcDogrula = (tc) => {
+  if (!/^\d{11}$/.test(tc)) return false;
+  if (tc[0] === "0") return false;
+  const haneler = tc.split("").map(Number);
+  const tekToplam = haneler[0] + haneler[2] + haneler[4] + haneler[6] + haneler[8];
+  const ciftToplam = haneler[1] + haneler[3] + haneler[5] + haneler[7];
+  const ilk10Toplam = haneler.slice(0, 10).reduce((a, b) => a + b, 0);
+  return (tekToplam * 7 - ciftToplam) % 10 === haneler[9] && ilk10Toplam % 10 === haneler[10];
+};
+
+const renkler = {
+  kamyoncu: {
+    a: "#f59e0b", b: "#b45309",
+    grad: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 45%, #d97706 100%)",
+    soft: "rgba(245,158,11,0.12)", text: "#d97706",
+    rozet: "🚛 Kamyoncu", emoji: "🚛"
+  },
+  issiz: {
+    a: "#3b82f6", b: "#0f172a",
+    grad: "linear-gradient(135deg, #60a5fa 0%, #2563eb 45%, #1e3a8a 100%)",
+    soft: "rgba(59,130,246,0.12)", text: "#2563eb",
+    rozet: "🏢 İşveren", emoji: "🏢"
+  }
+};
 
 export default function ProfilKart({ rol, userId }) {
-  const { oturum, cikisYap, profilGuncelle, ibanGuncelle, kullaniciBelgesiYukle, kullaniciBilgileri, ilanlar, setIlanlar, seferler } = useApp();
+  const { oturum, cikisYap, profilGuncelle, ibanGuncelle, kullaniciBelgesiYukle, kullaniciBilgileri, ilanlar, setIlanlar, seferler, degerlendirmeleriGetir } = useApp();
   const isKamyoncu = rol === "kamyoncu";
-
-  const tema = isKamyoncu
-    ? { birincil: "#f59e0b", ikincil: "#d97706", gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)", iconBg: "rgba(245,158,11,0.15)", navRenk: "#0f172a" }
-    : { birincil: "#1d4ed8", ikincil: "#0f172a", gradient: "linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%)", iconBg: "rgba(29,78,216,0.15)", navRenk: "#0f172a" };
+  const c = renkler[isKamyoncu ? "kamyoncu" : "issiz"];
 
   const [seciliKullanici, setSeciliKullanici] = useState(null);
   const [duzenle, setDuzenle] = useState(false);
@@ -20,6 +46,7 @@ export default function ProfilKart({ rol, userId }) {
   const [belgeYukleniyor, setBelgeYukleniyor] = useState(null);
   const [belgeEklendi, setBelgeEklendi] = useState(false);
   const [fotoUrl, setFotoUrl] = useState(null);
+  const [yorumListesi, setYorumListesi] = useState([]);
   const dosyaInputRef = useRef();
 
   const kullanici = userId && kullaniciBilgileri ? kullaniciBilgileri.find(u => u.id === userId) || seciliKullanici : seciliKullanici || oturum;
@@ -93,6 +120,12 @@ export default function ProfilKart({ rol, userId }) {
     });
   }, [seciliKullanici?.id]);
 
+  useEffect(() => {
+    if (kullanici?.id) {
+      degerlendirmeleriGetir(kullanici.id).then(setYorumListesi);
+    }
+  }, [kullanici?.id, degerlendirmeleriGetir]);
+
   const gosterMesaj = (tur, metin) => {
     setKayitMesaj({ tur, metin });
     setTimeout(() => setKayitMesaj(null), 3000);
@@ -116,10 +149,20 @@ export default function ProfilKart({ rol, userId }) {
     if (!form.ad?.trim()) { gosterMesaj("hata", "Ad soyad boş olamaz"); return; }
     if (!oturum?.id) { gosterMesaj("hata", "Oturum bulunamadı"); return; }
 
+    const tcKimlik = form.tc_kimlik.trim().replace(/\D/g, "").slice(0, 11);
+    if (tcKimlik && !tcDogrula(tcKimlik)) {
+      gosterMesaj("hata", "Geçersiz TC Kimlik No");
+      return;
+    }
+    if (form.telefon?.trim() && form.telefon.trim().replace(/\D/g, "").length < 10) {
+      gosterMesaj("hata", "Geçerli bir telefon numarası girin");
+      return;
+    }
+
     const payload = {
       ad: form.ad.trim(),
       telefon: form.telefon.trim(),
-      tc_kimlik: form.tc_kimlik.trim(),
+      tc_kimlik: tcKimlik,
       sehir: form.sehir.trim(),
     };
     if (isKamyoncu) {
@@ -133,8 +176,7 @@ export default function ProfilKart({ rol, userId }) {
         gosterMesaj("ok", "Profil güncellendi");
         setDuzenle(false);
       } else {
-        gosterMesaj("ok", "Profil kaydedildi (yerel)");
-        setDuzenle(false);
+        gosterMesaj("hata", "Güncelleme başarısız: " + (sonuc?.error || "Bilinmeyen hata"));
       }
     } catch {
       gosterMesaj("hata", "Güncelleme başarısız");
@@ -202,7 +244,7 @@ export default function ProfilKart({ rol, userId }) {
 
       const { error: dbError } = await supabase.from('belgeler').insert([{
         kullanici_id: userId,
-        rol: oturum.rol,
+        rol: oturum.role || oturum.rol || 'kamyoncu',
         dosya_adi: 'profil_fotografi',
         dosya_yolu: uploadData.path,
         url: publicUrl,
@@ -228,399 +270,369 @@ export default function ProfilKart({ rol, userId }) {
   const tamamlananBelge = kullanicininBelgeleri.filter(b => b?.onaylandi).length;
   const belgeYuzdesi = belgeTanimlari?.length ? Math.round((tamamlananBelge / belgeTanimlari.length) * 100) : 0;
 
-  const ortalamaPuan = kullanici?.puan || 4.9;
-  const oySayisi = Math.max(kullaniciSeferleri.length + kullaniciIlanlari.length, 128);
+  const dagilim = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  (yorumListesi || []).forEach(y => { if (dagilim[y.puan] !== undefined) dagilim[y.puan]++; });
+  const ortalama = yorumListesi.length
+    ? (yorumListesi.reduce((t, y) => t + Number(y.puan), 0) / yorumListesi.length)
+    : (Number(kullanici?.puan) || 0);
+  const oySayisi = yorumListesi.length || Number(kullanici?.oy_sayisi) || 0;
 
   const stl = {
-    kapsayici: { paddingBottom: 100 },
-    kart: (renk) => ({
-      background: "var(--bg2)",
-      backdropFilter: "blur(12px)",
-      WebkitBackdropFilter: "blur(12px)",
-      border: `1px solid ${renk}`,
-      borderRadius: 16
-    }),
+    kapsayici: { padding: 0, paddingBottom: 130 },
+    kart: {
+      margin: "0 16px 14px", padding: 16,
+      background: "var(--bg1)", borderRadius: 18,
+      border: "1px solid var(--border)",
+      boxShadow: "0 4px 20px rgba(15,23,42,0.06)"
+    },
+    baslik: {
+      display: "flex", alignItems: "center", gap: 8,
+      fontSize: 12, fontWeight: 800, letterSpacing: 1.5,
+      color: "var(--text3)", textTransform: "uppercase"
+    },
     input: (ekle = {}) => ({
       width: "100%",
-      padding: "10px 14px",
-      background: "var(--bg3)",
-      border: `1px solid ${tema.birincil}33`,
-      borderRadius: 10,
-      fontSize: 14,
+      padding: "10px 12px",
+      background: "#faf8f5",
+      border: "1px solid var(--border)",
+      borderRadius: 12,
+      fontSize: 13,
       color: "var(--text)",
       outline: "none",
       transition: "all 0.2s",
       ...ekle
     }),
-    btn: (birincilMi = true, renk = tema.birincil) => ({
-      padding: "10px 18px",
-      background: birincilMi ? tema.gradient : "transparent",
-      color: birincilMi ? "#fff" : renk,
-      border: birincilMi ? "none" : `1px solid ${renk}33`,
-      borderRadius: 10,
-      fontSize: 13,
-      fontWeight: 700,
+    btn: (birincilMi = true, kucuk = false) => ({
+      padding: kucuk ? "8px 12px" : "11px 18px",
+      background: birincilMi ? c.grad : "var(--bg1)",
+      color: birincilMi ? "#fff" : c.text,
+      border: birincilMi ? "none" : "1px solid var(--border)",
+      borderRadius: 12,
+      fontSize: 12,
+      fontWeight: 800,
       cursor: "pointer",
       transition: "all 0.25s",
-      boxShadow: birincilMi ? `0 4px 20px ${renk}44` : "none"
+      boxShadow: birincilMi ? `0 4px 18px ${c.a}44` : "none",
+      whiteSpace: "nowrap"
     }),
-    badge: (bg, fg) => ({
-      padding: "4px 12px",
-      background: bg,
-      color: fg,
-      borderRadius: 20,
-      fontSize: 11,
-      fontWeight: 700,
-      letterSpacing: 0.5
-    }),
-    bolumBaslik: {
-      display: "flex", alignItems: "center", gap: 10, marginBottom: 14,
-      fontSize: 12, fontWeight: 700, letterSpacing: 1, color: "var(--text3)", textTransform: "uppercase"
+    hucreLabel: {
+      display: "flex", alignItems: "center", gap: 5,
+      fontSize: 10, color: "var(--text3)", letterSpacing: 1,
+      textTransform: "uppercase", fontWeight: 600
+    },
+    hucreVal: {
+      fontSize: 14, fontWeight: 700, color: "var(--text)", marginTop: 5
     }
   };
 
   return (
     <div className="scroll-content" style={stl.kapsayici}>
-      {/* ===== KAPAK ALANI ===== */}
+      {/* ===== STICKY ÜST BAR ===== */}
       <div style={{
-        position: "relative",
-        margin: "0 -16px",
-        padding: "28px 20px 20px",
-        background: `linear-gradient(160deg, ${tema.birincil}22 0%, transparent 60%), linear-gradient(180deg, var(--bg1) 0%, var(--bg) 100%)`,
-        borderBottom: `1px solid ${tema.birincil}22`,
-        overflow: "hidden"
+        position: "sticky", top: 0, zIndex: 30,
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "12px 16px",
+        background: "rgba(245,241,234,0.82)",
+        backdropFilter: "blur(18px)",
+        WebkitBackdropFilter: "blur(18px)",
+        borderBottom: "1px solid rgba(0,0,0,0.05)"
       }}>
-        <div style={{ position: "absolute", top: -80, right: -60, width: 240, height: 240, borderRadius: "50%", background: `${tema.birincil}10`, filter: "blur(50px)" }} />
-        <div style={{ position: "absolute", bottom: -60, left: -40, width: 180, height: 180, borderRadius: "50%", background: "rgba(139,92,246,0.06)", filter: "blur(40px)" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", zIndex: 2 }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: tema.birincil, textTransform: "uppercase" }}>
-              {isKamyoncu ? "Kamyoncu Profili" : "İşveren Profili"}
-            </div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", marginTop: 4 }}>
-              Hesabım
-            </div>
-            <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 2 }}>
-              Profilini düzenle ve yönet
-            </div>
-          </div>
-          <button
-            onClick={() => setDuzenle(d => !d)}
-            style={{
-              padding: "10px 16px",
-              background: duzenle ? "var(--bg3)" : tema.gradient,
-              color: duzenle ? "var(--text)" : "#fff",
-              border: duzenle ? `1px solid ${tema.birincil}33` : "none",
-              borderRadius: 12,
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: "pointer",
-              boxShadow: duzenle ? "none" : `0 4px 20px ${tema.birincil}44`,
-              transition: "all 0.25s",
-              backdropFilter: "blur(8px)"
-            }}
-          >
-            {duzenle ? "✕ İptal" : "⚙ Düzenle"}
-          </button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text)", letterSpacing: 0.5 }}>HESABIM</div>
+          <div style={{ fontSize: 11, color: "var(--text3)" }}>{isKamyoncu ? "Kamyoncu profili & belgeler" : "Firma profili & belgeler"}</div>
+        </div>
+        <button
+          onClick={() => setDuzenle(d => !d)}
+          style={{
+            padding: "9px 14px", borderRadius: 12,
+            background: duzenle ? "var(--bg3)" : c.grad,
+            color: duzenle ? "var(--text)" : "#fff",
+            border: "1px solid " + (duzenle ? "var(--border2)" : "transparent"),
+            fontSize: 12, fontWeight: 800, cursor: "pointer",
+            boxShadow: duzenle ? "none" : `0 4px 18px ${c.a}44`,
+            transition: "all 0.25s", whiteSpace: "nowrap"
+          }}
+        >
+          {duzenle ? "✕" : "Düzenle"}
+        </button>
+      </div>
+
+      {/* ===== KAPAK ===== */}
+      <div style={{ position: "relative", height: 132, overflow: "hidden", background: c.grad }}>
+        <div style={{ position: "absolute", top: -46, right: -30, width: 190, height: 190, borderRadius: "50%", background: "rgba(255,255,255,0.16)", filter: "blur(6px)" }} />
+        <div style={{ position: "absolute", bottom: -70, left: -30, width: 220, height: 220, borderRadius: "50%", background: "rgba(255,255,255,0.10)", filter: "blur(8px)" }} />
+        <div style={{ position: "absolute", top: 16, right: 20, fontSize: 72, opacity: 0.18, transform: "rotate(-12deg)" }}>{c.emoji}</div>
+        <div style={{ position: "absolute", bottom: 12, left: 18, color: "rgba(255,255,255,0.9)", fontSize: 11, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>
+          Nakliyol Pro
         </div>
       </div>
 
-      {/* ===== PROFİL KARTI ===== */}
-      <div style={{ marginTop: 14, position: "relative" }}>
-        <div style={{
-          padding: "24px 20px 20px",
-          marginBottom: 14,
-          background: "var(--bg1)",
-          borderRadius: 16,
-          border: `1px solid ${tema.birincil}22`,
-          position: "relative",
-          overflow: "hidden"
-        }}>
-          {/* FOTOĞRAF */}
-          <div style={{ textAlign: "center", position: "relative" }}>
-            <div style={{
-              width: 104,
-              height: 104,
-              margin: "0 auto",
-              borderRadius: "50%",
-              background: tema.gradient,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 48,
-              boxShadow: `0 8px 32px ${tema.birincil}44`,
-              border: "3px solid var(--bg1)",
-              overflow: "hidden",
-              position: "relative"
-            }}>
+      <div style={{ padding: "0 16px" }}>
+        {/* ===== AVATAR + BİLGİ ===== */}
+        <div style={{ textAlign: "center", marginTop: -46, position: "relative" }}>
+          <div style={{ position: "relative", width: 96, height: 96, margin: "0 auto", borderRadius: "50%", padding: 3, background: "var(--bg1)", boxShadow: "0 8px 28px rgba(15,23,42,0.18)" }}>
+            <div style={{ width: "100%", height: "100%", borderRadius: "50%", background: c.grad, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", overflow: "hidden" }}>
               {(fotoUrl || kullanici?.fotograf) ? (
                 <img src={fotoUrl || kullanici.fotograf} alt="profil" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : (
-                <IconMap.user size={48} style={{ color: "#fff" }} />
-              )}
-              {duzenle && (
-                <label style={{
-                  position: "absolute", bottom: 0, left: 0, right: 0,
-                  background: "rgba(0,0,0,0.6)", color: "#fff",
-                  fontSize: 10, fontWeight: 700, padding: "4px 0",
-                  cursor: "pointer", textAlign: "center",
-                  backdropFilter: "blur(4px)"
-                }}>
-                  📷
-                  <input type="file" accept="image/*" onChange={fotoYukle} style={{ display: "none" }} />
-                </label>
+                <IconMap.user size={42} style={{ color: "#fff" }} />
               )}
             </div>
+            <div style={{
+              position: "absolute", right: 0, bottom: 0, width: 26, height: 26,
+              borderRadius: "50%", background: "#10b981", border: "3px solid var(--bg1)",
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13
+            }}>✓</div>
+            {duzenle && (
+              <label style={{
+                position: "absolute", bottom: 0, left: 0, right: 0,
+                background: "rgba(0,0,0,0.55)", color: "#fff",
+                fontSize: 11, fontWeight: 700, padding: "4px 0",
+                cursor: "pointer", textAlign: "center",
+                borderRadius: "0 0 48px 48px", backdropFilter: "blur(4px)", zIndex: 3
+              }}>
+                📷
+                <input type="file" accept="image/*" onChange={fotoYukle} style={{ display: "none" }} />
+              </label>
+            )}
           </div>
 
-          {/* AD */}
           {duzenle ? (
-            <div style={{ marginTop: 12 }}>
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
               <input
                 type="text" value={form.ad}
-                onChange={e => setForm(f => ({ ...f, ad: e.target.value }))}
+                onChange={e => setForm(f => ({ ...f, ad: harfFiltre(e.target.value, 60) }))}
                 placeholder="Ad Soyad"
-                style={stl.input({ textAlign: "center", fontSize: 18, fontWeight: 700 })}
+                style={stl.input({ textAlign: "center", fontSize: 16, fontWeight: 700 })}
               />
               <input
                 type="text" value={form.sehir}
-                onChange={e => setForm(f => ({ ...f, sehir: e.target.value }))}
+                onChange={e => setForm(f => ({ ...f, sehir: harfFiltre(e.target.value, 40) }))}
                 placeholder="Şehir"
-                style={stl.input({ textAlign: "center", fontSize: 13, marginTop: 8 })}
+                style={stl.input({ textAlign: "center", fontSize: 13 })}
               />
             </div>
           ) : (
-            <div style={{ marginTop: 12, textAlign: "center" }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: tema.birincil }}>
+            <>
+              <div style={{ fontSize: 23, fontWeight: 800, color: "var(--text)", marginTop: 10, letterSpacing: 0.3 }}>
                 {kullanici?.ad || (isKamyoncu ? "Sürücü" : "Firma")}
               </div>
               {kullanici?.sehir && (
-                <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>
-                  📍 {kullanici.sehir}
-                </div>
+                <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 2 }}>📍 {kullanici.sehir}</div>
               )}
-            </div>
+            </>
           )}
 
-          {/* ROZETLER */}
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-            <span style={stl.badge(tema.gradient, "#fff")}>
-              {isKamyoncu ? "🚛 Kamyoncu" : "🏢 İşveren"}
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            <span style={{ padding: "5px 14px", borderRadius: 20, fontSize: 11, fontWeight: 800, color: "#fff", background: c.grad, boxShadow: `0 4px 14px ${c.a}44` }}>
+              {c.rozet}
             </span>
-            <span style={stl.badge("rgba(16,185,129,0.15)", "#10b981")}>
+            <span style={{ padding: "5px 14px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: "rgba(16,185,129,0.13)", color: "#059669", border: "1px solid rgba(16,185,129,0.25)" }}>
               ✓ Doğrulanmış
             </span>
           </div>
+        </div>
 
-          {/* PUAN */}
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 10 }}>
-            <div style={{ display: "flex", gap: 1 }}>
-              {[1,2,3,4,5].map(i => (
-                <span key={i} style={{ fontSize: 14, color: i <= Math.round(ortalamaPuan) ? "#f59e0b" : "var(--bg3)" }}>★</span>
-              ))}
-            </div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{ortalamaPuan}</span>
-            <span style={{ fontSize: 11, color: "var(--text3)" }}>({oySayisi} oy)</span>
-          </div>
-
-          {/* İLETİŞİM BİLGİLERİ */}
+        {/* ===== MESAJ ===== */}
+        {kayitMesaj && (
           <div style={{
-            display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 16,
-            padding: 14, background: "var(--bg2)", borderRadius: 14,
-            border: `1px solid ${tema.birincil}15`
+            margin: "14px 0 0", padding: "11px 14px",
+            background: kayitMesaj.tur === "ok" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
+            color: kayitMesaj.tur === "ok" ? "#10b981" : "#ef4444",
+            border: `1px solid ${kayitMesaj.tur === "ok" ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
+            borderRadius: 12, fontSize: 13, fontWeight: 600,
+            textAlign: "center", backdropFilter: "blur(8px)"
           }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: "var(--text3)", letterSpacing: 1, textTransform: "uppercase" }}>
-                <IconMap.phone size={12} style={{ display: "inline", verticalAlign: "middle" }} /> Telefon
+            {kayitMesaj.metin}
+          </div>
+        )}
+
+        {/* ===== PUAN KARTI ===== */}
+        <div style={stl.kart}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <span style={stl.baslik}>⭐ Değerlendirme</span>
+            {oySayisi > 0 && <span style={{ fontSize: 11, color: "var(--text3)" }}>{oySayisi} değerlendirme</span>}
+          </div>
+          {oySayisi > 0 ? (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div style={{ width: 80, height: 80, borderRadius: 18, background: c.soft, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 30, fontWeight: 900, color: c.text, lineHeight: 1 }}>{ortalama.toFixed(1)}</span>
+                  <span style={{ fontSize: 9, color: c.text, opacity: 0.7, fontWeight: 600, letterSpacing: 0.5 }}>ORTALAMA</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <Yildizlar deger={ortalama} boyut={18} />
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
+                    {[5,4,3,2,1].map(p => (
+                      <div key={p} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 10, color: "var(--text3)", width: 10 }}>{p}</span>
+                        <span style={{ fontSize: 10, color: "#f59e0b" }}>★</span>
+                        <div style={{ flex: 1, height: 5, background: "var(--bg3)", borderRadius: 3, overflow: "hidden" }}>
+                          <div style={{ width: `${oySayisi ? (dagilim[p] / oySayisi) * 100 : 0}%`, height: "100%", background: c.grad, borderRadius: 3, transition: "width 0.5s ease" }} />
+                        </div>
+                        <span style={{ fontSize: 10, color: "var(--text3)", width: 16, textAlign: "right" }}>{dagilim[p]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
+              <button onClick={() => setAktifModal("yorumlar")} style={{
+                width: "100%", marginTop: 14, padding: "11px",
+                background: c.soft, color: c.text, border: "none", borderRadius: 12,
+                fontSize: 13, fontWeight: 800, cursor: "pointer", transition: "all 0.2s"
+              }}>
+                💬 Yorumları Gör
+              </button>
+            </>
+          ) : (
+            <div style={{ textAlign: "center", padding: "12px 0 4px", color: "var(--text3)", fontSize: 13 }}>
+              Henüz değerlendirme yok — ilk güvenilirlik sinyali burada görünecek
+            </div>
+          )}
+        </div>
+
+        {/* ===== İLETİŞİM ===== */}
+        <div style={stl.kart}>
+          <span style={stl.baslik}>📞 İletişim</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
+            <div style={{ background: "var(--bg2)", borderRadius: 14, padding: 12, border: "1px solid var(--border)" }}>
+              <div style={stl.hucreLabel}><IconMap.phone size={12} /> Telefon</div>
               {duzenle ? (
                 <input
                   type="tel" value={form.telefon}
-                  onChange={e => setForm(f => ({ ...f, telefon: e.target.value }))}
+                  onChange={e => setForm(f => ({ ...f, telefon: rakamFiltre(e.target.value, 11) }))}
                   placeholder="05XX XXX XX XX"
-                  style={stl.input({ textAlign: "center", fontSize: 13, fontWeight: 600, marginTop: 6 })}
+                  style={stl.input({ textAlign: "center", marginTop: 7, padding: "8px 10px", fontSize: 12, fontWeight: 700 })}
                 />
               ) : (
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", marginTop: 4 }}>
-                  {kullanici?.telefon || "—"}
-                </div>
+                <div style={stl.hucreVal}>{kullanici?.telefon || "—"}</div>
               )}
             </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: "var(--text3)", letterSpacing: 1, textTransform: "uppercase" }}>
-                <IconMap.idcard size={12} style={{ display: "inline", verticalAlign: "middle" }} /> TC Kimlik
-              </div>
+            <div style={{ background: "var(--bg2)", borderRadius: 14, padding: 12, border: "1px solid var(--border)" }}>
+              <div style={stl.hucreLabel}><IconMap.idcard size={12} /> TC Kimlik</div>
               {duzenle ? (
                 <input
                   type="text" value={form.tc_kimlik}
-                  onChange={e => setForm(f => ({ ...f, tc_kimlik: e.target.value }))}
+                  onChange={e => setForm(f => ({ ...f, tc_kimlik: e.target.value.replace(/\D/g, "") }))}
                   placeholder="11 hane" maxLength={11}
-                  style={stl.input({ textAlign: "center", fontSize: 13, fontWeight: 600, fontFamily: "monospace", letterSpacing: 2, marginTop: 6 })}
+                  style={stl.input({ textAlign: "center", marginTop: 7, padding: "8px 10px", fontSize: 12, fontWeight: 700, fontFamily: "monospace", letterSpacing: 2 })}
                 />
               ) : (
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", marginTop: 4, fontFamily: "monospace", letterSpacing: 2 }}>
+                <div style={{ ...stl.hucreVal, fontFamily: "monospace", letterSpacing: 1.5 }}>
                   {kullanici?.tc_kimlik ? `${kullanici.tc_kimlik.slice(0,3)}***${kullanici.tc_kimlik.slice(-2)}` : "—"}
                 </div>
               )}
             </div>
           </div>
+        </div>
 
-          {/* PLAKA (KAMYONCU) */}
-          {isKamyoncu && (
-            <div style={{
-              display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8,
-              padding: 14, background: "var(--bg2)", borderRadius: 14,
-              border: `1px solid ${tema.birincil}15`
-            }}>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: "var(--text3)", letterSpacing: 1, textTransform: "uppercase" }}>
-                  🚚 Çekici
-                </div>
+        {/* ===== ARAÇ (KAMYONCU) ===== */}
+        {isKamyoncu && (
+          <div style={stl.kart}>
+            <span style={stl.baslik}>🚚 Araç Bilgileri</span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
+              <div style={{ background: "var(--bg2)", borderRadius: 14, padding: 12, border: "1px solid var(--border)", textAlign: "center" }}>
+                <div style={stl.hucreLabel}>Çekici</div>
                 {duzenle ? (
                   <input
                     type="text" value={form.plaka}
-                    onChange={e => setForm(f => ({ ...f, plaka: e.target.value.toUpperCase() }))}
+                    onChange={e => setForm(f => ({ ...f, plaka: plakaFiltre(e.target.value) }))}
                     placeholder="34 ABC 123"
-                    style={stl.input({ textAlign: "center", fontSize: 13, fontWeight: 700, letterSpacing: 1, fontFamily: "monospace", marginTop: 6 })}
+                    style={stl.input({ textAlign: "center", marginTop: 7, padding: "8px 10px", fontSize: 12, fontWeight: 700, fontFamily: "monospace", letterSpacing: 1 })}
                   />
                 ) : (
-                  <div style={{
-                    display: "inline-block", background: "#fff", color: "#000",
-                    fontFamily: "monospace", fontSize: 13, padding: "4px 12px",
-                    borderRadius: 5, border: "2px solid #003099", marginTop: 4,
-                    letterSpacing: 2, fontWeight: 700
-                  }}>
+                  <div style={{ display: "inline-block", marginTop: 7, background: "#fff", color: "#000", fontFamily: "monospace", fontSize: 13, padding: "5px 14px", borderRadius: 6, border: "2px solid #003099", letterSpacing: 2, fontWeight: 700, boxShadow: "0 2px 6px rgba(0,0,0,0.08)" }}>
                     {kullanici?.plaka || "—"}
                   </div>
                 )}
               </div>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: "var(--text3)", letterSpacing: 1, textTransform: "uppercase" }}>
-                  🚐 Dorse
-                </div>
+              <div style={{ background: "var(--bg2)", borderRadius: 14, padding: 12, border: "1px solid var(--border)", textAlign: "center" }}>
+                <div style={stl.hucreLabel}>Dorse</div>
                 {duzenle ? (
                   <input
                     type="text" value={form.dorse_plaka}
-                    onChange={e => setForm(f => ({ ...f, dorse_plaka: e.target.value.toUpperCase() }))}
+                    onChange={e => setForm(f => ({ ...f, dorse_plaka: plakaFiltre(e.target.value) }))}
                     placeholder="34 ABC 123"
-                    style={stl.input({ textAlign: "center", fontSize: 13, fontWeight: 700, letterSpacing: 1, fontFamily: "monospace", marginTop: 6 })}
+                    style={stl.input({ textAlign: "center", marginTop: 7, padding: "8px 10px", fontSize: 12, fontWeight: 700, fontFamily: "monospace", letterSpacing: 1 })}
                   />
                 ) : (
-                  <div style={{
-                    display: "inline-block", background: "#fff", color: "#000",
-                    fontFamily: "monospace", fontSize: 13, padding: "4px 12px",
-                    borderRadius: 5, border: "2px solid #003099", marginTop: 4,
-                    letterSpacing: 2, fontWeight: 700
-                  }}>
+                  <div style={{ display: "inline-block", marginTop: 7, background: "#fff", color: "#000", fontFamily: "monospace", fontSize: 13, padding: "5px 14px", borderRadius: 6, border: "2px solid #003099", letterSpacing: 2, fontWeight: 700, boxShadow: "0 2px 6px rgba(0,0,0,0.08)" }}>
                     {kullanici?.dorse_plaka || "—"}
                   </div>
                 )}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* KAYDET BUTONU */}
-          {duzenle && (
-            <button onClick={handleProfilKaydet} style={{
-              width: "100%", marginTop: 14, padding: "14px",
-              background: tema.gradient, color: "#fff",
-              border: "none", borderRadius: 12,
-              fontSize: 14, fontWeight: 700, cursor: "pointer",
-              boxShadow: `0 4px 20px ${tema.birincil}44`,
-              transition: "all 0.25s"
-            }}>
-              💾 Değişiklikleri Kaydet
-            </button>
-          )}
-
-          {/* MESAJ */}
-          {kayitMesaj && (
-            <div style={{
-              marginTop: 10, padding: "10px 14px",
-              background: kayitMesaj.tur === "ok" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
-              color: kayitMesaj.tur === "ok" ? "#10b981" : "#ef4444",
-              border: `1px solid ${kayitMesaj.tur === "ok" ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`,
-              borderRadius: 10, fontSize: 13, fontWeight: 600,
-              textAlign: "center", backdropFilter: "blur(8px)"
-            }}>
-              {kayitMesaj.metin}
-            </div>
-          )}
-        </div>
+        {/* ===== KAYDET ===== */}
+        {duzenle && (
+          <button onClick={handleProfilKaydet} style={{
+            width: "100%", margin: "0 0 14px", padding: "14px",
+            background: c.grad, color: "#fff",
+            border: "none", borderRadius: 14,
+            fontSize: 14, fontWeight: 800, cursor: "pointer",
+            boxShadow: `0 6px 24px ${c.a}44`, transition: "all 0.25s"
+          }}>
+            💾 Değişiklikleri Kaydet
+          </button>
+        )}
 
         {/* ===== İSTATİSTİKLER ===== */}
-        <div style={{
-          padding: 18, marginBottom: 14,
-          background: "var(--bg1)", borderRadius: 16,
-          border: `1px solid ${tema.birincil}15`
-        }}>
-          <div style={stl.bolumBaslik}>📊 İstatistikler</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+        <div style={stl.kart}>
+          <span style={stl.baslik}>📊 İstatistikler</span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 12 }}>
             {statlar.map((s, i) => (
-              <div key={i} style={{
-                textAlign: "center", padding: "14px 4px",
-                background: "var(--bg2)", borderRadius: 12,
-                border: `1px solid ${tema.birincil}15`,
-                transition: "all 0.3s"
-              }}>
-                <div style={{ fontSize: 20, marginBottom: 4 }}>{s.icon}</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: tema.birincil }}>
-                  {s.val}{s.suffix || ""}
-                </div>
-                <div style={{ fontSize: 9, color: "var(--text3)", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>
-                  {s.lbl}
-                </div>
+              <div key={i} style={{ textAlign: "center", padding: "12px 4px", background: "var(--bg2)", borderRadius: 14, border: "1px solid var(--border)", transition: "transform 0.15s" }}>
+                <div style={{ fontSize: 17, marginBottom: 3 }}>{s.icon}</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: c.text, lineHeight: 1.2 }}>{s.val}{s.suffix || ""}</div>
+                <div style={{ fontSize: 8, color: "var(--text3)", marginTop: 2, letterSpacing: 1, textTransform: "uppercase" }}>{s.lbl}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* ===== BELGELER ===== */}
-        <div style={{
-          padding: 18, marginBottom: 14,
-          background: "var(--bg1)", borderRadius: 16,
-          border: `1px solid ${tema.birincil}15`
-        }}>
+        <div style={stl.kart}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: tema.iconBg, display: "flex",
-                alignItems: "center", justifyContent: "center", fontSize: 16
+                width: 36, height: 36, borderRadius: 12,
+                background: c.soft, display: "flex",
+                alignItems: "center", justifyContent: "center", fontSize: 16, color: c.text
               }}>
                 📁
               </div>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>Belgelerim</div>
                 <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 1 }}>
-                  {kullanicininBelgeleri.length}/{belgeTanimlari.length} belge
+                  {tamamlananBelge}/{belgeTanimlari.length} onaylı
                 </div>
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: tema.birincil }}>{belgeYuzdesi}%</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: c.text }}>{belgeYuzdesi}%</div>
               <div style={{ width: 56, height: 4, background: "var(--bg3)", borderRadius: 2, marginTop: 4, overflow: "hidden" }}>
-                <div style={{ width: `${belgeYuzdesi}%`, height: "100%", background: tema.gradient, borderRadius: 2, transition: "width 0.6s" }} />
+                <div style={{ width: `${belgeYuzdesi}%`, height: "100%", background: c.grad, borderRadius: 2, transition: "width 0.6s" }} />
               </div>
             </div>
           </div>
 
-          {/* Yüklenen belgeler */}
           {kullanicininBelgeleri.length > 0 && (
-            <div style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ marginBottom: 10, display: "flex", flexDirection: "column", gap: 6 }}>
               {kullanicininBelgeleri.map(b => (
                 <div key={b.id} style={{
-                  padding: "12px 14px",
+                  padding: "10px 12px",
                   background: "var(--bg2)", borderRadius: 12,
                   display: "flex", alignItems: "center", justifyContent: "space-between",
                   border: "1px solid rgba(16,185,129,0.2)"
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{
-                      width: 32, height: 32, borderRadius: 8,
+                      width: 30, height: 30, borderRadius: 8,
                       background: "rgba(16,185,129,0.15)",
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 14, color: "#10b981"
+                      fontSize: 13, color: "#10b981"
                     }}>✓</div>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{b.dosya_adi}</div>
@@ -643,30 +655,29 @@ export default function ProfilKart({ rol, userId }) {
             </div>
           )}
 
-          {/* Belge tipleri */}
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {belgeTanimlari.map(bt => {
               const yuklendi = kullanicininBelgeleri.some(kb => kb.dosya_adi === bt.ad);
               return (
                 <div key={bt.id} style={{
-                  padding: "12px 14px",
+                  padding: "10px 12px",
                   background: "var(--bg2)", borderRadius: 12,
                   display: "flex", alignItems: "center", justifyContent: "space-between",
-                  border: `1px solid ${yuklendi ? "rgba(16,185,129,0.2)" : `${tema.birincil}15`}`
+                  border: `1px solid ${yuklendi ? "rgba(16,185,129,0.2)" : "var(--border)"}`
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{
-                      width: 32, height: 32, borderRadius: 8,
+                      width: 30, height: 30, borderRadius: 8,
                       background: yuklendi ? "rgba(16,185,129,0.15)" : "var(--bg3)",
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 14, color: yuklendi ? "#10b981" : "var(--text3)"
+                      fontSize: 13, color: yuklendi ? "#10b981" : "var(--text3)"
                     }}>
                       {yuklendi ? "✓" : "○"}
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{bt.ad}</div>
                   </div>
                   {!yuklendi && (
-                    <button onClick={() => dosyaInputRef.current?.click()} style={stl.btn(false, tema.birincil)}>
+                    <button onClick={() => dosyaInputRef.current?.click()} style={stl.btn(false, true)}>
                       + Yükle
                     </button>
                   )}
@@ -700,14 +711,10 @@ export default function ProfilKart({ rol, userId }) {
         </div>
 
         {/* ===== AYARLAR MENÜSÜ ===== */}
-        <div style={{
-          padding: 6, marginBottom: 14,
-          background: "var(--bg1)", borderRadius: 16,
-          border: `1px solid ${tema.birincil}15`
-        }}>
+        <div style={{ margin: "0 16px 14px", padding: 6, background: "var(--bg1)", borderRadius: 18, border: "1px solid var(--border)", boxShadow: "0 4px 20px rgba(15,23,42,0.06)" }}>
           {[
             { icon: "help", text: "Yardım & Destek", color: "var(--text2)", action: () => setAktifModal("yardim") },
-            { icon: "file", text: "İş Geçmişim", color: tema.birincil, action: () => { window.location.hash = isKamyoncu ? "#/app?sekme=ilanlar" : "#/app?sekme=ilanlarim"; } },
+            { icon: "file", text: "İş Geçmişim", color: c.text, action: () => { window.location.hash = isKamyoncu ? "#/app?sekme=ilanlar" : "#/app?sekme=ilanlarim"; } },
             { icon: "star", text: "Aldığım Yorumlar", color: "#f59e0b", action: () => setAktifModal("yorumlar") },
             { icon: "lock", text: "Gizlilik Politikası", color: "var(--text2)", action: () => setAktifModal("gizlilik") },
             { icon: "settings", text: "Ayarlar", color: "var(--text2)", action: () => { window.location.hash = "#/ayarlar"; } },
@@ -716,8 +723,8 @@ export default function ProfilKart({ rol, userId }) {
               onClick={() => item.action()}
               style={{
                 display: "flex", alignItems: "center", gap: 12,
-                padding: "14px 14px",
-                borderBottom: i < 4 ? `1px solid ${tema.birincil}10` : "none",
+                padding: "12px 10px",
+                borderBottom: i < 4 ? "1px solid var(--border)" : "none",
                 cursor: "pointer", transition: "all 0.2s"
               }}
             >
@@ -731,7 +738,7 @@ export default function ProfilKart({ rol, userId }) {
                   return <Icon size={18} style={{ color: item.color }} />;
                 })()}
               </div>
-              <span style={{ fontSize: 14, flex: 1, fontWeight: 500, color: "var(--text)" }}>{item.text}</span>
+              <span style={{ fontSize: 14, flex: 1, fontWeight: 600, color: "var(--text)" }}>{item.text}</span>
               <span style={{ color: "var(--text3)", fontSize: 18 }}>›</span>
             </div>
           ))}
@@ -741,10 +748,10 @@ export default function ProfilKart({ rol, userId }) {
         <button
           onClick={() => { if (confirm("Çıkış yapmak istediğinize emin misiniz?")) cikisYap(); }}
           style={{
-            width: "100%", padding: "16px",
+            width: "100%", padding: "15px",
             background: "linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(239,68,68,0.04) 100%)",
             color: "#ef4444", border: "1px solid rgba(239,68,68,0.25)",
-            borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: "pointer",
+            borderRadius: 14, fontSize: 14, fontWeight: 800, cursor: "pointer",
             transition: "all 0.2s", backdropFilter: "blur(8px)"
           }}
         >
@@ -765,7 +772,7 @@ export default function ProfilKart({ rol, userId }) {
           }}>
             <button onClick={() => setAktifModal(null)} style={{
               position: "fixed", top: 20, right: 20,
-              background: "var(--bg1)", border: `1px solid ${tema.birincil}22`,
+              background: "var(--bg1)", border: "1px solid var(--border)",
               borderRadius: 12, padding: "12px 16px", fontSize: 18,
               cursor: "pointer", zIndex: 101, transition: "var(--tr)",
               backdropFilter: "blur(12px)"
@@ -781,16 +788,47 @@ export default function ProfilKart({ rol, userId }) {
                 {aktifModal === "yorumlar" && "Aldığım Yorumlar"}
                 {aktifModal === "gizlilik" && "Gizlilik Politikası"}
               </div>
-              <div style={{
-                fontSize: 14, color: "var(--text2)", lineHeight: 1.8,
-                background: "var(--bg2)", padding: 16, borderRadius: 12,
-                border: `1px solid ${tema.birincil}15`, whiteSpace: "pre-line",
-                marginBottom: 24
-              }}>
-                {aktifModal === "yardim" && "Merhaba! Nakliyol Pro uygulamasında yardıma mı ihtiyacınız var?\n\n📞 Destek Hattı: 0850 XXX XXXX\n📧 E-posta: destek@nakliyol.com\n💬 Canlı Destek: Uygulama içi mesajlaşma\n\nSıkça Sorulan Sorular:\n• İlan nasıl oluşturulur? 'İlan Ver' sekmesinden yeni ilan oluşturabilirsiniz.\n• Teklif nasıl verilir? İlan detay sayfasından 'Teklif Ver' butonunu kullanın.\n• Sefer takibi nasıl yapılır? 'Seferlerim' sekmesinden seferlerinizi takip edebilirsiniz.\n• Ödeme nasıl alınır? IBAN bilgilerinizi profil sayfanıza ekleyin."}
-                {aktifModal === "yorumlar" && "Yorumlar özelliği çok yakında yayınlanacak!\n\nBu özellik ile:\n✅ İşverenler sizi değerlendirebilecek\n✅ 1-5 yıldız arası puanlama sistemi\n✅ Yorumlar profilinizde görünecek\n✅ Güvenilirlik puanınız artacak\n\nGüncellemeleri takip etmek için bildirimleri açık tutun."}
-                {aktifModal === "gizlilik" && "Nakliyol Pro Gizlilik Politikası\n\n✅ Verileriniz şifrelenerek saklanır\n✅ Kişisel bilgileriniz yalnızca işverenlerle paylaşılır\n✅ Kullanım verileriyle hizmet kalitesi analiz edilir\n✅ Supabase altyapısı ile çalışıyor\n✅ KVKK / GDPR uyumlu\n✅ Üçüncü taraflarla veri paylaşılmaz\n✅ Hesap silme talepleri 24 saat içinde işleme alınır\n\nDetaylı bilgi için: destek@nakliyol.com"}
-              </div>
+              {aktifModal === "yorumlar" ? (
+                <div style={{
+                  background: "var(--bg2)", padding: 16, borderRadius: 12,
+                  border: "1px solid var(--border)", marginBottom: 24
+                }}>
+                  {yorumListesi.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "20px 0", color: "var(--text3)", fontSize: 13 }}>
+                      Henüz değerlendirme yok
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {yorumListesi.map(y => (
+                        <div key={y.id} style={{ background: "var(--bg1)", borderRadius: 12, padding: 12, border: "1px solid var(--border2)" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>
+                              {y.degerlendiren?.ad || "Kullanıcı"}
+                            </span>
+                            <span style={{ fontSize: 10, color: "var(--text3)" }}>{formatTarih(y.olusturulma_zamani)}</span>
+                          </div>
+                          <Yildizlar deger={y.puan} boyut={12} />
+                          {y.yorum && (
+                            <div style={{ fontSize: 13, color: "var(--text2)", marginTop: 6, lineHeight: 1.55, whiteSpace: "pre-line" }}>
+                              {y.yorum}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{
+                  fontSize: 14, color: "var(--text2)", lineHeight: 1.8,
+                  background: "var(--bg2)", padding: 16, borderRadius: 12,
+                  border: "1px solid var(--border)", whiteSpace: "pre-line",
+                  marginBottom: 24
+                }}>
+                  {aktifModal === "yardim" && "Merhaba! Nakliyol Pro uygulamasında yardıma mı ihtiyacınız var?\n\n📞 Destek Hattı: 0850 XXX XXXX\n📧 E-posta: destek@nakliyol.com\n💬 Canlı Destek: Uygulama içi mesajlaşma\n\nSıkça Sorulan Sorular:\n• İlan nasıl oluşturulur? 'İlan Ver' sekmesinden yeni ilan oluşturabilirsiniz.\n• Teklif nasıl verilir? İlan detay sayfasından 'Teklif Ver' butonunu kullanın.\n• Sefer takibi nasıl yapılır? 'Seferlerim' sekmesinden seferlerinizi takip edebilirsiniz.\n• Ödeme nasıl alınır? IBAN bilgilerinizi profil sayfanıza ekleyin."}
+                  {aktifModal === "gizlilik" && "Nakliyol Pro Gizlilik Politikası\n\n✅ Verileriniz şifrelenerek saklanır\n✅ Kişisel bilgileriniz yalnızca işverenlerle paylaşılır\n✅ Kullanım verileriyle hizmet kalitesi analiz edilir\n✅ Supabase altyapısı ile çalışıyor\n✅ KVKK / GDPR uyumlu\n✅ Üçüncü taraflarla veri paylaşılmaz\n✅ Hesap silme talepleri 24 saat içinde işleme alınır\n\nDetaylı bilgi için: destek@nakliyol.com"}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -131,10 +131,47 @@ export const StokBar = ({ kalan, toplam }) => {
   );
 };
 
-export const EmptyState = ({ icon, text }) => (
-  <div className="empty">
-    <div className="empty-icon">{icon}</div>
-    <div style={{ fontSize: 14 }}>{text}</div>
+export const EmptyState = ({ icon, text, title, alt, cta }) => (
+  <div style={{
+    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+    padding: "64px 24px", textAlign: "center", position: "relative", overflow: "hidden"
+  }}>
+    <div style={{
+      position: "absolute", top: 30, left: "50%", transform: "translateX(-50%)",
+      width: 200, height: 200, borderRadius: "50%",
+      background: "radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%)",
+      pointerEvents: "none"
+    }} />
+    <div style={{
+      position: "relative", width: 96, height: 96, borderRadius: 28,
+      background: "linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%)",
+      border: "1px solid var(--border)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: 42, marginBottom: 18, boxShadow: "0 12px 32px rgba(15,23,42,0.08)",
+      animation: "float 3.2s ease-in-out infinite"
+    }}>
+      {icon}
+    </div>
+    <div style={{ position: "relative" }}>
+      <div style={{ fontSize: title ? 17 : 15, fontWeight: 800, color: "var(--text)", letterSpacing: 0.3 }}>
+        {title || text}
+      </div>
+      {title && alt && (
+        <div style={{ fontSize: 13, color: "var(--text3)", marginTop: 8, lineHeight: 1.6 }}>
+          {alt}
+        </div>
+      )}
+      {!title && <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 6 }}>{alt}</div>}
+      {cta && (
+        <div style={{ marginTop: 20 }}>
+          {typeof cta === "function" ? (
+            <button onClick={cta} className="btn btn-primary" style={{ fontSize: 13, padding: "12px 24px" }}>
+              Başla
+            </button>
+          ) : cta}
+        </div>
+      )}
+    </div>
   </div>
 );
 

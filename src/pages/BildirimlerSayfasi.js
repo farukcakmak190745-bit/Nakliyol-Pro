@@ -1,6 +1,5 @@
 import { useApp } from "../context/AppContext";
-import { IconMap } from "../components/Icons";
-import { formatTarih } from "../components/UI";
+import { formatTarih, EmptyState } from "../components/UI";
 
 export function BildirimlerSayfasi() {
   const { bildirimler, setGosterenBildirim, setBildirimlerList } = useApp();
@@ -10,10 +9,7 @@ export function BildirimlerSayfasi() {
       <div className="section-title">BİLDİRİMLER ({bildirimler?.length || 0})</div>
 
       {(!bildirimler || bildirimler.length === 0) ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
-          <div style={{ fontSize: 56, marginBottom: 20 }}><IconMap.bell size={56} className="icon-primary" /></div>
-          <div style={{ fontSize: 16, marginBottom: 8 }}>Henüz bildiriniz yok</div>
-        </div>
+        <EmptyState icon="🔔" title="Henüz bildiriminiz yok" alt="Teklif, mesaj ve sefer gelişmeleri burada görünecek." />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {bildirimler.map((b, index) => {

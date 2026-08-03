@@ -20,6 +20,7 @@ import {
 import { BildirimlerSayfasi } from "./pages/BildirimlerSayfasi";
 import { BildirimlerModal } from "./components/BildirimlerModal";
 import ChatSayfasi from "./components/ChatSayfasi";
+import HalkaAcikProfil from "./components/HalkaAcikProfil";
 import { Header, BottomNav } from "./components/UI";
 import AyarlarSayfasi from "./pages/AyarlarSayfasi";
 import "./index.css";
@@ -28,7 +29,8 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingScreen from "./components/LoadingScreen";
 
 function MobilApp({ cikisYap }) {
-  const { oturum, ilanlar, seferler, teklifler, konusmalar } = useApp();
+  const { oturum, ilanlar, seferler, teklifler, konusmaOluştur, seciliProfilId, profiliKapat } = useApp();
+  const { konusmalar, loadConversations } = useMesaj();
   const [sekme, setSekme] = useState("ilanlar");
   const [seciliKonusma, setSeciliKonusma] = useState(null);
 
@@ -49,6 +51,32 @@ function MobilApp({ cikisYap }) {
     console.log('💬 ChatSayfasi açılıyor:', konusmaId, seferBilgileri);
     setSeciliKonusma(konusmaId);
   };
+
+  // Profil üzerinden "Mesaj Gönder" — konuşma açıp chat'e geç
+  const profildenMesaj = async (hedef) => {
+    if (!hedef?.id || !oturum?.id) return;
+    const konusmaId = await konusmaOluştur({
+      userId: oturum.id,
+      partnerId: hedef.id,
+      partnerAd: hedef.ad || "Kullanıcı",
+      partnerRol: oturum.role === "kamyoncu" ? "issiz" : "kamyoncu",
+      isTrucker: oturum.role === "kamyoncu",
+      konusmaTuru: "direkt",
+      baslik: hedef.ad || "Kullanıcı",
+      resim: hedef.fotograf || "https://api.dicebear.com/7.x/initials/svg?seed=" + String(hedef.ad || "K").substring(0, 2).toUpperCase()
+    });
+    if (konusmaId) {
+      profiliKapat();
+      setSeciliKonusma(konusmaId);
+    }
+  };
+
+  // Açılan konuşma listede yoksa konuşmaları yeniden yükle
+  useEffect(() => {
+    if (seciliKonusma && oturum?.id && !konusmalar?.find(k => k.id === seciliKonusma)) {
+      loadConversations(oturum.id);
+    }
+  }, [seciliKonusma, konusmalar, oturum?.id, loadConversations]);
 
   // Use useMemo to avoid hoisting issues with state variables
   const sayfa = React.useMemo(() => {
@@ -91,11 +119,19 @@ function MobilApp({ cikisYap }) {
   if (seciliKonusma) {
     const konusma = konusmalar?.find(k => k.id === seciliKonusma);
     if (!konusma) {
-      console.log("Konuşma bulunamadı, çıkılıyor:", seciliKonusma);
-      setSeciliKonusma(null);
-      return null;
+      return (
+        <div className="scroll-content" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+          <div style={{ fontSize: 14, color: "var(--text3)" }}>⏳ Konuşma yükleniyor...</div>
+        </div>
+      );
     }
-    return <ChatSayfasi konusmaId={seciliKonusma} onGeri={() => setSeciliKonusma(null)} isKamyoncu={oturum.role === "kamyoncu"} />;
+    // Profil overlay sohbet üzerinde de açılabilsin
+    return (
+      <>
+        <ChatSayfasi konusmaId={seciliKonusma} onGeri={() => setSeciliKonusma(null)} isKamyoncu={oturum.role === "kamyoncu"} />
+        {seciliProfilId && <HalkaAcikProfil onGeri={profiliKapat} onMesajGonder={profildenMesaj} />}
+      </>
+    );
   }
 
   return (
@@ -104,6 +140,7 @@ function MobilApp({ cikisYap }) {
       {sayfa !== undefined && sayfa !== null ? sayfa : null}
       <BottomNav aktif={sekme} setAktif={setSekme} rol={oturum.role} />
       <BildirimlerModal />
+      {seciliProfilId && <HalkaAcikProfil onGeri={profiliKapat} onMesajGonder={profildenMesaj} />}
     </div>
   );
 }

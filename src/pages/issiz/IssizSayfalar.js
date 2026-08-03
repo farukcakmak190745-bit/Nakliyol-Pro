@@ -4,16 +4,18 @@ import ChatSayfasi from "../../components/ChatSayfasi";
 import { useApp } from "../../context/AppContext";
 import { useMesaj } from "../../context/MesajContext";
 import { EmptyState, formatTarih, vadeTarihiniBul, vadeGectiMi } from "../../components/UI";
+import { MesajListeKart } from "../../components/MesajListesi";
+import DegerlendirmeModal from "../../components/DegerlendirmeModal";
 import ProfilKart from "../../components/ProfilKart";
 import IlIlceSecici from "../../components/IlIlceSecici";
 import { IconMap } from "../../components/Icons";
+import { harfFiltre, plakaFiltre, rakamFiltre, yukFiltre, adresFiltre, serbestFiltre } from "../../utils/inputFilters";
 
 export function IlanVerSayfasi() {
   const { ilanEkle, ilanSil } = useApp();
   const { dosyaYukle } = useMesaj();
   const [form, setForm] = useState({
     nereden: "", nereye: "", yuk: "",
-    tonaj: "20",
     ucret: "",
     kdvEkle: false,
     tarih: "",
@@ -34,11 +36,10 @@ export function IlanVerSayfasi() {
     }
     const ucret = Number(form.ucret);
 
-    console.log(`📤 Yeni ilan gönderiliyor:`, { ...form, faturaDosya: form.faturaDosya ? { tip: form.faturaDosya.tip, ad: form.faturaDosya.ad } : null, ton: 0, ucret: ucret, odemeTuru: form.odemeTuru, odemeGun: Number(form.odemeGun) });
+    console.log(`📤 Yeni ilan gönderiliyor:`, { ...form, faturaDosya: form.faturaDosya ? { tip: form.faturaDosya.tip, ad: form.faturaDosya.ad } : null, ucret: ucret, odemeTuru: form.odemeTuru, odemeGun: Number(form.odemeGun) });
 
     ilanEkle({
       ...form,
-      ton: 0,
       ucret: ucret,
       odemeTuru: form.odemeTuru,
       odemeGun: Number(form.odemeGun)
@@ -134,12 +135,12 @@ export function IlanVerSayfasi() {
         </div>
         <div className="input-group">
           <Label zorunlu>Yük Türü</Label>
-          <input className={inputStyle} placeholder="Kömür, çelik, gıda..." value={form.yuk} onChange={e => set("yuk", e.target.value)} />
+          <input className={inputStyle} placeholder="Kömür, çelik, gıda..." value={form.yuk} onChange={e => set("yuk", yukFiltre(e.target.value, 80))} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 10 }}>
           <div className="input-group">
             <Label zorunlu>Fiyat (₺)</Label>
-            <input className={inputStyle} type="number" placeholder="8500" value={form.ucret} onChange={e => set("ucret", e.target.value)} />
+            <input className={inputStyle} type="number" placeholder="8500" value={form.ucret} onChange={e => set("ucret", rakamFiltre(e.target.value, 12))} />
           </div>
           <div className="input-group">
             <Label zorunlu>Araç Tipi</Label>
@@ -174,7 +175,7 @@ export function IlanVerSayfasi() {
         </div>
         <div className="input-group">
           <Label>Açıklama</Label>
-          <textarea className={inputStyle} rows={3} placeholder="Özel şartlar, araç özellikleri..." value={form.aciklama} onChange={e => set("aciklama", e.target.value)} style={{ resize: "vertical", lineHeight: 1.6 }} />
+          <textarea className={inputStyle} rows={3} placeholder="Özel şartlar, araç özellikleri..." value={form.aciklama} onChange={e => set("aciklama", serbestFiltre(e.target.value, 500))} style={{ resize: "vertical", lineHeight: 1.6 }} />
         </div>
       </div>
 
@@ -186,7 +187,7 @@ export function IlanVerSayfasi() {
         <div className="input-group">
           <Label>Yükleme Yeri (Adres)</Label>
           <div style={{ display: "flex", gap: 8 }}>
-            <input className={inputStyle} placeholder="Yükleme adresini girin..." value={form.yuklemeKonum} onChange={e => set("yuklemeKonum", e.target.value)} style={{ flex: 1 }} />
+            <input className={inputStyle} placeholder="Yükleme adresini girin..." value={form.yuklemeKonum} onChange={e => set("yuklemeKonum", adresFiltre(e.target.value, 200))} style={{ flex: 1 }} />
             {form.yuklemeKonum && (
               <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.yuklemeKonum)}`} target="_blank" rel="noopener noreferrer" style={{ padding: "10px 12px", borderRadius: "10px", background: "var(--bg3)", border: "1px solid var(--border2)", color: "#1d4ed8", textDecoration: "none", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
                 🗺 Harita
@@ -222,13 +223,8 @@ export function IlanVerSayfasi() {
           ) : (
             <div style={{ display: "flex", gap: 8 }}>
               <label style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "14px 8px", borderRadius: 12, border: "1.5px dashed var(--border2)", background: "var(--bg3)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                📷 Fotoğraf Çek
-                <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text3)" }}>Kamera ile</span>
-                <input type="file" accept="image/*" capture="environment" onChange={faturaSec} style={{ display: "none" }} />
-              </label>
-              <label style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "14px 8px", borderRadius: 12, border: "1.5px dashed var(--border2)", background: "var(--bg3)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                📎 Dosya Seç
-                <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text3)" }}>Galeri / PDF</span>
+                📎 Fatura Yükle
+                <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text3)" }}>Fotoğraf veya PDF</span>
                 <input type="file" accept="image/*,application/pdf,.pdf" onChange={faturaSec} style={{ display: "none" }} />
               </label>
             </div>
@@ -238,7 +234,7 @@ export function IlanVerSayfasi() {
         <div className="input-group" style={{ marginTop: 10 }}>
           <Label>Boşaltma Yeri (Adres)</Label>
           <div style={{ display: "flex", gap: 8 }}>
-            <input className={inputStyle} placeholder="Boşaltma adresini girin..." value={form.bosaltmaKonum} onChange={e => set("bosaltmaKonum", e.target.value)} style={{ flex: 1 }} />
+            <input className={inputStyle} placeholder="Boşaltma adresini girin..." value={form.bosaltmaKonum} onChange={e => set("bosaltmaKonum", adresFiltre(e.target.value, 200))} style={{ flex: 1 }} />
             {form.bosaltmaKonum && (
               <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.bosaltmaKonum)}`} target="_blank" rel="noopener noreferrer" style={{ padding: "10px 12px", borderRadius: "10px", background: "var(--bg3)", border: "1px solid var(--border2)", color: "#1d4ed8", textDecoration: "none", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
                 🗺 Harita
@@ -331,11 +327,7 @@ export function IlanlarSayfasi() {
       <div className="section-title">KENDİ İLANLARIM ({mevcutIlanlar.length})</div>
 
       {mevcutIlanlar.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
-          <div style={{ fontSize: 56, marginBottom: 20 }}><IconMap.file size={56} className="icon-primary" /></div>
-          <div style={{ fontSize: 16, marginBottom: 8 }}>Henüz ilanınız yok</div>
-          <div style={{ fontSize: 13 }}>Yeni ilan vererek başlayın!</div>
-        </div>
+        <EmptyState icon="📋" title="Henüz ilanınız yok" alt="İlan verin, kamyoncular işinize teklif versin." />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {mevcutIlanlar.map(ilan => (
@@ -395,12 +387,13 @@ export function IlanlarSayfasi() {
 }
 
 export function TekliflerSayfasi({ onChatAc }) {
-  const { oturum, konusmaOluştur, ilkMesajiGonder, seferler, bekleyenOnaylariGetir, kamyoncuBasvuruBekleyenleriGetir, ilaniOnayla, ilaniReddet, ilaniptalEt, odemeOnayla, ilanlar } = useApp();
+  const { oturum, konusmaOluştur, ilkMesajiGonder, seferler, bekleyenOnaylariGetir, kamyoncuBasvuruBekleyenleriGetir, ilaniOnayla, ilaniReddet, ilaniptalEt, odemeOnayla, ilanlar, profiliGoster, benimDegerlendirdiklerim } = useApp();
   const [kabulEdilen, setKabulEdilen] = useState(new Set());
   const [seciliSefer, setSeciliSefer] = useState(null);
   const [konusmaIdMap, setKonusmaIdMap] = useState({});
   const [bekleyenOnaylar, setBekleyenOnaylar] = useState([]);
   const [yeniBekleyenler, setYeniBekleyenler] = useState([]);
+  const [degerlendirilecek, setDegerlendirilecek] = useState(null);
   const [simdi, setSimdi] = useState(Date.now());
 
   // Onay iptal süresi: 10 dakika
@@ -447,6 +440,7 @@ export function TekliflerSayfasi({ onChatAc }) {
         yuk: s?.yuk,
         nereden: s?.nereden,
         nereye: s?.nereye,
+        kamyoncuId: s?.kamyoncu_user_id,
         bilgiler: {
           ad: s.kamyoncu,
           tel: s?.kamyoncu_tel,
@@ -585,6 +579,15 @@ export function TekliflerSayfasi({ onChatAc }) {
                 </div>
               </div>
 
+              {(o.bilgiler?.kamyoncuId || o?.kamyoncuId || o?.kamyoncu_user_id) && (
+                <button
+                  onClick={() => profiliGoster(o.bilgiler?.kamyoncuId || o?.kamyoncuId || o?.kamyoncu_user_id)}
+                  style={{ width: "100%", padding: "10px", marginBottom: 8, background: "var(--bg1)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: "12px", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#f59e0b" }}
+                >
+                  👤 Kamyoncu Profilini Gör
+                </button>
+              )}
+
               <div style={{ display: "flex", gap: 8 }}>
                 <button
                   onClick={() => ilaniOnayla(o.ilanId, o.bilgiler.ad, o.bilgiler.tel, o.bilgiler.cekiciPlaka, o.bilgiler.dorsePlaka, o.bilgiler.tc_kimlik, oturum?.user?.id)}
@@ -633,7 +636,12 @@ export function TekliflerSayfasi({ onChatAc }) {
                 <span style={{ color: "#fbbf24" }}>→</span>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>{s?.nereye}</span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+              {s?.kamyoncu_user_id && (
+                <div style={{ marginBottom: 10, fontSize: 12, color: "var(--text3)", cursor: "pointer" }} onClick={() => profiliGoster(s.kamyoncu_user_id)}>
+                  🚛 {s.kamyoncu || "Kamyoncu"} <span style={{ color: "#fbbf24", fontWeight: 600 }}>• Profili Gör</span>
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
                 <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
                   <div style={{ fontSize: 10, color: "var(--text3)" }}>Plaka</div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "#1d4ed8" }}>{typeof s?.plaka === 'string' ? s?.plaka : '—'}</div>
@@ -643,10 +651,6 @@ export function TekliflerSayfasi({ onChatAc }) {
                   <div style={{ fontSize: 16, fontWeight: 700, color: "#fbbf24" }}>₺{typeof s?.ucret === 'number' ? s?.ucret.toLocaleString() : '0'}</div>
                   <div style={{ fontSize: 9, color: "#1d4ed8", marginTop: 2 }}>{!s?.odemeGun || s?.odemeGun === 0 || s?.odemeTuru === "pesin" ? "💰 Peşin" : `${s?.odemeGun} Gün`}</div>
                   {s?.kdvOrani > 0 && <div style={{ fontSize: 9, color: "#10b981", marginTop: 1 }}>+KDV</div>}
-                </div>
-                <div style={{ background: "var(--bg2)", borderRadius: "12px", padding: "12px", textAlign: "center", border: "1px solid rgba(251,191,36,0.1)" }}>
-                  <div style={{ fontSize: 10, color: "var(--text3)" }}>Tonaj</div>
-                  <div style={{ fontSize: 16, fontWeight: 700 }}>{s?.ton > 0 ? `${s?.ton} Ton` : "🔥 Serbest"}</div>
                 </div>
               </div>
               {s?.durum === "teslima_bekleniyor" && (() => {
@@ -705,6 +709,31 @@ export function TekliflerSayfasi({ onChatAc }) {
                   );
                 })()}
               </div>
+              {(s?.teslim || s?.iban) && (
+                <div style={{ marginTop: 12, background: "var(--bg2)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "12px", padding: 14 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: "#10b981", marginBottom: 10 }}>KAMYONCU ÖDEME BİLGİLERİ</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13 }}>
+                    {(() => {
+                      const odemeSahibi = s?.teslim?.iban_sahibi || s?.iban_sahibi || s?.ibanSahibi || "";
+                      const odemeIban = s?.teslim?.iban || s?.iban || "";
+                      return (
+                        <>
+                          {odemeSahibi && <div>👤 <span style={{ color: "var(--text3)" }}>Ad Soyad:</span> <b>{odemeSahibi}</b></div>}
+                          {odemeIban && <div>💳 <span style={{ color: "var(--text3)" }}>IBAN:</span> <b style={{ fontFamily: "monospace", fontSize: 12, wordBreak: "break-all" }}>{odemeIban}</b></div>}
+                        </>
+                      );
+                    })()}
+                    {s?.teslim?.evrak && (s.teslim.evrak.tip === "img" ? (
+                      <div>
+                        <div style={{ color: "var(--text3)", marginBottom: 6 }}>📎 Teslim Evrağı:</div>
+                        <img src={s.teslim.evrak.veri} alt="Teslim evrağı" style={{ maxWidth: "100%", borderRadius: "10px", border: "1px solid rgba(251,191,36,0.2)" }} />
+                      </div>
+                    ) : (
+                      <a href={s.teslim.evrak.veri} download={s.teslim.evrak.ad || "teslim_evragi"} style={{ color: "#1d4ed8", fontWeight: 600, textDecoration: "underline" }}>📎 Teslim Evrağı: {s.teslim.evrak.ad}</a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </>
@@ -736,11 +765,7 @@ export function TekliflerSayfasi({ onChatAc }) {
       )}
 
       {yeniBekleyenler.length === 0 && aktifSeferler.length === 0 && (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
-          <div style={{ fontSize: 56, marginBottom: 20 }}><IconMap.file size={56} className="icon-primary" /></div>
-          <div style={{ fontSize: 16, marginBottom: 8 }}>Henüz teklif veya aktif iş yok</div>
-          <div style={{ fontSize: 13 }}>İlanlar sekmesinden yük vererek başlayın!</div>
-        </div>
+        <EmptyState icon="📬" title="Henüz teklif veya aktif iş yok" alt="İlan verin; kamyoncular işinize başvuracak, bekleyen teklifler burada görünecek." />
       )}
     </div>
   );
@@ -751,6 +776,7 @@ export function MesajlarSayfasi({ onGeri }) {
   const { konusmalar, loadConversations } = useMesaj();
   const [secili, setSecili] = useState(null);
   const [kategori, setKategori] = useState("aktif"); // aktif | tamamlanan | tumu
+  const [arama, setArama] = useState("");
 
   // Oturum değişince konuşmaları yeniden yükle (auth listener fallback)
   useEffect(() => {
@@ -764,9 +790,19 @@ export function MesajlarSayfasi({ onGeri }) {
     if (kategori === "tumu") return true;
     const s = seferler?.find(sf => sf.ilan_id === k.ilan_id || sf.ilanId === k.ilan_id);
     if (kategori === "aktif") return !s || ["bekliyor", "yolda", "teslima_bekleniyor"].includes(s.durum);
-    if (kategori === "tamamlanan") return s?.durum === "odendi";
+    if (kategori === "tamamlanan") return s?.durum === "odendi" || s?.durum === "tamamlandı" || s?.durum === "tamamlandi";
     return true;
   });
+
+  const aramaTermi = (arama || "").trim().toLocaleLowerCase("tr-TR");
+  const gorunenKonusmalar = (filtrelenmisKonusmalar || []).filter(k => {
+    if (!aramaTermi) return true;
+    return (k.partnerAd || "").toLocaleLowerCase("tr-TR").includes(aramaTermi);
+  });
+
+  const toplamOkunmamis = (konusmalar || []).reduce((top, k) => top + (k.okunmamis || 0), 0);
+
+  const seferDurumIcin = (k) => seferler?.find(sf => sf.ilan_id === k.ilan_id || sf.ilanId === k.ilan_id);
 
   if (secili) {
     const konusma = konusmalar?.find(k => k.id === secili);
@@ -779,7 +815,49 @@ export function MesajlarSayfasi({ onGeri }) {
 
   return (
     <div className="scroll-content">
-      <div className="section-title">MESAJLAR</div>
+      <div className="section-title">
+        MESAJLAR
+        {toplamOkunmamis > 0 && (
+          <span style={{
+            marginLeft: 8,
+            fontSize: 11,
+            background: "linear-gradient(135deg, #f59e0b, #ea580c)",
+            color: "#fff",
+            borderRadius: 12,
+            padding: "2px 10px",
+            fontWeight: 700,
+            verticalAlign: "middle"
+          }}>
+            {toplamOkunmamis} yeni
+          </span>
+        )}
+      </div>
+
+      {/* Arama */}
+      <div style={{ padding: "0 16px 12px" }}>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          background: "var(--bg2)",
+          border: "1px solid rgba(251,191,36,0.15)",
+          borderRadius: 12,
+          padding: "0 12px"
+        }}>
+          <span style={{ fontSize: 15, opacity: 0.6 }}>🔍</span>
+          <input
+            value={arama}
+            onChange={e => setArama(e.target.value)}
+            placeholder="Kişi ara..."
+            style={{ flex: 1, background: "none", border: "none", outline: "none", padding: "10px 0", fontSize: 14, color: "var(--text)" }}
+          />
+          {arama && (
+            <button onClick={() => setArama("")} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "var(--text3)" }}>✕</button>
+          )}
+        </div>
+      </div>
+
+      {/* Kategori filtreleri */}
       <div style={{ display: "flex", gap: 8, padding: "0 16px 12px" }}>
         {["aktif", "tamamlanan", "tumu"].map(k => (
           <button key={k} onClick={() => setKategori(k)} style={{
@@ -791,36 +869,17 @@ export function MesajlarSayfasi({ onGeri }) {
           </button>
         ))}
       </div>
-      {(!filtrelenmisKonusmalar || filtrelenmisKonusmalar.length === 0) ? (
-        <EmptyState icon="💬" text={kategori === "aktif" ? "Aktif konuşma yok" : kategori === "tamamlanan" ? "Tamamlanan konuşma yok" : "Henüz mesaj yok"} />
+      {(!gorunenKonusmalar || gorunenKonusmalar.length === 0) ? (
+        <EmptyState
+          icon={aramaTermi ? "🔍" : "💬"}
+          title={aramaTermi ? "Arama sonucu bulunamadı" : (kategori === "aktif" ? "Aktif konuşma yok" : kategori === "tamamlanan" ? "Tamamlanan konuşma yok" : "Henüz mesaj yok")}
+          alt={aramaTermi ? "Farklı bir isimle tekrar deneyin." : "İş görüşmeleriniz burada görünecek."}
+        />
       ) : (
-        filtrelenmisKonusmalar.map(k => {
-          const s = seferler?.find(sf => sf.ilan_id === k.ilan_id || sf.ilanId === k.ilan_id);
-          return (<div key={k.id} className="card" style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} onClick={() => setSecili(k.id)}>
-            <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#fff", flexShrink: 0, position: "relative" }}>
-              {k.partnerRol === "kamyoncu" ? "🚛" : "🏢"}
-              {s && (
-                <div style={{
-                  position: "absolute", bottom: -2, right: -2, width: 14, height: 14, borderRadius: "50%",
-                  background: s.durum === "odendi" ? "#10b981" : s.durum === "yolda" ? "#1d4ed8" : s.durum === "teslima_bekleniyor" ? "#f59e0b" : "#6b7280",
-                  border: "2px solid var(--bg1)"
-                }} />
-              )}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: "#fbbf24" }}>{k.partnerAd}</div>
-              <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {k.mesajlar && k.mesajlar.length > 0 ? (k.mesajlar[k.mesajlar.length - 1]?.metin || "📄 Dosya gönderildi") : (k.baslik || "")}
-              </div>
-            </div>
-            <div style={{ flexShrink: 0, textAlign: "right" }}>
-              <div style={{ fontSize: 11, color: "var(--text3)" }}>
-                {k.sonOkuma ? new Date(k.sonOkuma).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "—"}
-              </div>
-            </div>
-          </div>
-        )}
-      ))}
+        gorunenKonusmalar.map(k => (
+          <MesajListeKart key={k.id} konusma={k} sefer={seferDurumIcin(k)} onClick={() => setSecili(k.id)} />
+        ))
+      )}
     </div>
   );
 }
@@ -831,10 +890,11 @@ export function IssizProfilSayfasi() {
 
 
 export function IssizIlanlarSayfasi() {
-  const { oturum, ilanlar, ilanSil, seferler } = useApp();
+  const { oturum, ilanlar, ilanSil, seferler, profiliGoster, benimDegerlendirdiklerim } = useApp();
   const [silinenId, setSilinenId] = useState(null);
   const [toast, setToast] = useState(null);
   const [gosterGeçmiş, setGosterGeçmiş] = useState(false);
+  const [degerlendirilecek, setDegerlendirilecek] = useState(null);
 
   // Sadece aktif ve alindi olanları ana listede göster; silindi olanı gizle.
   // (Geçmiş bölümünde ayrıca gösterilecek.)
@@ -849,8 +909,8 @@ export function IssizIlanlarSayfasi() {
     .filter(s => s.olusturan_id === oturum?.id)
     .sort((a, b) => new Date(b.olusturma_zamani || b.tarih || 0) - new Date(a.olusturma_zamani || a.tarih || 0));
 
-  const tamamlananSayi = gecmisIsler.filter(s => s.durum === "tamamlandı").length;
-  const devamEdenSayi = gecmisIsler.filter(s => s.durum !== "tamamlandı").length;
+  const tamamlananSayi = gecmisIsler.filter(s => s.durum === "tamamlandı" || s.durum === "tamamlandi" || s.durum === "odendi").length;
+  const devamEdenSayi = gecmisIsler.filter(s => s.durum !== "tamamlandı" && s.durum !== "tamamlandi" && s.durum !== "odendi").length;
 
   const gosterToast = (tur, metin) => {
     setToast({ tur, metin });
@@ -906,11 +966,7 @@ export function IssizIlanlarSayfasi() {
       </div>
 
       {mevcutIlanlar.length === 0 ? (
-        <div className="card" style={{ textAlign: "center", padding: "60px 20px", color: "var(--text3)" }}>
-          <div style={{ fontSize: 56, marginBottom: 20 }}>📭</div>
-          <div style={{ fontSize: 16, marginBottom: 8, color: "var(--text)", fontWeight: 600 }}>Henüz ilanın yok</div>
-          <div style={{ fontSize: 13, marginBottom: 24 }}>"İlan Ver" sekmesinden yeni ilan oluştur</div>
-        </div>
+        <EmptyState icon="📭" title="Henüz ilanın yok" alt="'İlan Ver' sekmesinden yeni ilan oluştur." />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {mevcutIlanlar.map(ilan => {
@@ -967,11 +1023,6 @@ export function IssizIlanlarSayfasi() {
                   <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
                     📅 {formatTarih(ilan.tarih)}
                   </span>
-                  {ilan.ton ? (
-                    <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
-                      ⚖️ {ilan.ton} ton
-                    </span>
-                  ) : null}
                   <span style={{ fontSize: 11, padding: "4px 10px", background: "var(--bg3)", borderRadius: "8px", color: "var(--text2)" }}>
                     🚛 {ilan.aracTip || "Belirtilmedi"}
                   </span>
@@ -1070,10 +1121,7 @@ export function IssizIlanlarSayfasi() {
         {gosterGeçmiş && (
           <div style={{ marginTop: 12 }}>
             {gecmisIsler.length === 0 ? (
-              <div className="card" style={{ textAlign: "center", padding: "40px 20px", color: "var(--text3)" }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-                <div style={{ fontSize: 14 }}>Henüz geçmiş iş yok</div>
-              </div>
+              <EmptyState icon="🗂️" title="Henüz geçmiş iş yok" alt="Tamamlanan seferleriniz burada listelenecek." />
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {gecmisIsler.map(sefer => {
@@ -1131,7 +1179,10 @@ export function IssizIlanlarSayfasi() {
                         gridTemplateColumns: "1fr 1fr",
                         gap: "6px 12px"
                       }}>
-                        <div>🚛 <strong>{sefer.kamyoncu || "—"}</strong></div>
+                        <div style={{ cursor: sefer.kamyoncu_user_id ? "pointer" : "default" }} onClick={() => sefer.kamyoncu_user_id && profiliGoster(sefer.kamyoncu_user_id)}>
+                          🚛 <strong>{sefer.kamyoncu || "—"}</strong>
+                          {sefer.kamyoncu_user_id && <span style={{ color: "#fbbf24", fontWeight: 600 }}> • Profili Gör</span>}
+                        </div>
                         <div>📌 {sefer.plaka || "—"}</div>
                         {sefer.kamyoncu_tel && (
                           <div style={{ gridColumn: "span 2" }}>
@@ -1158,6 +1209,14 @@ export function IssizIlanlarSayfasi() {
                           💰 Ödeme yapıldı{sefer.odeme_tarihi ? ` (${formatTarih(sefer.odeme_tarihi)})` : ""}
                         </div>
                       )}
+                      {(sefer.durum === "odendi" || sefer.durum === "tamamlandı") && sefer.kamyoncu_user_id && !benimDegerlendirdiklerim.has(sefer.id) && (
+                        <button
+                          onClick={() => setDegerlendirilecek(sefer)}
+                          style={{ width: "100%", marginTop: 10, padding: "11px", background: "linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.08) 100%)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.3)", borderRadius: "12px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                        >
+                          ⭐ Seferi Değerlendir
+                        </button>
+                      )}
                     </div>
                   );
                 })}
@@ -1166,6 +1225,16 @@ export function IssizIlanlarSayfasi() {
           </div>
         )}
       </div>
+
+      {degerlendirilecek && (
+        <DegerlendirmeModal
+          hedefId={degerlendirilecek.kamyoncu_user_id}
+          hedefAd={degerlendirilecek.kamyoncu || "Kamyoncu"}
+          seferId={degerlendirilecek.id}
+          seferOzet={`${degerlendirilecek.yuk || ""} · ${degerlendirilecek.nereden || ""} → ${degerlendirilecek.nereye || ""}`}
+          onKapat={() => setDegerlendirilecek(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "../supabaseClient";
+import { pushGonder } from "../utils/push";
 
 const Ctx = createContext();
 
@@ -13,6 +14,7 @@ export const MesajProvider = ({ children }) => {
   silinenIdsRef.current = silinenIds;
   const subscribedRef = useRef(false);
   const currentUserIdRef = useRef(null);
+  const tempMesajSayacRef = useRef(0);
 
   // =============================================
   // LOAD: Supabase'den konuşmaları ve mesajları çek
@@ -156,6 +158,20 @@ export const MesajProvider = ({ children }) => {
             const gonderen = msg.gonderen === userId ? 'ben' : 'konusmaci';
             // Duplicate kontrol
             if (k.mesajlar.find(m => m.id === msg.id)) return k;
+            // Kendi gönderdiğimiz mesaj realtime'dan geldiyse, optimistic temp satır
+            // zaten eklenmiş olabilir — temp satırın yerine gerçek ID'yi koy
+            if (gonderen === 'ben') {
+              const tempSatir = k.mesajlar.find(m =>
+                m.id.startsWith('temp_') && m.metin === msg.metin && m.veriTipi === (msg.veri_tipi || 'metin')
+              );
+              if (tempSatir) {
+                return {
+                  ...k,
+                  mesajlar: k.mesajlar.map(m => m.id === tempSatir.id ? { ...m, id: msg.id, zaman: msg.zaman } : m)
+                };
+              }
+              return k;
+            }
             return {
               ...k,
               mesajlar: [...k.mesajlar, {
@@ -269,6 +285,21 @@ export const MesajProvider = ({ children }) => {
       }
     }
 
+    // ilan_id verilmemişse partner ile mevcut konuşma var mı kontrol et
+    // (profil üzerinden "Mesaj Gönder" ile tekrar tekrar boş konuşma açılmasın)
+    if (!params.ilanId && supabase && params.userId && params.partnerId) {
+      const { data: mevcut } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('user_id', params.userId)
+        .eq('partner_id', params.partnerId)
+        .maybeSingle();
+      if (mevcut) {
+        console.log('✅ Partner ile mevcut konuşma bulundu:', mevcut.id);
+        return mevcut.id;
+      }
+    }
+
     // Yeni konuşma oluştur
     const insertData = {
       user_id: userId,
@@ -321,12 +352,14 @@ export const MesajProvider = ({ children }) => {
     if (!konusmaId || (!metin && !veri)) return;
 
     // Local state güncelle (optimistic)
+    tempMesajSayacRef.current += 1;
+    const tempId = `temp_${Date.now()}_${tempMesajSayacRef.current}`;
     setKonusmalar(prev => prev.map(k => {
       if (k.id !== konusmaId) return k;
       return {
         ...k,
         mesajlar: [...k.mesajlar, {
-          id: `temp_${Date.now()}`,
+          id: tempId,
           metin,
           veriTipi,
           veri,
@@ -351,7 +384,7 @@ export const MesajProvider = ({ children }) => {
         return;
       }
 
-      console.log('📤 mesajGonder:', { konusmaId, gonderenId, metin: metin.substring(0, 30) });
+      console.log('📤 mesajGonder:', { konusmaId, gonderenId, uzunluk: metin?.length || 0 });
 
       const { data: msgRow, error } = await supabase
         .from('messages')
@@ -394,17 +427,35 @@ export const MesajProvider = ({ children }) => {
       if (konusma) {
         const aliciId = gonderenId === konusma.user_id ? konusma.partner_id : konusma.user_id;
         if (aliciId) {
-          const bildirimIcerik = metin || (veri?.ad ? `📎 ${veri.ad}` : '📎 Dosya');
-          try {
-            await supabase.from('bildirimler').insert({
-              kullanici_id: aliciId,
-              tur: 'mesaj',
-              baslik: 'Yeni mesaj',
-              icerik: bildirimIcerik.length > 100 ? bildirimIcerik.substring(0, 100) + '...' : bildirimIcerik,
-              sefer_id: konusma.ilan_id || null
-            });
-          } catch (err) {
-            console.error('Mesaj bildirimi hatası:', err);
+          // Sadece dosya/ek eklenmiş (metin yok) mesajlar bildirim OLUŞTURMASIN —
+          // "📎 rastgele-uuid.png / dosya.pdf" gibi anlamsız bildirimler istenmiyor.
+          const sadeceDosya = veriTipi !== 'metin' && !(metin && metin.trim().length > 0);
+          if (!sadeceDosya) {
+            const bildirimIcerik = metin || (veri?.ad ? `📎 ${veri.ad}` : '📎 Dosya');
+            try {
+              await supabase.from('bildirimler').insert({
+                kullanici_id: aliciId,
+                tur: 'mesaj',
+                baslik: 'Yeni mesaj',
+                icerik: bildirimIcerik.length > 100 ? bildirimIcerik.substring(0, 100) + '...' : bildirimIcerik,
+                sefer_id: konusma.ilan_id || null
+              });
+            } catch (err) {
+              console.error('Mesaj bildirimi hatası:', err);
+            }
+
+            // Web Push: mesaj alıcısına
+            try {
+              await pushGonder({
+                hedefKullaniciId: aliciId,
+                baslik: "💬 Yeni Mesaj",
+                icerik: bildirimIcerik.length > 100 ? bildirimIcerik.substring(0, 100) + "..." : bildirimIcerik,
+                url: "/#/app?sekme=mesajlar",
+                zorunlu: false
+              });
+            } catch (err) {
+              console.warn('Mesaj push gönderilemedi:', err);
+            }
           }
         }
       }

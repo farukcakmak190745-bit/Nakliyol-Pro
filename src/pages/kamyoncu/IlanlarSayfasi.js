@@ -1,9 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "../../context/AppContext";
 import { EmptyState, formatTarih } from "../../components/UI";
 import { IconMap } from "../../components/Icons";
+import IlIlceSecici from "../../components/IlIlceSecici";
+import { harfFiltre, plakaFiltre, rakamFiltre } from "../../utils/inputFilters";
 
-const IlanKart = ({ ilan, onClick }) => {
+const ilAdiniAl = (sehir) => {
+  if (!sehir) return "";
+  return String(sehir).split(" / ")[0].trim();
+};
+
+const IlanKart = ({ ilan, onClick, donus = false }) => {
+  const { profiliGoster } = useApp();
   const getYukIcon = (yuk) => {
     if (yuk.includes("kömür")) return "fire";
     if (yuk.includes("çelik") || yuk.includes("boru")) return "wrench";
@@ -60,6 +68,11 @@ const IlanKart = ({ ilan, onClick }) => {
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+        {donus && (
+          <div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 700, color: "#10b981", border: "1px solid rgba(16,185,129,0.35)", letterSpacing: 0.5 }}>
+            🔄 DÖNÜŞ YÜKÜ
+          </div>
+        )}
         <div style={{ background: "linear-gradient(135deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.08) 100%)", padding: "6px 12px", borderRadius: "12px", fontSize: 11, fontWeight: 600, color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
           <IconMap.calendar size={12} className="icon-primary" /> {formatTarih(ilan.tarih)}
         </div>
@@ -75,7 +88,7 @@ const IlanKart = ({ ilan, onClick }) => {
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "1px solid rgba(251,191,36,0.15)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", flex: 1 }} onClick={() => window.location.href = `/profil/${ilan.olusturan_id}`}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", flex: 1 }} onClick={(e) => { e.stopPropagation(); profiliGoster(ilan.olusturan_id); }}>
           {ilan.profilFoto ? (
             <img src={ilan.profilFoto} alt="" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(251,191,36,0.3)" }} />
           ) : (
@@ -89,9 +102,15 @@ const IlanKart = ({ ilan, onClick }) => {
               {ilan.firmaAdi && <span style={{ fontSize: 11, fontWeight: 500, color: "var(--text3)" }}>• {ilan.firmaAdi}</span>}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
-              {ilan.olusturanPuan >= 4.5 ? "⭐" : ilan.olusturanPuan >= 4 ? "✦" : "•"}
-              <span style={{ fontSize: 11, fontWeight: 600, color: "#fbbf24" }}>{ilan.olusturanPuan?.toFixed(1)}</span>
-              <span style={{ fontSize: 10, color: "var(--text3)" }}>puan • {ilan.istekSayisi} istek</span>
+              {ilan.olusturanOySayisi > 0 ? (
+                <>
+                  {ilan.olusturanPuan >= 4.5 ? "⭐" : ilan.olusturanPuan >= 4 ? "✦" : "•"}
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#fbbf24" }}>{Number(ilan.olusturanPuan).toFixed(1)}</span>
+                  <span style={{ fontSize: 10, color: "var(--text3)" }}>puan • {ilan.olusturanOySayisi} değerlendirme</span>
+                </>
+              ) : (
+                <span style={{ fontSize: 10, color: "var(--text3)" }}>{ilan.istekSayisi} istek aldı</span>
+              )}
             </div>
           </div>
         </div>
@@ -101,11 +120,16 @@ const IlanKart = ({ ilan, onClick }) => {
 };
 
 export default function IlanlarSayfasi() {
-  const { ilanlar, ilanAl, başvuruGonder, oturum } = useApp();
+  const { ilanlar, ilanAl, başvuruGonder, oturum, seferler } = useApp();
   const [filtre, setFiltre] = useState("");
   const [secilen, setSecilen] = useState(null);
   const [secilenBasvuru, setSecilenBasvuru] = useState(null);
   const [simdi, setSimdi] = useState(Date.now());
+
+  // Dönüş Yükü: kamyoncunun boşaltma şehri (son seferin varış şehri otomatik tespit)
+  const [donusSehir, setDonusSehir] = useState(() => {
+    try { return localStorage.getItem("donus_yuk_sehir") || ""; } catch { return ""; }
+  });
 
   // Cooldown sayacı (fazla iptal sonrası başvuru yasağı)
   useEffect(() => {
@@ -127,10 +151,28 @@ export default function IlanlarSayfasi() {
   };
 
   const liste = ilanlar.filter(i =>
-    i.nereden.toLowerCase().includes(filtre.toLowerCase()) ||
-    i.nereye.toLowerCase().includes(filtre.toLowerCase()) ||
-    i.yuk.toLowerCase().includes(filtre.toLowerCase())
+    (i.nereden || "").toLowerCase().includes(filtre.toLowerCase()) ||
+    (i.nereye || "").toLowerCase().includes(filtre.toLowerCase()) ||
+    (i.yuk || "").toLowerCase().includes(filtre.toLowerCase())
   );
+
+  // Kamyoncunun son seferinin varış şehri = boşaltma şehri (dönüş yükü tespiti)
+  const otomatikSehir = ilAdiniAl((seferler || [])
+    .filter(s => s?.kamyoncu_user_id === oturum?.id || s?.kamyoncu_tel === oturum?.telefon)
+    .sort((a, b) => new Date(b?.tarih || 0) - new Date(a?.tarih || 0))[0]?.nereye || "");
+
+  const aktifDonusSehir = donusSehir || otomatikSehir;
+
+  const donusYuku = (i) =>
+    aktifDonusSehir && ilAdiniAl(i.nereden) === aktifDonusSehir;
+
+  const donusIlanlar = liste.filter(donusYuku);
+  const digerIlanlar = liste.filter(i => !donusYuku(i));
+
+  const setDonusSehirKalici = (sehir) => {
+    setDonusSehir(sehir);
+    try { localStorage.setItem("donus_yuk_sehir", sehir || ""); } catch {}
+  };
 
   const sec = () => {
     if (!oturum) {
@@ -168,11 +210,66 @@ export default function IlanlarSayfasi() {
         {filtre && <button onClick={() => setFiltre("")} style={{ color: "var(--text3)", fontSize: 16, transition: "var(--tr)" }}>✕</button>}
       </div>
 
+      {/* DÖNÜŞ YÜKÜ */}
+      <div style={{
+        background: "linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(16,185,129,0.04) 100%)",
+        border: "1px solid rgba(16,185,129,0.3)",
+        borderRadius: "16px",
+        padding: "16px",
+        marginBottom: 16,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <span style={{ fontSize: 24 }}>🔄</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#10b981", letterSpacing: 0.5 }}>DÖNÜŞ YÜKÜ</div>
+            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>
+              Boşaltma şehrini seç; oradan kalkan yükler önce listelenir, boş dönme.
+            </div>
+          </div>
+        </div>
+        <IlIlceSecici
+          value={aktifDonusSehir}
+          onChange={(val) => setDonusSehirKalici(ilAdiniAl(val))}
+          placeholder="Boşaltma şehrini seç..."
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+          {otomatikSehir && (
+            <span style={{ fontSize: 11, color: "var(--text2)", background: "rgba(16,185,129,0.1)", padding: "4px 10px", borderRadius: "20px" }}>
+              📍 Son boşaltma: <b style={{ color: "#10b981" }}>{otomatikSehir}</b>
+            </span>
+          )}
+          {donusSehir && (
+            <button
+              onClick={() => setDonusSehirKalici("")}
+              style={{ fontSize: 11, color: "#ef4444", background: "rgba(239,68,68,0.1)", padding: "4px 10px", borderRadius: "20px", border: "1px solid rgba(239,68,68,0.25)", cursor: "pointer" }}
+            >
+              ✕ Sıfırla
+            </button>
+          )}
+          {aktifDonusSehir && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#10b981", marginLeft: "auto" }}>
+              {donusIlanlar.length} dönüş yükü bulundu
+            </span>
+          )}
+        </div>
+      </div>
+
+      {aktifDonusSehir && donusIlanlar.length > 0 && (
+        <div className="section-title" style={{ color: "#10b981" }}>🔄 DÖNÜŞ YÜKÜ · {aktifDonusSehir} ({donusIlanlar.length})</div>
+      )}
       <div className="section-title">AKTİF İLANLAR ({liste.length})</div>
 
       {liste.length === 0
-        ? <EmptyState icon="🔍" text="Sonuç bulunamadı" />
-        : liste.map(i => <IlanKart key={i.id} ilan={i} onClick={() => setSecilen(i)} />)
+        ? <EmptyState icon="🔍" title="Sonuç bulunamadı" alt={filtre ? "Arama kriterlerine uyan ilan yok." : "Henüz aktif ilan yok."} />
+        : <>
+            {aktifDonusSehir && donusIlanlar.map(i => <IlanKart key={i.id} ilan={i} donus onClick={() => setSecilen(i)} />)}
+            {aktifDonusSehir && donusIlanlar.length > 0 && digerIlanlar.length > 0 && (
+              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text3)", letterSpacing: 1, textTransform: "uppercase", padding: "8px 2px", marginTop: 8 }}>
+                Diğer İlanlar
+              </div>
+            )}
+            {digerIlanlar.map(i => <IlanKart key={i.id} ilan={i} onClick={() => setSecilen(i)} />)}
+          </>
       }
 
       {secilen && (
@@ -217,7 +314,6 @@ export default function IlanlarSayfasi() {
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
                 {[
-                  { k: "Tonaj", v: secilen?.ton > 0 ? `${secilen.ton} Ton` : "🔥 Serbest" },
                   { k: "Ödeme Planı", v: !secilen?.odemeGun || secilen.odemeGun === 0 ? "💰 Peşin" : `${secilen.odemeGun} Gün Sonra` },
                   { k: "Ücret", v: <>₺{secilen?.ucret?.toLocaleString() || 0} {secilen?.kdvOrani > 0 ? <span style={{color:"#10b981"}}> +KDV</span> : ""}</> },
                   { k: "Araç Tipi", v: secilen?.aracTip || "Belirtilmedi" },
@@ -234,12 +330,12 @@ export default function IlanlarSayfasi() {
                 onClick={() => setSecilenBasvuru({
                   id: secilen?.id,
                   bilgiler: {
-                    // Form alanları ŞOFÖRÜN bilgilerini alır — boş başlar
-                    ad: "",
-                    tel: "",
-                    tc_kimlik: "",
-                    cekiciPlaka: "",
-                    dorsePlaka: ""
+                    // Profildeki bilgilerle ön doldur — istenirse değiştirilebilir
+                    ad: oturum?.ad || "",
+                    tel: oturum?.telefon || "",
+                    tc_kimlik: oturum?.tc_kimlik || "",
+                    cekiciPlaka: oturum?.plaka || "",
+                    dorsePlaka: oturum?.dorse_plaka || ""
                   }
                 })}
                 className="btn btn-display-gold btn-full"
@@ -270,7 +366,7 @@ export default function IlanlarSayfasi() {
                     value={secilenBasvuru?.bilgiler?.ad || ""}
                     onChange={e => setSecilenBasvuru(p => ({
                       ...p,
-                      bilgiler: { ad: e.target.value, tel: p?.bilgiler?.tel || "", dorsePlaka: p?.bilgiler?.dorsePlaka || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", tc_kimlik: p?.bilgiler?.tc_kimlik || "" }
+                      bilgiler: { ad: harfFiltre(e.target.value, 60), tel: p?.bilgiler?.tel || "", dorsePlaka: p?.bilgiler?.dorsePlaka || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", tc_kimlik: p?.bilgiler?.tc_kimlik || "" }
                     }))}
                     style={{
                       padding: "16px 14px 16px 50px",
@@ -302,7 +398,7 @@ export default function IlanlarSayfasi() {
                     value={secilenBasvuru?.bilgiler?.tel || ""}
                     onChange={e => setSecilenBasvuru(p => ({
                       ...p,
-                      bilgiler: { ad: p?.bilgiler?.ad || "", tel: e.target.value, dorsePlaka: p?.bilgiler?.dorsePlaka || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", tc_kimlik: p?.bilgiler?.tc_kimlik || "" }
+                      bilgiler: { ad: p?.bilgiler?.ad || "", tel: rakamFiltre(e.target.value, 11), dorsePlaka: p?.bilgiler?.dorsePlaka || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", tc_kimlik: p?.bilgiler?.tc_kimlik || "" }
                     }))}
                     style={{
                       padding: "16px 14px 16px 50px",
@@ -337,7 +433,7 @@ export default function IlanlarSayfasi() {
                     value={secilenBasvuru?.bilgiler?.cekiciPlaka || ""}
                     onChange={e => setSecilenBasvuru(p => ({
                       ...p,
-                      bilgiler: { ad: p?.bilgiler?.ad || "", tel: p?.bilgiler?.tel || "", cekiciPlaka: e.target.value, dorsePlaka: p?.bilgiler?.dorsePlaka || "", tc_kimlik: p?.bilgiler?.tc_kimlik || "" }
+                      bilgiler: { ad: p?.bilgiler?.ad || "", tel: p?.bilgiler?.tel || "", cekiciPlaka: plakaFiltre(e.target.value), dorsePlaka: p?.bilgiler?.dorsePlaka || "", tc_kimlik: p?.bilgiler?.tc_kimlik || "" }
                     }))}
                     style={{
                       padding: "16px 14px 16px 50px",
@@ -369,7 +465,7 @@ export default function IlanlarSayfasi() {
                     value={secilenBasvuru?.bilgiler?.dorsePlaka || ""}
                     onChange={e => setSecilenBasvuru(p => ({
                       ...p,
-                      bilgiler: { ad: p?.bilgiler?.ad || "", tel: p?.bilgiler?.tel || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", dorsePlaka: e.target.value, tc_kimlik: p?.bilgiler?.tc_kimlik || "" }
+                      bilgiler: { ad: p?.bilgiler?.ad || "", tel: p?.bilgiler?.tel || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", dorsePlaka: plakaFiltre(e.target.value), tc_kimlik: p?.bilgiler?.tc_kimlik || "" }
                     }))}
                     style={{
                       padding: "16px 14px 16px 50px",
@@ -400,10 +496,11 @@ export default function IlanlarSayfasi() {
                 <input
                   type="text"
                   placeholder="TC Kimlik No *"
+                  maxLength={11}
                   value={secilenBasvuru?.bilgiler?.tc_kimlik || ""}
                   onChange={e => setSecilenBasvuru(p => ({
                     ...p,
-                    bilgiler: { ...p?.bilgiler, ad: p?.bilgiler?.ad || "", tel: p?.bilgiler?.tel || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", dorsePlaka: p?.bilgiler?.dorsePlaka || "", tc_kimlik: e.target.value }
+                    bilgiler: { ...p?.bilgiler, ad: p?.bilgiler?.ad || "", tel: p?.bilgiler?.tel || "", cekiciPlaka: p?.bilgiler?.cekiciPlaka || "", dorsePlaka: p?.bilgiler?.dorsePlaka || "", tc_kimlik: e.target.value.replace(/\D/g, "") }
                   }))}
                   style={{
                     width: "100%",
@@ -470,6 +567,14 @@ export default function IlanlarSayfasi() {
                   onClick={() => {
                     if (!secilenBasvuru?.bilgiler?.ad || !secilenBasvuru?.bilgiler?.tel || !secilenBasvuru?.bilgiler?.cekiciPlaka || !secilenBasvuru?.bilgiler?.dorsePlaka || !secilenBasvuru?.bilgiler?.tc_kimlik) {
                       alert("Lütfen tüm zorunlu alanları doldurun!");
+                      return;
+                    }
+                    if ((secilenBasvuru?.bilgiler?.tc_kimlik || "").length !== 11) {
+                      alert("TC Kimlik No 11 haneli olmalıdır!");
+                      return;
+                    }
+                    if ((secilenBasvuru?.bilgiler?.tel || "").replace(/\D/g, "").length < 10) {
+                      alert("Geçerli bir telefon numarası giriniz!");
                       return;
                     }
                     başvuruGonder(secilenBasvuru.id, {

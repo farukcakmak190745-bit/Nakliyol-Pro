@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
 import { supabase } from "../supabaseClient";
 import { useMesaj } from "./MesajContext";
 import { IconMap } from "../components/Icons";
+import { serviceWorkerKaydet, pushAboneligiKaydet, pushGonder } from "../utils/push";
 
 let supabaseInitialized = false;
 const initSupabase = () => {
@@ -21,6 +22,22 @@ let seferlerData = null;
 let tekliflerData = null;
 let usersData = null;
 let ihtilaflarData = null;
+
+// RLS sıkılaştırması sonrası tc_kimlik sütunu anon/authenticated'ten gizlendi.
+// Kullanıcı kendi TC'sini kendi_profilini_getir() SECURITY DEFINER RPC'sinden alır.
+// SQL henüz çalıştırılmadıysa RPC yoktur → mevcut kullanıcı nesnesi aynen döner.
+async function kendiTcKimliginiGetir(kullanici) {
+  if (!kullanici || !kullanici.id) return kullanici;
+  try {
+    const { data, error } = await supabase.rpc('kendi_profilini_getir');
+    if (!error && Array.isArray(data) && data.length > 0 && data[0].tc_kimlik) {
+      return { ...kullanici, tc_kimlik: data[0].tc_kimlik };
+    }
+  } catch (e) {
+    // RPC henüz yok (SQL çalıştırılmadı) — sessizce geç
+  }
+  return kullanici;
+}
 
 export const AppProvider = ({ children }) => {
   const { konusmaAc, mesajGonder, loadConversations, subscribeRealtime } = useMesaj();
@@ -140,7 +157,8 @@ export const AppProvider = ({ children }) => {
               firmaAdi: olusturanUser?.firma_adi || null,
               profilFoto: olusturanUser?.fotograf || fotoMap[String(ilan.olusturan_id)] || null,
               telefon: olusturanUser?.telefon || null,
-              olusturanPuan: olusturanUser?.puan || ilan.olusturanPuan || 5.0
+              olusturanPuan: olusturanUser?.puan ?? ilan.olusturanPuan ?? 5.0,
+              olusturanOySayisi: olusturanUser?.oy_sayisi ?? 0
             };
           });
           setIlanlar(ilanlarWithUsers);
@@ -187,7 +205,9 @@ export const AppProvider = ({ children }) => {
               await supabase.auth.signOut();
             } else if (userData) {
               console.log('✅ User verisi alındı:', userData);
-              setOturum(userData);
+              // tc_kimlik RLS sonrası gizlendi → kendi_profilini_getir RPC ile tamamla
+              const tamamlanmis = await kendiTcKimliginiGetir(userData);
+              setOturum(tamamlanmis);
             } else {
               console.error('❌ User yok! Session ID:', session.user.id);
             }
@@ -231,10 +251,11 @@ export const AppProvider = ({ children }) => {
   const [kamyoncuBasvuru, setKamyoncuBasvuru] = useState(null);
   const [seferOnayDurumu, setSeferOnayDurumu] = useState(() => ({}));
   const [ihtilaflar, setIhtilaflar] = useState([]);
+  const [seciliProfilId, setSeciliProfilId] = useState(null);
+  const [benimDegerlendirmelerim, setBenimDegerlendirmelerim] = useState([]);
 
   const kayitOl = useCallback(async (bilgiler) => {
-    console.log("📥 kayitOl fonksiyonuna gelen bilgiler:", bilgiler);
-    console.log("🎭 Rol kontrolü:", bilgiler.rol, typeof bilgiler.rol);
+    console.log("📥 kayitOl çağrıldı. Rol:", bilgiler.rol);
 
     if (!bilgiler.rol) {
       console.error("❌ Rol bilgisi eksik!");
@@ -252,10 +273,7 @@ export const AppProvider = ({ children }) => {
       const password = bilgiler.sifre; // Kullanıcı formdan girdiği şifre
 
       console.log("📱 Telefon:", telefon);
-      console.log("🔑 Şifre:", password ? "✓ Set" : "✗ Boş");
       console.log("👤 Ad:", bilgiler.ad);
-      console.log("🆔 TC:", bilgiler.tc_kimlik);
-      console.log("🎭 Rol:", bilgiler.rol, typeof bilgiler.rol);
 
       if (!telefon || telefon.length < 10) {
         throw new Error("Geçerli telefon numarası girin");
@@ -341,7 +359,7 @@ export const AppProvider = ({ children }) => {
                   console.log("⚠️ Rol boş, Supabase'den yeniden çekiliyor...");
                   const { data: freshUser } = await supabase
                     .from('users')
-                    .select('role, ad, tc_kimlik, telefon')
+                    .select('role, ad, telefon')
                     .eq('id', userId)
                     .single();
 
@@ -441,8 +459,13 @@ export const AppProvider = ({ children }) => {
               .single();
 
             if (freshUserData && freshUserData.role) {
-              setOturum(freshUserData);
-              return freshUserData;
+              // tc_kimlik RLS sonrası gizlendi → RPC ile tamamla, olmazsa form değerini kullan
+              const tamamlanmis = await kendiTcKimliginiGetir({
+                ...freshUserData,
+                tc_kimlik: freshUserData.tc_kimlik || bilgiler.tc
+              });
+              setOturum(tamamlanmis);
+              return tamamlanmis;
             }
           } catch (error) {
             console.error("Kayıt sonrası kullanıcı çekme hatası:", error);
@@ -465,9 +488,11 @@ export const AppProvider = ({ children }) => {
             .single();
 
           if (freshUserData && freshUserData.role) {
-            finalUser = freshUserData;
-            setOturum(freshUserData);
-            return freshUserData;
+            // tc_kimlik RLS sonrası gizlendi → RPC ile tamamla
+            const tamamlanmis = await kendiTcKimliginiGetir(freshUserData);
+            finalUser = tamamlanmis;
+            setOturum(tamamlanmis);
+            return tamamlanmis;
           }
         } catch (error) {
           console.error("Son kullanıcı çekme hatası:", error);
@@ -495,10 +520,15 @@ export const AppProvider = ({ children }) => {
           .single();
 
         if (userData) {
-          finalUser = userData;
-          setOturum(userData);
+          // tc_kimlik RLS sonrası gizlendi → RPC ile tamamla, olmazsa form değerini kullan
+          const tamamlanmis = await kendiTcKimliginiGetir({
+            ...userData,
+            tc_kimlik: userData.tc_kimlik || bilgiler.tc
+          });
+          finalUser = tamamlanmis;
+          setOturum(tamamlanmis);
           console.log("✅ Kayıt başarılı (sadece user var)");
-          return userData;
+          return tamamlanmis;
         }
       }
 
@@ -585,19 +615,24 @@ export const AppProvider = ({ children }) => {
       }
 
       if (freshUserData) {
-        setOturum(freshUserData);
-        return freshUserData;
+        // tc_kimlik RLS sonrası gizlendi → kendi_profilini_getir RPC ile tamamla
+        const tamamlanmis = await kendiTcKimliginiGetir(freshUserData);
+        setOturum(tamamlanmis);
+        return tamamlanmis;
       }
 
       // Session varsa oturumu oluştur
-      setOturum({
+      const fallbackOturum = {
         ...data.user,
         role: userData.role,
         ad: userData.ad,
         tc_kimlik: userData.tc_kimlik,
         email: email,
         session: data.session
-      });
+      };
+      // tc_kimlik RLS sonrası gizlendi → RPC ile tamamla
+      const tamamlanmisOturum = await kendiTcKimliginiGetir(fallbackOturum);
+      setOturum(tamamlanmisOturum);
       return { ...data.user, role: userData.role };
 
     } catch (error) {
@@ -656,7 +691,6 @@ export const AppProvider = ({ children }) => {
       ucret: yeni.ucret,
       tarih: yeni.tarih || new Date().toISOString().split("T")[0],
       sure: yeni.sure,
-      ton: yeni.ton || 0,
       arac_tip: yeni.aracTip,
       odeme_turu: yeni.odemeTuru || "pesin",
       odeme_gun: yeni.odemeGun || 0,
@@ -712,9 +746,24 @@ export const AppProvider = ({ children }) => {
         bosaltmaSaatBit: data.bosaltma_saat_bit || "",
         faturaBaslik: data.fatura_baslik || "",
         faturaDosya: data.fatura_dosya || null,
-        olusturanPuan: data.olusturan?.puan || 5.0
+        olusturanPuan: data.olusturan?.puan ?? 5.0,
+        olusturanOySayisi: data.olusturan?.oy_sayisi ?? 0
       };
       setIlanlar(prev => [normalizedData, ...prev]);
+
+      // Web Push: yeni ilan → tüm kamyonculara bildirim
+      try {
+        await pushGonder({
+          hedefRol: "kamyoncu",
+          baslik: "🚚 Yeni İlan",
+          icerik: `${yeni.yuk} · ${yeni.nereden} → ${yeni.nereye} · ₺${Number(yeni.ucret || 0).toLocaleString("tr-TR")}`,
+          url: "/#/app?sekme=ilanlar",
+          zorunlu: false
+        });
+      } catch (err) {
+        console.warn("Yeni ilan push gönderilemedi:", err);
+      }
+
       return normalizedData;
     } catch (error) {
       console.error("❌ İlan kaydedilemedi:", error);
@@ -761,9 +810,6 @@ export const AppProvider = ({ children }) => {
       return i;
     }));
 
-    const secilenTonaj = kamyoncu?.secilenTonaj || ilan.ton;
-    const ton = secilenTonaj === "serbest" ? 0 : parseInt(secilenTonaj);
-
     const yeniSefer = {
       yuk: ilan.yuk,
       nereden: ilan.nereden,
@@ -771,7 +817,6 @@ export const AppProvider = ({ children }) => {
       ucret: ilan.ucret,
       tarih: ilan.tarih,
       sure: ilan.sure,
-      ton: ton,
       arac_tip: ilan.arac_tip,
       ilan_id: ilanId,
       plaka: kamyoncu?.plaka || "Belirtilmedi",
@@ -788,8 +833,8 @@ export const AppProvider = ({ children }) => {
       odeme_durumu: "beklemede",
       odeme_turu: ilan.odeme_turu,
       odeme_gun: ilan.odeme_gun,
-      iban: ilan.iban || "",
-      iban_sahibi: ilan.iban_sahibi || "",
+      iban: kamyoncu?.iban || "",
+      iban_sahibi: kamyoncu?.ibanSahibi || kamyoncu?.ad || "",
     };
 
     if (supabase) {
@@ -900,7 +945,7 @@ export const AppProvider = ({ children }) => {
         .from('belgeler')
         .insert([{
           kullanici_id: userId,
-          rol: oturum.rol,
+          rol: oturum.role || oturum.rol || 'kamyoncu',
           dosya_adi: dosya.name,
           dosya_yolu: uploadData.path,
           url: publicUrl,
@@ -933,6 +978,17 @@ export const AppProvider = ({ children }) => {
     };
   }, [oturum?.id, loadConversations, subscribeRealtime]);
 
+  // Web Push: oturum açılınca service worker + abonelik kur
+  useEffect(() => {
+    if (!oturum?.id) return;
+    (async () => {
+      const swVarMi = await serviceWorkerKaydet();
+      if (swVarMi) {
+        await pushAboneligiKaydet(oturum.id);
+      }
+    })();
+  }, [oturum?.id]);
+
   const odemeYap = useCallback(async (seferId) => {
     const sefer = seferler.find(s => s.id === seferId);
     if (sefer && sefer.odemeDurumu === "beklemede") {
@@ -951,13 +1007,17 @@ export const AppProvider = ({ children }) => {
   }, [seferler, supabase]);
 
   const odemeGunleriniKabulEt = useCallback(async (seferId) => {
+    const sefer = seferler.find(s => s.id === seferId);
+    const odemeGun = Number(sefer?.odeme_gun || sefer?.odemeGun || 0);
+    const teslimTarihi = new Date(sefer?.tarih || new Date());
+    teslimTarihi.setDate(teslimTarihi.getDate() + odemeGun);
+    const teslimTarihiStr = teslimTarihi.toISOString().split("T")[0];
+
     setSeferler(prev => prev.map(s => {
       if (s.id === seferId) {
-        const teslimTarihi = new Date(s.tarih);
-        teslimTarihi.setDate(teslimTarihi.getDate() + (s.odemeGun || 0));
         return {
           ...s,
-          teslim_tarihi: teslimTarihi.toISOString().split("T")[0],
+          teslim_tarihi: teslimTarihiStr,
           durum: "teslima_bekleniyor"
         };
       }
@@ -965,17 +1025,14 @@ export const AppProvider = ({ children }) => {
     }));
 
     if (supabase) {
-      const sefer = seferler.find(s => s.id === seferId);
-      if (sefer) {
-        await supabase.from('seferler').update({
-          teslim_tarihi: new Date().toISOString().split("T")[0],
-          durum: "teslima_bekleniyor"
-        }).eq('id', seferId);
-      }
+      await supabase.from('seferler').update({
+        teslim_tarihi: teslimTarihiStr,
+        durum: "teslima_bekleniyor"
+      }).eq('id', seferId);
     }
   }, [seferler, supabase]);
 
-  const islemiTeslimEt = useCallback(async (seferId) => {
+  const islemiTeslimEt = useCallback(async (seferId, teslimBilgisi = null) => {
     const sefer = seferler.find(s => s.id === seferId);
     const teslimTarihi = new Date().toISOString().split("T")[0];
     // Vadeli ödeme: teslim tarihi + ödeme günü → vade tarihi
@@ -995,19 +1052,28 @@ export const AppProvider = ({ children }) => {
           durum: "teslima_bekleniyor",
           teslim_tarihi: teslimTarihi,
           vade_tarihi: vadeTarihi,
-          odeme_durumu: "beklemede"
+          odeme_durumu: "beklemede",
+          teslim: teslimBilgisi,
+          iban: teslimBilgisi?.iban || s.iban || "",
+          iban_sahibi: teslimBilgisi?.iban_sahibi || s.iban_sahibi || s.ibanSahibi || ""
         };
       }
       return s;
     }));
 
     if (supabase) {
-      await supabase.from('seferler').update({
+      const guncelle = {
         durum: "teslima_bekleniyor",
         teslim_tarihi: teslimTarihi,
         vade_tarihi: vadeTarihi,
         odeme_durumu: "beklemede"
-      }).eq('id', seferId);
+      };
+      if (teslimBilgisi) {
+        guncelle.teslim = teslimBilgisi;
+        if (teslimBilgisi.iban) guncelle.iban = teslimBilgisi.iban;
+        if (teslimBilgisi.iban_sahibi) guncelle.iban_sahibi = teslimBilgisi.iban_sahibi;
+      }
+      await supabase.from('seferler').update(guncelle).eq('id', seferId);
 
       // İşverene teslim bildirimi
       if (sefer?.olusturan_id) {
@@ -1024,18 +1090,33 @@ export const AppProvider = ({ children }) => {
         }
       }
     }
+
+    // Web Push: iş teslim edildi → işverene bildirim
+    if (sefer?.olusturan_id) {
+      try {
+        await pushGonder({
+          hedefKullaniciId: sefer.olusturan_id,
+          baslik: "📦 İş Teslim Edildi",
+          icerik: `${sefer.yuk || ''} · ${sefer.nereden || ''} → ${sefer.nereye || ''}\n\nKamyoncu işi teslim etti, ödeme bekleniyor.`,
+          url: "/#/app?sekme=teklifler",
+          zorunlu: false
+        });
+      } catch (err) {
+        console.warn("Teslim push gönderilemedi:", err);
+      }
+    }
   }, [supabase, seferler]);
 
   const odemeOnayla = useCallback(async (seferId) => {
     const sefer = seferler.find(s => s.id === seferId);
     if (!sefer) return;
     const odemeTarihi = new Date().toISOString().split("T")[0];
-    setSeferler(prev => prev.map(s => s.id === seferId ? { ...s, durum: "odendi", odeme_durumu: "odendi", odeme_tarihi: odemeTarihi } : s));
+    setSeferler(prev => prev.map(s => s.id === seferId ? { ...s, durum: "tamamlandı", odeme_durumu: "odendi", odeme_tarihi: odemeTarihi } : s));
 
     if (supabase) {
       try {
         await supabase.from('seferler').update({
-          durum: "odendi",
+          durum: "tamamlandı",
           odeme_durumu: "odendi",
           odeme_tarihi: odemeTarihi
         }).eq('id', seferId);
@@ -1060,15 +1141,33 @@ export const AppProvider = ({ children }) => {
         console.error('Ödeme onaylama hatası:', err);
       }
     }
+
+    // Web Push: ödeme onaylandı → kamyoncuya bildirim
+    if (sefer.kamyoncu_user_id) {
+      try {
+        await pushGonder({
+          hedefKullaniciId: sefer.kamyoncu_user_id,
+          baslik: "💰 Ödemeniz Onaylandı",
+          icerik: `${sefer.yuk || ''} · ${sefer.nereden || ''} → ${sefer.nereye || ''}\n\nİşveren ödemeyi onayladı, iş tamamlandı.`,
+          url: "/#/app?sekme=seferler",
+          zorunlu: false
+        });
+      } catch (err) {
+        console.warn("Ödeme push gönderilemedi:", err);
+      }
+    }
   }, [seferler, supabase]);
 
   const ihtilafAc = useCallback(async (seferId, sebep) => {
     const sefer = seferler.find(s => s.id === seferId);
     if (!sefer || !sebep || !sebep.trim()) return;
+    // Karşı taraf: ihtilafı açan kim değilse o taraf
+    const hedefId = sefer.olusturan_id === oturum?.id ? sefer.kamyoncu_user_id : sefer.olusturan_id;
     const yeni = {
       sefer_id: seferId,
       acan_id: oturum?.id,
       acan_rol: oturum?.rol || "kamyoncu",
+      hedef_id: hedefId || null,
       sebep: sebep.trim(),
       durum: "acik",
       admin_notu: null,
@@ -1301,10 +1400,22 @@ export const AppProvider = ({ children }) => {
 
   const başvuruGonder = useCallback(async (ilanId, bilgiler) => {
     // DEBUG: başvuruGonder çağrılıyor mu?
-    console.log('🚀 başvuruGonder ÇAĞRILDI', { ilanId, bilgiler, supabaseVarMi: !!supabase, ilanSayisi: ilanlar?.length });
+    console.log('🚀 başvuruGonder ÇAĞRILDI', { ilanId, supabaseVarMi: !!supabase, ilanSayisi: ilanlar?.length });
 
     setKamyoncuBasvuru({ ilanId, ...bilgiler });
     setSeferOnayDurumu(prev => ({ ...prev, [ilanId]: "bekliyor_onay" }));
+
+    // Aynı ilana zaten bekleyen başvuru varsa tekrar gönderme (çift tıklama koruması)
+    const zatenVar = (seferler || []).some(s =>
+      (s.ilan_id === ilanId || s.ilanId === ilanId) &&
+      s.kamyoncu_user_id === oturum?.id &&
+      s.durum === "bekliyor"
+    );
+    if (zatenVar) {
+      console.warn('⚠️ Bu ilana zaten bekleyen başvurunuz var:', ilanId);
+      alert('Bu ilana başvurunuz zaten gönderilmiş. İşveren onayı bekleniyor.');
+      return;
+    }
 
     const ilan = ilanlar.find(i => i.id === ilanId);
     if (!ilan) {
@@ -1355,10 +1466,9 @@ export const AppProvider = ({ children }) => {
       ucret: ilan.ucret,
       tarih: ilan.tarih,
       sure: ilan.sure,
-      ton: 0,
       arac_tip: ilan.arac_tip,
       ilan_id: ilan.id,
-      plaka: "",
+      plaka: bilgiler.cekiciPlaka || "",
       // Şoförün bilgileri (formdan gelir — işverenin firmaya verdiği personel)
       kamyoncu: bilgiler.ad,
       kamyoncu_tel: bilgiler.tel,
@@ -1375,8 +1485,8 @@ export const AppProvider = ({ children }) => {
       odeme_durumu: "beklemede",
       odeme_turu: ilan.odeme_turu,
       odeme_gun: ilan.odeme_gun,
-      iban: ilan.iban || "",
-      iban_sahibi: ilan.iban_sahibi || "",
+      iban: oturum?.iban || "",
+      iban_sahibi: oturum?.ibanSahibi || oturum?.ad || "",
     };
 
     if (supabase) {
@@ -1415,6 +1525,19 @@ export const AppProvider = ({ children }) => {
     }
 
     setSeferler(prev => [yeniSefer, ...prev]);
+
+    // Web Push: yeni başvuru → işverene bildirim
+    try {
+      await pushGonder({
+        hedefKullaniciId: ilan.olusturan_id,
+        baslik: "📩 Yeni Başvuru",
+        icerik: `${bilgiler.ad} · ${ilan.yuk} · ${ilan.nereden} → ${ilan.nereye}\n\nÇekici: ${bilgiler.cekiciPlaka} · Dorse: ${bilgiler.dorsePlaka}`,
+        url: "/#/app?sekme=teklifler",
+        zorunlu: false
+      });
+    } catch (err) {
+      console.warn("Başvuru push gönderilemedi:", err);
+    }
   }, [ilanlar, supabase, oturum]);
 
   const ilaniOnayla = useCallback(async (ilanId, kamyoncuAd, kamyoncuTel, plaka, dorsePlaka, tc) => {
@@ -1445,8 +1568,8 @@ export const AppProvider = ({ children }) => {
     console.log('✅ Onanacak sefer bulundu:', mevcutSefer.id);
 
     const guncelSefer = {
-      plaka: plaka,
-      dorse_plaka: dorsePlaka,
+      plaka: plaka || mevcutSefer.plaka || mevcutSefer.cekiciPlaka || "",
+      dorse_plaka: dorsePlaka || mevcutSefer.dorse_plaka || "",
       kamyoncu: kamyoncuAd,
       kamyoncu_tel: kamyoncuTel,
       kamyoncu_tc: tc,
@@ -1456,8 +1579,8 @@ export const AppProvider = ({ children }) => {
       belgeler: [],
       odeme_tarihi: null,
       odeme_durumu: "beklemede",
-      iban: mevcutSefer.iban || ilan.iban || "",
-      iban_sahibi: mevcutSefer.ibanSahibi || ilan.ibanSahibi || "",
+      iban: mevcutSefer.iban || "",
+      iban_sahibi: mevcutSefer.iban_sahibi || mevcutSefer.ibanSahibi || "",
     };
 
     if (supabase) {
@@ -1478,14 +1601,18 @@ export const AppProvider = ({ children }) => {
     // Eski kayıtlar için fallback: tc/telefon ile users tablosundan bul.
     let kamyoncuUserId = mevcutSefer.kamyoncu_user_id || null;
     if (!kamyoncuUserId && supabase) {
-      // Önce tc ile dene
+      // Önce tc ile dene (tc_kimlik sütunu RLS sonrası gizli olabilir → hata olursa telefon fallback'e geç)
       if (tc) {
-        const { data: u } = await supabase
-          .from('users')
-          .select('id')
-          .eq('tc_kimlik', tc)
-          .maybeSingle();
-        if (u) { kamyoncuUserId = u.id; console.log('✅ Kamyoncu user bulundu (tc fallback):', kamyoncuUserId); }
+        try {
+          const { data: u } = await supabase
+            .from('users')
+            .select('id')
+            .eq('tc_kimlik', tc)
+            .maybeSingle();
+          if (u) { kamyoncuUserId = u.id; console.log('✅ Kamyoncu user bulundu (tc fallback):', kamyoncuUserId); }
+        } catch (tcHata) {
+          console.warn('⚠️ tc ile kullanıcı bulunamadı (RLS engelleyebilir), telefon ile deneniyor:', tcHata?.message);
+        }
       }
       // Sonra telefon ile dene
       if (!kamyoncuUserId && kamyoncuTel) {
@@ -1566,6 +1693,21 @@ export const AppProvider = ({ children }) => {
         await mesajGonder(yeniKonusma, "🧾 Fatura dosyası", faturaTipi, ilan.faturaDosya);
       }
       console.log('✅ mesajGonder tamamlandı');
+    }
+
+    // Web Push: başvuru onaylandı → kamyoncuya bildirim
+    if (kamyoncuUserId) {
+      try {
+        await pushGonder({
+          hedefKullaniciId: kamyoncuUserId,
+          baslik: "✅ Başvurunuz Onaylandı",
+          icerik: `${ilan.yuk} · ${ilan.nereden} → ${ilan.nereye}\n\nİşveren başvurunuzu kabul etti. Detaylar için konuşmayı açın.`,
+          url: "/#/app?sekme=seferler",
+          zorunlu: false
+        });
+      } catch (err) {
+        console.warn("Onay push gönderilemedi:", err);
+      }
     }
   }, [ilanlar, seferler, konusmaAc, mesajGonder, supabase, oturum]);
 
@@ -1736,17 +1878,20 @@ export const AppProvider = ({ children }) => {
 
   const bekleyenOnaylariGetir = useCallback(() => {
     const onayBekleyenler = [];
-    if (seferOnayDurumu && typeof seferOnayDurumu.forEach === 'function') {
+    if (seferOnayDurumu && typeof seferOnayDurumu === 'object') {
       Object.entries(seferOnayDurumu).forEach(([ilanId, durum]) => {
         if (durum === "bekliyor_onay") {
           const ilan = ilanlar.find(i => i.id === ilanId);
-          if (ilan && kamyoncuBasvuru && kamyoncuBasvuru.ilanId === ilanId) {
+          if (ilan) {
+            const basvuruBilgileri = (kamyoncuBasvuru && kamyoncuBasvuru.ilanId === ilanId)
+              ? (kamyoncuBasvuru.bilgiler || kamyoncuBasvuru)
+              : null;
             onayBekleyenler.push({
               ilanId,
               yuk: ilan.yuk,
               nereden: ilan.nereden,
               nereye: ilan.nereye,
-              bilgiler: kamyoncuBasvuru.bilgiler,
+              bilgiler: basvuruBilgileri,
             });
           }
         }
@@ -1764,7 +1909,7 @@ export const AppProvider = ({ children }) => {
       yuk: ilan.yuk,
       nereden: ilan.nereden,
       nereye: ilan.nereye,
-      bilgiler: kamyoncuBasvuru.bilgiler,
+      bilgiler: kamyoncuBasvuru.bilgiler || kamyoncuBasvuru,
     }];
   }, [kamyoncuBasvuru, ilanlar]);
 
@@ -1888,6 +2033,16 @@ export const AppProvider = ({ children }) => {
         if (data) setBildirimlerList(data);
       };
       refreshBildirimler();
+
+      // RLS sonrası anon seferleri/teklifleri göremez; oturum açılınca ilk veriyi çek
+      const refreshTeklifler = async () => {
+        const { data } = await supabase.from('teklifler').select('*');
+        if (data) setTeklifler(data);
+      };
+      refreshTeklifler();
+      // "Teklifler" sekmesi seferler tablosunu render ediyor — seferler RLS gerektirdiği
+      // için oturum açılmadan önce boş gelir, bu yüzden oturum açılınca yeniden yükle.
+      seferleriYenile();
     }
 
     // Cleanup: tüm kanalları kapat ve intervali temizle
@@ -1902,12 +2057,97 @@ export const AppProvider = ({ children }) => {
     };
   }, [supabase, oturum?.id, seferleriYenile]);
 
+  // =============================================
+  // PROFİL GÖRÜNTÜLEME + DEĞERLENDİRME SİSTEMİ
+  // =============================================
+  const profiliGoster = useCallback((userId) => {
+    if (!userId) return;
+    setSeciliProfilId(userId);
+  }, []);
+
+  const profiliKapat = useCallback(() => setSeciliProfilId(null), []);
+
+  const degerlendirmelerimYenile = useCallback(async () => {
+    if (!supabase || !oturum?.id) return;
+    try {
+      const { data } = await supabase
+        .from('degerlendirmeler')
+        .select('id, sefer_id, hedef_kullanici_id, puan')
+        .eq('degerlendiren_id', oturum.id);
+      setBenimDegerlendirmelerim(data || []);
+    } catch (err) {
+      console.error('Değerlendirmelerim yüklenemedi:', err);
+    }
+  }, [supabase, oturum?.id]);
+
+  useEffect(() => {
+    degerlendirmelerimYenile();
+  }, [degerlendirmelerimYenile]);
+
+  const benimDegerlendirdiklerim = useMemo(
+    () => new Set(benimDegerlendirmelerim.map(r => r.sefer_id)),
+    [benimDegerlendirmelerim]
+  );
+
+  const degerlendirmeleriGetir = useCallback(async (hedefId) => {
+    if (!supabase || !hedefId) return [];
+    try {
+      const { data, error } = await supabase
+        .from('degerlendirmeler')
+        .select('id, puan, yorum, olusturma_zamani, degerlendiren_id, hedef_kullanici_id')
+        .eq('hedef_kullanici_id', hedefId)
+        .order('olusturma_zamani', { ascending: false })
+        .limit(50);
+      if (error || !data?.length) {
+        if (error) console.error('Değerlendirmeler alınamadı:', error);
+        return [];
+      }
+      const degerlendirenIds = [...new Set(data.map(d => d.degerlendiren_id))];
+      const { data: degerlendirenler } = await supabase
+        .from('users')
+        .select('*')
+        .in('id', degerlendirenIds);
+      const kullaniciMap = Object.fromEntries((degerlendirenler || []).map(u => [u.id, u]));
+      return data.map(d => ({ ...d, degerlendiren: kullaniciMap[d.degerlendiren_id] || null }));
+    } catch (err) {
+      console.error('Değerlendirmeler alınamadı:', err);
+      return [];
+    }
+  }, [supabase]);
+
+  const degerlendirmeGonder = useCallback(async ({ hedefId, seferId, puan, yorum }) => {
+    if (!supabase || !hedefId || !seferId) return { ok: false, error: 'Eksik bilgi' };
+    const { data, error } = await supabase.rpc('degerlendirme_ekle', {
+      p_hedef: hedefId,
+      p_sefer: seferId,
+      p_puan: puan,
+      p_yorum: yorum || null
+    });
+    if (error) {
+      console.error('Değerlendirme gönderilemedi:', error);
+      return { ok: false, error: error.message };
+    }
+    await degerlendirmelerimYenile();
+    const { data: usersData } = await supabase.from('users').select('*');
+    if (usersData) {
+      setKullanicilar(usersData);
+      setIlanlar(prev => prev.map(i => {
+        const u = usersData.find(x => x.id === i.olusturan_id);
+        return u ? { ...i, olusturanPuan: u.puan, olusturanOySayisi: u.oy_sayisi } : i;
+      }));
+    }
+    return { ok: true, data };
+  }, [supabase, oturum?.id, degerlendirmelerimYenile]);
+
   return (
     <Ctx.Provider value={{
       oturum, loading, kullanicilar: adminKullanicilar, ilanlar, setIlanlar, seferler, teklifler, konusmalar,
       kayitOl, girisYap, cikisYap,
       ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle, profilGuncelle, kullaniciBelgesiYukle,
       konusmaOluştur, ilkMesajiGonder,
+      seciliProfilId, profiliGoster, profiliKapat,
+      benimDegerlendirmelerim, benimDegerlendirdiklerim, degerlendirmelerimYenile,
+      degerlendirmeleriGetir, degerlendirmeGonder,
       bildirimler: bildirimlerList, bildirimGoster, bildirimGuncelle, setBildirimlerList, gosterenBildirim, setGosterenBildirim,
       kamyoncuBasvuru, setKamyoncuBasvuru,
       seferOnayDurumu, ilaniOnayla, ilaniReddet, ilaniptalEt, kamyoncuIptalEt,

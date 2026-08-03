@@ -12,6 +12,9 @@
 DROP POLICY IF EXISTS "Users can view own messages" ON messages;
 DROP POLICY IF EXISTS "Users can insert messages" ON messages;
 DROP POLICY IF EXISTS "Users can delete messages" ON messages;
+DROP POLICY IF EXISTS "messages_select_policy" ON messages;
+DROP POLICY IF EXISTS "messages_insert_policy" ON messages;
+DROP POLICY IF EXISTS "messages_delete_policy" ON messages;
 
 -- Yeni: SELECT policy — bir mesajı ancak ait olduğu konuşmanın
 -- user_id'si veya partner_id'si isen görebilirsin

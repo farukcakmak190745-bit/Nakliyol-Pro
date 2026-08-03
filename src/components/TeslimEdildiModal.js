@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useMesaj } from "../context/MesajContext";
+import { harfFiltre } from "../utils/inputFilters";
 import { formatTarih } from "./UI";
 
 export default function TeslimEdildiModal({ sefer, onClose }) {
@@ -39,16 +40,30 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
       alert("Lütfen teslimat açıklaması giriniz!");
       return;
     }
-    if (!iban.trim()) {
+    const temizIban = iban.replace(/[^A-Z0-9]/g, "");
+    if (!temizIban) {
       alert("Lütfen IBAN numaranızı giriniz!");
+      return;
+    }
+    if (temizIban.length !== 26 || !temizIban.startsWith("TR")) {
+      alert("IBAN 26 haneli olmalıdır (TR + 24 hane). Örnek: TR330006100519786457841326");
       return;
     }
     if (gonderiyor) return;
     setGonderiyor(true);
 
     try {
-      // 1) Sefer durumunu güncelle
-      await islemiTeslimEt(sefer.id);
+      // 1) Sefer durumunu güncelle + IBAN/isim/evrak bilgisini sefere kaydet
+      await islemiTeslimEt(sefer.id, {
+        iban: iban.trim(),
+        iban_sahibi: ibanSahibi.trim(),
+        evrak: dosya ? {
+          tip: dosya.tip,
+          ad: dosyaAdi,
+          veri: dosya.veri,
+          boyut: dosya.boyut
+        } : null
+      });
 
       // 1b) Teslim evrağını sefere ekle
       if (dosya) {
@@ -165,7 +180,7 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
           <input
             type="text"
             value={ibanSahibi}
-            onChange={e => setIbanSahibi(e.target.value)}
+            onChange={e => setIbanSahibi(harfFiltre(e.target.value, 60))}
             placeholder="Ad Soyad / Firma Adı"
             style={{
               width: "100%", padding: "14px",
@@ -184,7 +199,8 @@ export default function TeslimEdildiModal({ sefer, onClose }) {
           <input
             type="text"
             value={iban}
-            onChange={e => setIban(e.target.value)}
+            maxLength={26}
+            onChange={e => setIban(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 26))}
             placeholder="TR00 0000 0000 0000 0000 0000 00"
             style={{
               width: "100%", padding: "14px",

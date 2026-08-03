@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { IconMap } from "../components/Icons";
+import { harfFiltre, plakaFiltre, rakamFiltre } from "../utils/inputFilters";
 
 export default function AyarlarSayfasi() {
   const { oturum, bildirimler, bildirimGuncelle, profilGuncelle, cikisYap } = useApp();
@@ -34,13 +35,13 @@ export default function AyarlarSayfasi() {
     e.preventDefault();
     const form = e.target;
     const payload = {
-      ad: form.ad.value.trim(),
-      telefon: form.telefon.value.trim(),
-      tc_kimlik: form.tc_kimlik.value.trim(),
+      ad: harfFiltre(form.ad.value.trim(), 60),
+      telefon: rakamFiltre(form.telefon.value.trim(), 11),
+      tc_kimlik: rakamFiltre(form.tc_kimlik.value.trim(), 11),
     };
     if (isKamyoncu) {
-      payload.plaka = form.plaka.value.trim();
-      payload.dorse_plaka = form.dorse_plaka.value.trim();
+      payload.plaka = plakaFiltre(form.plaka.value.trim());
+      payload.dorse_plaka = plakaFiltre(form.dorse_plaka.value.trim());
     }
     const sonuc = await profilGuncelle(payload);
     if (sonuc.ok) {

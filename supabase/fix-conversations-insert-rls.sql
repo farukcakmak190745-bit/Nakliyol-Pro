@@ -11,6 +11,10 @@ DROP POLICY IF EXISTS "Users can see their conversations" ON conversations;
 DROP POLICY IF EXISTS "Users can insert conversations" ON conversations;
 DROP POLICY IF EXISTS "Users can update conversations" ON conversations;
 DROP POLICY IF EXISTS "Users can delete conversations" ON conversations;
+DROP POLICY IF EXISTS "conversations_select" ON conversations;
+DROP POLICY IF EXISTS "conversations_insert" ON conversations;
+DROP POLICY IF EXISTS "conversations_update" ON conversations;
+DROP POLICY IF EXISTS "conversations_delete" ON conversations;
 
 -- SELECT: her iki taraf da görebilir
 CREATE POLICY "conversations_select" ON conversations

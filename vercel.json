@@ -1,0 +1,10 @@
+{
+  "framework": "create-react-app",
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "functions": {
+    "api/push.js": {
+      "maxDuration": 10
+    }
+  }
+}
