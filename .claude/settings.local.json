@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(npm run *)",
+      "Bash(npm start *)",
+      "Bash(curl http://localhost:3000 --max-time 5 --fail)",
+      "Bash(npx react-scripts *)",
+      "Bash(tee react-start.log)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3000)",
+      "Bash(npm install *)",
+      "Bash(curl -s \"http://localhost:3000/static/js/main.c8c3f8a4.js\")",
+      "Bash(git commit -m 'fix: Add null check for oturum.role to prevent React #130 error *)",
+      "Bash(npx serve *)",
+      "Bash(git commit -m 'fix: Add null checks for sefer values in SeferlerSayfasi and BottomNav *)",
+      "Bash(git commit -m 'fix: Complete null checks for all sefer values and add safe render *)",
+      "Bash(git commit -m 'fix: Add null checks for all remaining sefer properties *)",
+      "Bash(git commit -m 'fix: Add null checks for seferlerList filter and fix filter syntax *)",
+      "Bash(git commit -m 'fix: Add null check for seferlerList array in SeferlerSayfasi *)",
+      "Bash(findstr LISTENING)",
+      "Bash(git commit -m 'fix: Add index and better logging for sefer validation *)",
+      "Bash(git commit -m 'fix: Fix React Error #130 and GoTrueClient multiple instances *)",
+      "Bash(git commit -m 'fix: Complete React Error #130 fix - fix all undefined keys *)",
+      "Bash(git commit *)",
+      "Bash(npx eslint *)",
+      "Bash(awk '/^export default function/ {found=1} found {print NR\": \"$0}' src/components/ProfilKart.js)",
+      "Bash(grep -n \"^  return$\" src/pages/issiz/IssizSayfalar.js src/pages/ChatSayfasi.js src/pages/BildirimlerSayfasi.js)",
+      "Bash(findstr /S /N /C:\".baslik\" /C:\".icerik\" /C:\".icon\" /C:\".resim\" /C:\".bg\" /C:\".gonderen\" /C:\".metin\" /C:\".partnerAd\" /C:\".partnerRol\" src\\\\components\\\\*.js src\\\\pages\\\\*.js src\\\\pages\\\\*\\\\*.js)",
+      "Bash(findstr /V \"optional chaining\")",
+      "Bash(findstr /V \"gosterenBildirim\")"
+    ]
+  }
+}

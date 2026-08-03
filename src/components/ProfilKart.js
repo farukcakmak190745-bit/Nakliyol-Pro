@@ -5,6 +5,8 @@ import { IconMap } from "./Icons";
 import { Yildizlar } from "./Yildizlar";
 import { formatTarih } from "./UI";
 import { harfFiltre, plakaFiltre, rakamFiltre } from "../utils/inputFilters";
+import { kullaniciSeferOzeti, yorumDagilimi } from "../utils/istatistik";
+import { belgeleriGetir as belgeleriGetirApi } from "../utils/belgeler";
 
 // TC Kimlik No doğrulama: 11 hane + algoritma (ilk 10 hane toplamı vs 11. hane)
 const tcDogrula = (tc) => {
@@ -51,12 +53,8 @@ export default function ProfilKart({ rol, userId }) {
 
   const kullanici = userId && kullaniciBilgileri ? kullaniciBilgileri.find(u => u.id === userId) || seciliKullanici : seciliKullanici || oturum;
 
-  const kullaniciSeferleri = seferler?.filter(s =>
-    isKamyoncu ? s.kamyoncu_user_id === kullanici?.id : s.olusturan_id === kullanici?.id
-  ) || [];
+  const { seferler: kullaniciSeferleri, tamamlanan: tamamlananSefer, basariOrani } = kullaniciSeferOzeti(seferler, kullanici?.id, isKamyoncu);
   const kullaniciIlanlari = ilanlar?.filter(i => i.olusturan_id === kullanici?.id) || [];
-  const tamamlananSefer = kullaniciSeferleri.filter(s => s.durum === "teslim_edildi" || s.durum === "tamamlandi").length;
-  const basariOrani = kullaniciSeferleri.length > 0 ? Math.round((tamamlananSefer / kullaniciSeferleri.length) * 100) : 0;
 
   const statlar = isKamyoncu
     ? [
@@ -134,11 +132,10 @@ export default function ProfilKart({ rol, userId }) {
   const belgeleriGetir = async () => {
     if (!seciliKullanici?.id) return;
     try {
-      const { data } = await supabase
-        .from('belgeler')
-        .select('*')
-        .eq('kullanici_id', seciliKullanici.id)
-        .eq('rol', isKamyoncu ? 'kamyoncu' : 'issiz');
+      const { data } = await belgeleriGetirApi(supabase, {
+        kullaniciId: seciliKullanici.id,
+        rol: isKamyoncu ? 'kamyoncu' : 'issiz'
+      });
       setBelgelerim(data || []);
     } catch (err) {
       console.error('Belgeler yüklenemedi:', err);
@@ -270,12 +267,8 @@ export default function ProfilKart({ rol, userId }) {
   const tamamlananBelge = kullanicininBelgeleri.filter(b => b?.onaylandi).length;
   const belgeYuzdesi = belgeTanimlari?.length ? Math.round((tamamlananBelge / belgeTanimlari.length) * 100) : 0;
 
-  const dagilim = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-  (yorumListesi || []).forEach(y => { if (dagilim[y.puan] !== undefined) dagilim[y.puan]++; });
-  const ortalama = yorumListesi.length
-    ? (yorumListesi.reduce((t, y) => t + Number(y.puan), 0) / yorumListesi.length)
-    : (Number(kullanici?.puan) || 0);
-  const oySayisi = yorumListesi.length || Number(kullanici?.oy_sayisi) || 0;
+  const { dagilim, ortalama, oySayisi: yorumSayisi } = yorumDagilimi(yorumListesi, kullanici?.puan);
+  const oySayisi = yorumSayisi || Number(kullanici?.oy_sayisi) || 0;
 
   const stl = {
     kapsayici: { padding: 0, paddingBottom: 130 },

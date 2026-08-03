@@ -3,6 +3,8 @@ import { useApp } from "../../context/AppContext";
 import { supabase } from "../../supabaseClient";
 import { IconMap } from "../../components/Icons";
 import { formatTarih, vadeTarihiniBul, vadeGectiMi, EmptyState } from "../../components/UI";
+import { kullaniciIstatistik as kullaniciIstatistikUtil, gelirVerisi as gelirVerisiUtil } from "../../utils/istatistik";
+import { belgeleriGetir as belgeleriGetirApi, belgeOnayla as belgeOnaylaApi } from "../../utils/belgeler";
 
 const menu = [
   { key: "ozet", icon: "activity", label: "Özet", renk: "#1d4ed8" },
@@ -229,11 +231,7 @@ export default function AdminPanel() {
   const belgeleriGetir = async () => {
     setBelgelerYukleniyor(true);
     try {
-      const { data } = await supabase
-        .from('belgeler')
-        .select('*')
-        .order('olusturulma_tarihi', { ascending: false })
-        .limit(200);
+      const { data } = await belgeleriGetirApi(supabase, { limit: 200 });
       setBelgeler(data || []);
     } catch (err) {
       console.error('Belgeler yüklenemedi:', err);
@@ -244,7 +242,7 @@ export default function AdminPanel() {
 
   const belgeOnayla = async (b, onayliMi) => {
     try {
-      await supabase.from('belgeler').update({ onaylandi: onayliMi }).eq('id', b.id);
+      await belgeOnaylaApi(supabase, b.id, onayliMi);
       await bildirimGonder(b.kullanici_id, onayliMi ? "✅ Belgeniz onaylandı" : "⚠️ Belgeniz reddedildi",
         `"${b.dosya_adi || 'Belge'}" ${onayliMi ? "onaylandı. Artık profil güvenilirliğiniz arttı." : "reddedildi. Lütfen yeniden yükleyin veya destekle iletişime geçin."}`);
       setBelgeler(prev => prev.map(x => x.id === b.id ? { ...x, onaylandi: onayliMi } : x));
@@ -290,47 +288,13 @@ export default function AdminPanel() {
     return durum === belgeFiltre;
   });
 
-  const kullaniciIstatistik = (k) => {
-    const id = k.id;
-    return {
-      ilanSayisi: ilanlarList.filter(i => i.olusturan_id === id).length,
-      seferSayisi: seferlerList.filter(s => s.kamyoncu_user_id === id || s.olusturan_id === id).length,
-      tamamlanan: seferlerList.filter(s => (s.kamyoncu_user_id === id || s.olusturan_id === id) && (s.durum === "odendi" || s.durum === "tamamlandı")).length,
-      ihtilafSayisi: ihtilaflarList.filter(i => i.acan_id === id).length,
-    };
-  };
+  const kullaniciIstatistik = (k) => kullaniciIstatistikUtil(k, {
+    ilanlar: ilanlarList,
+    seferler: seferlerList,
+    ihtilaflar: ihtilaflarList
+  });
 
-  const gelirVerisi = useMemo(() => {
-    const odendiler = seferlerList.filter(s => s.durum === "odendi" || s.durum === "tamamlandı" || s.durum === "tamamlandi");
-    const bekleyenler = seferlerList.filter(s => s.durum === "teslima_bekleniyor");
-    const toplam = odendiler.reduce((t, s) => t + Number(s.ucret || 0), 0);
-    const bekleyenToplam = bekleyenler.reduce((t, s) => t + Number(s.ucret || 0), 0);
-    const komisyon = toplam * 0.03;
-
-    // Kamyoncu bazlı kazanç
-    const kamyoncuGelir = {};
-    odendiler.forEach(s => {
-      const ad = s.kamyoncu || "Bilinmeyen";
-      kamyoncuGelir[ad] = (kamyoncuGelir[ad] || 0) + Number(s.ucret || 0);
-    });
-    const topKamyoncular = Object.entries(kamyoncuGelir).sort((a, b) => b[1] - a[1]).slice(0, 5);
-
-    // Aylık dağılım
-    const aylik = {};
-    odendiler.forEach(s => {
-      const d = s.odeme_tarihi ? new Date(s.odeme_tarihi) : null;
-      if (!d || isNaN(d.getTime())) return;
-      const anahtar = `${d.getMonth() + 1}.${d.getFullYear()}`;
-      aylik[anahtar] = (aylik[anahtar] || 0) + Number(s.ucret || 0);
-    });
-    const aylikListe = Object.entries(aylik).sort((a, b) => {
-      const [ay1, yil1] = a[0].split(".").map(Number);
-      const [ay2, yil2] = b[0].split(".").map(Number);
-      return (yil2 - yil1) || (ay2 - ay1);
-    }).slice(0, 6);
-
-    return { odendiler, bekleyenler, toplam, bekleyenToplam, komisyon, topKamyoncular, aylikListe };
-  }, [seferlerList]);
+  const gelirVerisi = useMemo(() => gelirVerisiUtil(seferlerList), [seferlerList]);
 
   const onayBekleyenBelgeSayisi = belgeler.filter(b => !b.onaylandi).length;
 

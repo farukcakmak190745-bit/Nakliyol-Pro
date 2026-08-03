@@ -3,6 +3,7 @@ import { useApp } from "../context/AppContext";
 import { supabase } from "../supabaseClient";
 import { Yildizlar } from "./Yildizlar";
 import { formatTarih } from "./UI";
+import { kullaniciSeferOzeti, yorumDagilimi } from "../utils/istatistik";
 
 const renkler = {
   kamyoncu: {
@@ -60,25 +61,15 @@ export default function HalkaAcikProfil({ onGeri, onMesajGonder }) {
   const c = renkler[isKamyoncu ? "kamyoncu" : "issiz"];
   const kendiProfili = seciliProfilId && oturum && seciliProfilId === oturum.id;
 
-  const hedefSeferleri = (seferler || []).filter(s =>
-    isKamyoncu ? s.kamyoncu_user_id === kullanici?.id : s.olusturan_id === kullanici?.id
-  );
-  const tamamlanan = hedefSeferleri.filter(s =>
-    s.durum === "odendi" || s.durum === "tamamlandı" || s.durum === "tamamlandi"
-  ).length;
-  const basari = hedefSeferleri.length > 0 ? Math.round((tamamlanan / hedefSeferleri.length) * 100) : 0;
+  const { seferler: hedefSeferleri, tamamlanan, basariOrani } = kullaniciSeferOzeti(seferler, kullanici?.id, isKamyoncu);
+  const basari = basariOrani;
   const hedefIlanlar = isKamyoncu ? [] : (ilanlar || []).filter(i => i.olusturan_id === kullanici?.id);
 
-  const dagilim = useMemo(() => {
-    const d = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    (yorumlar || []).forEach(y => { if (d[y.puan] !== undefined) d[y.puan]++; });
-    return d;
-  }, [yorumlar]);
-
-  const ortalama = yorumlar.length
-    ? (yorumlar.reduce((t, y) => t + Number(y.puan), 0) / yorumlar.length)
-    : (Number(kullanici?.puan) || 0);
-  const oySayisi = yorumlar.length || Number(kullanici?.oy_sayisi) || 0;
+  const { dagilim, ortalama, oySayisi: yorumSayisi } = useMemo(
+    () => yorumDagilimi(yorumlar, kullanici?.puan),
+    [yorumlar, kullanici?.puan]
+  );
+  const oySayisi = yorumSayisi || Number(kullanici?.oy_sayisi) || 0;
 
   const statlar = [
     { val: hedefIlanlar.length, lbl: "İlan", icon: "📋" },

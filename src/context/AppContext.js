@@ -3,17 +3,36 @@ import { supabase } from "../supabaseClient";
 import { useMesaj } from "./MesajContext";
 import { IconMap } from "../components/Icons";
 import { serviceWorkerKaydet, pushAboneligiKaydet, pushGonder } from "../utils/push";
-
-let supabaseInitialized = false;
-const initSupabase = () => {
-  if (!supabaseInitialized && supabase) {
-    console.log(`${IconMap.fire} Supabase Backend Connected`);
-    supabaseInitialized = true;
-  }
-};
-
-// Check if Supabase client is initialized on app start
-initSupabase();
+import { useAuth } from "./hooks/useAuth";
+import {
+  kullanicilariGetir,
+  ilanlariGetir,
+  ilanEkle as ilanEkleApi,
+  ilanSoftSil,
+  ilanDurumuGuncelle as ilanDurumuGuncelleApi,
+  seferleriGetir,
+  seferEkle,
+  seferGuncelle,
+  teklifleriGetir,
+  teklifEkle as teklifEkleApi,
+  teklifGuncelle as teklifGuncelleApi,
+  bildirimEkle,
+  bildirimleriGetir,
+  bildirimOkundu,
+  tumBildirimleriOkundu,
+  ihtilaflariGetir,
+  ihtilafEkle,
+  ihtilafGuncelle,
+  ihtilaflariKapat,
+  kamyoncuIptalEkle,
+  son24SaatIptalleri,
+  profilFotograflariGetir,
+  benimDegerlendirmelerimGetir,
+  degerlendirmeleriGetir as degerlendirmeleriGetirApi,
+  degerlendirmeGonder as degerlendirmeGonderApi,
+  hizSiniriAsildiMi
+} from "../utils/api";
+import { ilanNormalize, ilanListesiNormalize } from "../utils/ilanNormalize";
 
 const Ctx = createContext();
 
@@ -23,27 +42,11 @@ let tekliflerData = null;
 let usersData = null;
 let ihtilaflarData = null;
 
-// RLS sıkılaştırması sonrası tc_kimlik sütunu anon/authenticated'ten gizlendi.
-// Kullanıcı kendi TC'sini kendi_profilini_getir() SECURITY DEFINER RPC'sinden alır.
-// SQL henüz çalıştırılmadıysa RPC yoktur → mevcut kullanıcı nesnesi aynen döner.
-async function kendiTcKimliginiGetir(kullanici) {
-  if (!kullanici || !kullanici.id) return kullanici;
-  try {
-    const { data, error } = await supabase.rpc('kendi_profilini_getir');
-    if (!error && Array.isArray(data) && data.length > 0 && data[0].tc_kimlik) {
-      return { ...kullanici, tc_kimlik: data[0].tc_kimlik };
-    }
-  } catch (e) {
-    // RPC henüz yok (SQL çalıştırılmadı) — sessizce geç
-  }
-  return kullanici;
-}
-
 export const AppProvider = ({ children }) => {
   const { konusmaAc, mesajGonder, loadConversations, subscribeRealtime } = useMesaj();
   const [loading, setLoading] = useState(true);
-  const [konusmalar, setKonusmalar] = useState([]);
-  console.log('🔍 AppContext - konusmalar loaded:', konusmalar?.length || 0);
+  // Auth durumu, giriş/kayıt/çıkış/şifre sıfırlama ve session oturma mantığı ayrı hook'a taşındı.
+  const { oturum, setOturum, kayitOl, girisYap, cikisYap } = useAuth(supabase, { setLoading });
 
   // Load initial data from Supabase on mount
   useEffect(() => {
@@ -56,11 +59,7 @@ export const AppProvider = ({ children }) => {
 
       try {
         // Fetch ilanlar
-        const { data: ilanlarRes, error: ilanlarError } = await supabase
-          .from('ilanlar')
-          .select('*')
-          .order('tarih', { ascending: false })
-          .limit(50);
+        const { data: ilanlarRes, error: ilanlarError } = await ilanlariGetir(supabase);
 
         if (!ilanlarError && ilanlarRes) {
           console.log(`✅ ${ilanlarRes.length} ilan yüklendi`);
@@ -70,11 +69,7 @@ export const AppProvider = ({ children }) => {
         }
 
         // Fetch seferler
-        const { data: seferlerRes, error: seferlerError } = await supabase
-          .from('seferler')
-          .select('*')
-          .order('tarih', { ascending: false })
-          .limit(50);
+        const { data: seferlerRes, error: seferlerError } = await seferleriGetir(supabase);
 
         if (!seferlerError && seferlerRes) {
           console.log(`✅ ${seferlerRes.length} sefer yüklendi`);
@@ -84,9 +79,7 @@ export const AppProvider = ({ children }) => {
         }
 
         // Fetch teklifler
-        const { data: tekliflerRes, error: tekliflerError } = await supabase
-          .from('teklifler')
-          .select('*');
+        const { data: tekliflerRes, error: tekliflerError } = await teklifleriGetir(supabase);
 
         if (!tekliflerError && tekliflerRes) {
           console.log(`✅ ${tekliflerRes.length} teklif yüklendi`);
@@ -96,9 +89,7 @@ export const AppProvider = ({ children }) => {
         }
 
         // Fetch users
-        const { data: usersRes, error: usersError } = await supabase
-          .from('users')
-          .select('*');
+        const { data: usersRes, error: usersError } = await kullanicilariGetir(supabase);
 
         if (!usersError && usersRes) {
           console.log(`✅ ${usersRes.length} kullanıcı yüklendi`);
@@ -108,10 +99,7 @@ export const AppProvider = ({ children }) => {
         }
 
         // Fetch ihtilaflar
-        const { data: ihtilaflarRes, error: ihtilaflarError } = await supabase
-          .from('ihtilaflar')
-          .select('*')
-          .order('olusturma_zamani', { ascending: false });
+        const { data: ihtilaflarRes, error: ihtilaflarError } = await ihtilaflariGetir(supabase);
 
         if (!ihtilaflarError && ihtilaflarRes) {
           console.log(`✅ ${ihtilaflarRes.length} ihtilaf yüklendi`);
@@ -123,11 +111,7 @@ export const AppProvider = ({ children }) => {
         // Set the fetched data
         if (ilanlarData) {
           // Fetch profile photos from belgeler table
-          const { data: profilFotograflari } = await supabase
-            .from('belgeler')
-            .select('kullanici_id, url')
-            .eq('dosya_adi', 'profil_fotografi')
-            .order('olusturulma_tarihi', { ascending: false });
+          const { data: profilFotograflari } = await profilFotograflariGetir(supabase);
           const fotoMap = {};
           if (profilFotograflari) {
             profilFotograflari.forEach(f => {
@@ -135,32 +119,7 @@ export const AppProvider = ({ children }) => {
             });
           }
           // Her ilana olusturanın kullanıcı bilgilerini ekle + camelCase normalize
-          const ilanlarWithUsers = ilanlarData.map(ilan => {
-            const olusturanUser = usersData?.find(u => u.id === ilan.olusturan_id || u.email === ilan.olusturan);
-            return {
-              ...ilan,
-              aracTip: ilan.arac_tip,
-              odemeTuru: ilan.odeme_turu,
-              odemeGun: ilan.odeme_gun,
-              kdvOrani: ilan.kdv_orani,
-              kdvTutari: ilan.kdv_tutari,
-              toplamUcret: ilan.toplam_ucret,
-              aciklama: ilan.aciklama || "",
-              yuklemeKonum: ilan.yukleme_konum || "",
-              bosaltmaKonum: ilan.bosaltma_konum || "",
-              yuklemeSaatBas: ilan.yukleme_saat_bas || "",
-              yuklemeSaatBit: ilan.yukleme_saat_bit || "",
-              bosaltmaSaatBas: ilan.bosaltma_saat_bas || "",
-              bosaltmaSaatBit: ilan.bosaltma_saat_bit || "",
-              faturaBaslik: ilan.fatura_baslik || "",
-              faturaDosya: ilan.fatura_dosya || null,
-              firmaAdi: olusturanUser?.firma_adi || null,
-              profilFoto: olusturanUser?.fotograf || fotoMap[String(ilan.olusturan_id)] || null,
-              telefon: olusturanUser?.telefon || null,
-              olusturanPuan: olusturanUser?.puan ?? ilan.olusturanPuan ?? 5.0,
-              olusturanOySayisi: olusturanUser?.oy_sayisi ?? 0
-            };
-          });
+          const ilanlarWithUsers = ilanListesiNormalize(ilanlarData, { usersData, fotoMap });
           setIlanlar(ilanlarWithUsers);
         }
         if (seferlerData) setSeferler(seferlerData);
@@ -181,56 +140,7 @@ export const AppProvider = ({ children }) => {
     loadInitialData();
   }, [supabase]);
 
-  useEffect(() => {
-    initSupabase();
-
-    // Session'ı yükle
-    if (supabase && supabase.auth) {
-      supabase.auth.getSession().then(async ({ data: { session } }) => {
-        console.log('🔐 Session yüklendi:', session ? '✅ Var' : '❌ Yok');
-
-        if (session) {
-          try {
-            // Güncel user verisini çek
-            console.log('🔐 Session ID:', session.user.id);
-            const { data: userData, error } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
-
-            if (error) {
-              console.error('❌ User fetch error after session load:', error);
-              // Session var ama user yoksa oturumu temizle
-              await supabase.auth.signOut();
-            } else if (userData) {
-              console.log('✅ User verisi alındı:', userData);
-              // tc_kimlik RLS sonrası gizlendi → kendi_profilini_getir RPC ile tamamla
-              const tamamlanmis = await kendiTcKimliginiGetir(userData);
-              setOturum(tamamlanmis);
-            } else {
-              console.error('❌ User yok! Session ID:', session.user.id);
-            }
-          } catch (err) {
-            console.error('❌ Error fetching user after session load:', err);
-          }
-        } else {
-          console.log(`${IconMap.warning} Session yok`);
-        }
-
-        setLoading(false);
-      }).catch((error) => {
-        console.error('❌ Session yükleme hatası:', error);
-        setLoading(false);
-      });
-    } else {
-      console.warn(`${IconMap.warning} Supabase client yok, Demo modu`);
-      setLoading(false);
-    }
-  }, [supabase]);
-
   // State'leri başlat
-  const [oturum, setOturum] = useState(null);
   const [kullanicilar, setKullanicilar] = useState([]);
   const [ilanlar, setIlanlar] = useState([]);
   const [seferler, setSeferler] = useState([]);
@@ -253,434 +163,6 @@ export const AppProvider = ({ children }) => {
   const [ihtilaflar, setIhtilaflar] = useState([]);
   const [seciliProfilId, setSeciliProfilId] = useState(null);
   const [benimDegerlendirmelerim, setBenimDegerlendirmelerim] = useState([]);
-
-  const kayitOl = useCallback(async (bilgiler) => {
-    console.log("📥 kayitOl çağrıldı. Rol:", bilgiler.rol);
-
-    if (!bilgiler.rol) {
-      console.error("❌ Rol bilgisi eksik!");
-      throw new Error("Rol bilgisi eksik. Lütfen kayıt olurken rol seçin.");
-    }
-
-    if (!supabase) {
-      console.warn(<>{IconMap.warning} Supabase kurulumu yapılmadı!</>);
-      throw new Error("Supabase kurulumu yapılmadı. Lütfen .env dosyasını kontrol edin.");
-    }
-
-    try {
-      // Sadece telefon ve şifre form'dan geliyor
-      const telefon = bilgiler.telefon;
-      const password = bilgiler.sifre; // Kullanıcı formdan girdiği şifre
-
-      console.log("📱 Telefon:", telefon);
-      console.log("👤 Ad:", bilgiler.ad);
-
-      if (!telefon || telefon.length < 10) {
-        throw new Error("Geçerli telefon numarası girin");
-      }
-
-      if (!password || password.length < 6) {
-        throw new Error("Şifre en az 6 karakter olmalı");
-      }
-
-      // Telefon numarasına göre önce user olup olmadığına bak
-      const { data: existingUser, error: checkError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('telefon', telefon)
-        .maybeSingle();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw new Error("Kullanıcı kontrol hatası: " + checkError.message);
-      }
-
-      if (existingUser) {
-        throw new Error("Bu telefon numarası ile zaten kayıtlısınız.");
-      }
-
-      // Email olarak telefon numarasını kullan
-      const email = `${telefon}@nakliyol.com`;
-
-      let userId = null;
-      let authSession = null;
-
-      try {
-        // 1. First try to create user in Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email,
-          password
-        });
-
-        if (authError) {
-          console.warn(<>{IconMap.warning} Supabase Auth hatası:", authError.message</>);
-
-          if (authError.message.includes("rate limit")) {
-            // Rate limit varsa kullanıcı oluştur ama auth olmadan
-            const { data: userData, error: userError } = await supabase.from('users').insert([{
-              email: email,
-              role: bilgiler.rol || "issiz",
-              ad: bilgiler.ad,
-              tc_kimlik: bilgiler.tc,
-              telefon: telefon
-            }]).select().single();
-
-            if (userError) throw new Error("Kayıt hatası: " + userError.message);
-
-            userId = userData.id;
-            console.log("✅ Local kayıt başarılı (Auth rate limit dolu)");
-          } else if (authError.message.includes("already registered") || authError.message.includes("User already registered")) {
-            // Email zaten var, önce users tablosundan bulalım
-            const { data: existingUser } = await supabase
-              .from('users')
-              .select('*')
-              .eq('email', email)
-              .maybeSingle();
-
-            if (existingUser) {
-              userId = existingUser.id;
-              console.log("✅ Kullanıcı mevcut, ID:", userId);
-              console.log("🎭 Mevcut rol:", existingUser.role);
-
-              // Email ile giriş yap
-              const { data: authUser, error: signInError } = await supabase.auth.signInWithPassword({
-                email,
-                password
-              });
-
-              if (signInError) {
-                throw new Error("Şifre yanlış. Lütfen kontrol edin.");
-              }
-
-              if (authUser?.session) {
-                authSession = authUser.session;
-
-                // User rolünü kontrol et, yoksa Supabase'den tekrar çek
-                if (!existingUser.role) {
-                  console.log("⚠️ Rol boş, Supabase'den yeniden çekiliyor...");
-                  const { data: freshUser } = await supabase
-                    .from('users')
-                    .select('role, ad, telefon')
-                    .eq('id', userId)
-                    .single();
-
-                  if (freshUser && freshUser.role) {
-                    setOturum({
-                      id: userId,
-                      email: freshUser.email || email,
-                      role: freshUser.role,
-                      ad: freshUser.ad || bilgiler.ad,
-                      tc_kimlik: freshUser.tc_kimlik || bilgiler.tc,
-                      telefon: freshUser.telefon || telefon
-                    });
-                    console.log("✅ Rol güncellendi:", freshUser.role);
-                  } else {
-                    // Veritabanında rol yoksa kullanıcı kaydet
-                    await supabase.from('users').update({
-                      role: bilgiler.rol || "issiz",
-                      ad: bilgiler.ad,
-                      tc_kimlik: bilgiler.tc
-                    }).eq('id', userId);
-                    console.log("✅ Rol Supabase'e kaydedildi:", bilgiler.rol);
-                  }
-                } else {
-                  // Mevcut rolü kullan
-                  setOturum({
-                    id: userId,
-                    email: existingUser.email || email,
-                    role: existingUser.role,
-                    ad: existingUser.ad || bilgiler.ad,
-                    tc_kimlik: existingUser.tc_kimlik || bilgiler.tc,
-                    telefon: existingUser.telefon || telefon
-                  });
-                  console.log("✅ Mevcut rol kullanılıyor:", existingUser.role);
-                }
-              } else {
-                throw new Error("Giriş başarısız. Lütfen kontrol edin.");
-              }
-            } else {
-              // Users tablosunda yok ama auth'da var - onu oluştur
-              const { data: authUser } = await supabase.auth.signInWithPassword({
-                email,
-                password
-              });
-
-              if (authUser?.session) {
-                userId = authUser.user.id;
-                authSession = authUser.session;
-
-                const { error: insertError } = await supabase.from('users').insert([{
-                  id: userId,
-                  email: email,
-                  role: bilgiler.rol || "issiz",
-                  ad: bilgiler.ad,
-                  tc_kimlik: bilgiler.tc,
-                  telefon: telefon
-                }]).select().single();
-
-                if (insertError) throw insertError;
-              } else {
-                throw new Error("Giriş başarısız. Lütfen kontrol edin.");
-              }
-            }
-          } else {
-            throw new Error("Kayıt hatası: " + authError.message);
-          }
-        } else {
-          // Auth başarılı
-          userId = authData.user?.id;
-          authSession = authData.session;
-
-          // 2. Then insert user data to users table
-          const { data: userData, error: userError } = await supabase.from('users').insert([{
-            id: userId,
-            email: email,
-            role: bilgiler.rol || "issiz",
-            ad: bilgiler.ad,
-            tc_kimlik: bilgiler.tc,
-            telefon: telefon
-          }]).select().single();
-
-          console.log("💾 Veritabanına kaydedilen veri:", userData);
-          console.log("🎭 Kaydedilen rol:", userData?.role);
-
-          if (userError) {
-            console.error("Kullanıcı tablosu hatası, devam etmeyi dene:", userError);
-            // Kullanıcı tablosunda hata olsa bile devam et
-          }
-
-          console.log("✅ Auth ve database kayıtları oluşturuldu");
-        }
-          // Kayıttan sonra Supabase'den son kullanıcıyı çek ve rolü kontrol et
-          try {
-            const { data: freshUserData } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', userId)
-              .single();
-
-            if (freshUserData && freshUserData.role) {
-              // tc_kimlik RLS sonrası gizlendi → RPC ile tamamla, olmazsa form değerini kullan
-              const tamamlanmis = await kendiTcKimliginiGetir({
-                ...freshUserData,
-                tc_kimlik: freshUserData.tc_kimlik || bilgiler.tc
-              });
-              setOturum(tamamlanmis);
-              return tamamlanmis;
-            }
-          } catch (error) {
-            console.error("Kayıt sonrası kullanıcı çekme hatası:", error);
-          }
-      } catch (authError) {
-        console.error("Auth işlemi hatası:", authError);
-        throw authError;
-      }
-
-      // Son kullanıcıyı çek veya oturumu kullan
-      let finalUser;
-
-      if (userId && authSession) {
-        // Kayıttan önce Supabase'den son kullanıcıyı çek ve doğru rolü kullan
-        try {
-          const { data: freshUserData } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single();
-
-          if (freshUserData && freshUserData.role) {
-            // tc_kimlik RLS sonrası gizlendi → RPC ile tamamla
-            const tamamlanmis = await kendiTcKimliginiGetir(freshUserData);
-            finalUser = tamamlanmis;
-            setOturum(tamamlanmis);
-            return tamamlanmis;
-          }
-        } catch (error) {
-          console.error("Son kullanıcı çekme hatası:", error);
-        }
-
-        // Eğer Supabase'de yoksa kaydettiğimiz veriyi kullan
-        finalUser = {
-          id: userId,
-          email: email,
-          role: bilgiler.rol || "issiz",
-          ad: bilgiler.ad,
-          tc_kimlik: bilgiler.tc,
-          telefon: telefon,
-          session: authSession
-        };
-        setOturum(finalUser);
-        console.log("✅ Kayıt başarılı ve oturum oluşturuldu");
-        return finalUser;
-      } else if (userId) {
-        // Sadece user var
-        const { data: userData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', userId)
-          .single();
-
-        if (userData) {
-          // tc_kimlik RLS sonrası gizlendi → RPC ile tamamla, olmazsa form değerini kullan
-          const tamamlanmis = await kendiTcKimliginiGetir({
-            ...userData,
-            tc_kimlik: userData.tc_kimlik || bilgiler.tc
-          });
-          finalUser = tamamlanmis;
-          setOturum(tamamlanmis);
-          console.log("✅ Kayıt başarılı (sadece user var)");
-          return tamamlanmis;
-        }
-      }
-
-      throw new Error("Kullanıcı oluşturulamadı. Lütfen daha sonra tekrar deneyin.");
-    } catch (error) {
-      console.error("Kayıt hatası:", error);
-      throw error;
-    }
-  }, [supabase]);
-
-  const girisYap = useCallback(async (telefon, sifre) => {
-    if (!supabase) {
-      console.warn("⚠️ Supabase yok!");
-      throw new Error("Supabase kurulumu yapılmadı.");
-    }
-
-    try {
-      console.log("🔐 Giriş başlatılıyor:", telefon);
-
-      // Önce telefon numarasına göre kullanıcıyı bul
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('telefon', telefon)
-        .maybeSingle();
-
-      if (userError) {
-        if (userError.code === 'PGRST116') {
-          throw new Error("Telefon numarası kayıtlı değil. Önce kayıt olun.");
-        }
-        console.error("User fetch hatası:", userError);
-        throw new Error("Kullanıcı bulunamadı. Lütfen kontrol edin.");
-      }
-
-      if (!userData) {
-        throw new Error("Telefon numarası kayıtlı değil. Önce kayıt olun.");
-      }
-
-      // Askıya alınmış kullanıcı giriş yapamaz
-      if (userData.durum === "pasif") {
-        throw new Error("Hesabınız askıya alınmış. Destek ekibiyle iletişime geçin.");
-      }
-
-      const email = userData.email;
-
-      // Supabase Auth ile giriş yap
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password: sifre
-      });
-
-      if (error) {
-        console.error("Supabase Auth hatası:", error);
-
-        if (error.message.includes("Invalid login credentials") ||
-            error.message.includes("Invalid API key") ||
-            error.message.includes("User not found")) {
-          throw new Error("Telefon numarası veya şifre yanlış. Lütfen kontrol edin.");
-        }
-
-        if (error.message.includes("Email not confirmed")) {
-          throw new Error("E-posta adresi doğrulanmamış. Lütfen e-posta onayını kontrol edin.");
-        }
-
-        throw new Error("Giriş başarısız: " + error.message);
-      }
-
-      if (!data || !data.session || !data.user) {
-        throw new Error("Oturum oluşturulamadı. Lütfen daha sonra tekrar deneyin.");
-      }
-
-      console.log("✅ Giriş başarılı, session:", data.session.access_token ? "var" : "yok");
-
-      // Güncel user verisini al (supabase'den gelen fresh data)
-      const { data: freshUserData, error: freshError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('telefon', telefon)
-        .single();
-
-      if (freshError) {
-        console.error("User data fetch hatası:", freshError);
-        // Session varsa user bilgilerini kullan, yoksa devam et
-      }
-
-      if (freshUserData) {
-        // tc_kimlik RLS sonrası gizlendi → kendi_profilini_getir RPC ile tamamla
-        const tamamlanmis = await kendiTcKimliginiGetir(freshUserData);
-        setOturum(tamamlanmis);
-        return tamamlanmis;
-      }
-
-      // Session varsa oturumu oluştur
-      const fallbackOturum = {
-        ...data.user,
-        role: userData.role,
-        ad: userData.ad,
-        tc_kimlik: userData.tc_kimlik,
-        email: email,
-        session: data.session
-      };
-      // tc_kimlik RLS sonrası gizlendi → RPC ile tamamla
-      const tamamlanmisOturum = await kendiTcKimliginiGetir(fallbackOturum);
-      setOturum(tamamlanmisOturum);
-      return { ...data.user, role: userData.role };
-
-    } catch (error) {
-      console.error("Giriş hatası:", error);
-      throw error;
-    }
-  }, [supabase]);
-
-  const cikisYap = useCallback(async () => {
-    console.log('🔐 Çıkış yapılıyor...');
-    try {
-      if (supabase) {
-        await supabase.auth.signOut();
-        console.log('✅ Supabase signOut başarılı');
-      }
-    } catch (error) {
-      console.error('Supabase signOut hatası (yine de devam):', error);
-    }
-
-    // React state'i temizle
-    setOturum(null);
-
-    // HashRouter URL'i ne olursa olsun, anasayfaya tam yenilemeyle dön.
-    // pathname '/' + hash '#/app' olabilir → replace ile birlikte URL '/' olur.
-    // window.location.replace, tarayıcı history'sine bile eklemeden tam yenileme yapar.
-    try {
-      const target = window.location.origin + window.location.pathname;
-      if (window.location.hash || window.location.href !== target) {
-        window.location.replace(target);
-      }
-    } catch (e) {
-      console.error('Navigate hatası:', e);
-      // son çare: sayfayı yenile, AppIceriki zaten Navigate to="/" yapacak
-      window.location.reload();
-    }
-    }, [supabase]);
-
-  const sifreSifirla = useCallback(async (email) => {
-    if (!supabase) {
-      throw new Error("Supabase kurulumu yapılmadı.");
-    }
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/sifre-sifirla`
-    });
-
-    if (error) throw error;
-  }, [supabase]);
 
   const ilanEkle = useCallback(async (yeni) => {
     const ilan = {
@@ -723,32 +205,15 @@ export const AppProvider = ({ children }) => {
     }
 
     try {
-      const { data, error } = await supabase.from('ilanlar').insert([ilan]).select().single();
+      const { data, error } = await ilanEkleApi(supabase, ilan);
 
       if (error) throw error;
 
       console.log("✅ İlan Supabase'e kaydedildi:", ilan.yuk);
       // Normalize data for display
-      const normalizedData = {
-        ...data,
-        aracTip: data.arac_tip,
-        odemeTuru: data.odeme_turu,
-        odemeGun: data.odeme_gun,
-        kdvOrani: data.kdv_orani,
-        kdvTutari: data.kdv_tutari,
-        toplamUcret: data.toplam_ucret,
-        aciklama: data.aciklama || "",
-        yuklemeKonum: data.yukleme_konum || "",
-        bosaltmaKonum: data.bosaltma_konum || "",
-        yuklemeSaatBas: data.yukleme_saat_bas || "",
-        yuklemeSaatBit: data.yukleme_saat_bit || "",
-        bosaltmaSaatBas: data.bosaltma_saat_bas || "",
-        bosaltmaSaatBit: data.bosaltma_saat_bit || "",
-        faturaBaslik: data.fatura_baslik || "",
-        faturaDosya: data.fatura_dosya || null,
-        olusturanPuan: data.olusturan?.puan ?? 5.0,
-        olusturanOySayisi: data.olusturan?.oy_sayisi ?? 0
-      };
+      const normalizedData = ilanNormalize(data, {
+        usersData: oturum?.id ? [{ id: oturum.id, puan: oturum.puan, oy_sayisi: oturum.oy_sayisi }] : undefined
+      });
       setIlanlar(prev => [normalizedData, ...prev]);
 
       // Web Push: yeni ilan → tüm kamyonculara bildirim
@@ -780,10 +245,7 @@ export const AppProvider = ({ children }) => {
     //   - İşveren "Geçmiş İşler" bölümünden ilan/sefer geçmişine ulaşabilir
     //   - RLS "Public can view active ilans" sayesinde diğer kamyoncular silinen ilanı göremez
     if (supabase) {
-      const { error } = await supabase
-        .from('ilanlar')
-        .update({ durum: 'silindi' })
-        .eq('id', id);
+      const { error } = await ilanSoftSil(supabase, id);
       if (error) {
         console.error('❌ İlan silinemedi (soft-delete):', error);
         throw error;
@@ -838,7 +300,7 @@ export const AppProvider = ({ children }) => {
     };
 
     if (supabase) {
-      const { error } = await supabase.from('seferler').insert([yeniSefer]);
+      const { error } = await seferEkle(supabase, yeniSefer);
       if (error) console.error("Sefer ekleme hatası:", error);
     }
 
@@ -875,13 +337,27 @@ export const AppProvider = ({ children }) => {
     }
 
     try {
-      const { data, error } = await supabase.from('teklifler').insert([{
+      // Anti-spam: aynı kullanıcının son 1 dakikada en fazla 5 teklif
+      if (oturum?.id) {
+        const engelle = await hizSiniriAsildiMi(supabase, {
+          tablo: 'teklifler',
+          sutun: 'teklif_sahibi_id',
+          deger: oturum.id,
+          dakika: 1,
+          limit: 5
+        });
+        if (engelle) {
+          throw new Error("Çok hızlı işlem yapıyorsunuz. Lütfen birkaç saniye bekleyip tekrar deneyin.");
+        }
+      }
+
+      const { data, error } = await teklifEkleApi(supabase, {
         ilan_id: ilanId,
         teklif_sahibi_id: oturum?.id,
         tutar: teklifVerisi.tutar,
         ozellikler: teklifVerisi.ozellikler || {},
         durum: "bekliyor"
-      }]).select().single();
+      });
 
       if (error) throw error;
 
@@ -895,7 +371,7 @@ export const AppProvider = ({ children }) => {
 
   const teklifGuncelle = useCallback(async (teklifId, durum) => {
     if (supabase) {
-      await supabase.from('teklifler').update({ durum }).eq('id', teklifId);
+      await teklifGuncelleApi(supabase, teklifId, durum);
     }
     setTeklifler(prev => prev.map(t =>
       t.id === teklifId ? { ...t, durum } : t
@@ -1115,21 +591,18 @@ export const AppProvider = ({ children }) => {
 
     if (supabase) {
       try {
-        await supabase.from('seferler').update({
+        await seferGuncelle(supabase, seferId, {
           durum: "tamamlandı",
           odeme_durumu: "odendi",
           odeme_tarihi: odemeTarihi
-        }).eq('id', seferId);
+        });
 
         // Açık ihtilaf varsa otomatik kapat
-        await supabase.from('ihtilaflar')
-          .update({ durum: "cozuldu", admin_notu: "Ödeme onaylandı" })
-          .eq('sefer_id', seferId)
-          .eq('durum', 'acik');
+        await ihtilaflariKapat(supabase, seferId);
 
         // Kamyoncuya bildirim
         if (sefer.kamyoncu_user_id) {
-          await supabase.from('bildirimler').insert({
+          await bildirimEkle(supabase, {
             kullanici_id: sefer.kamyoncu_user_id,
             tur: 'odeme',
             baslik: '💰 Ödemeniz onaylandı',
@@ -1177,7 +650,7 @@ export const AppProvider = ({ children }) => {
 
     if (supabase) {
       try {
-        const { error } = await supabase.from('ihtilaflar').insert([yeni]);
+        const { error } = await ihtilafEkle(supabase, yeni);
         if (error) {
           console.error('İhtilaf ekleme hatası:', error);
           return;
@@ -1190,7 +663,7 @@ export const AppProvider = ({ children }) => {
       // İşverene bildirim
       if (sefer.olusturan_id) {
         try {
-          await supabase.from('bildirimler').insert({
+          await bildirimEkle(supabase, {
             kullanici_id: sefer.olusturan_id,
             tur: 'ihtilaf',
             baslik: '⚠️ Ödeme ihtilafı açıldı',
@@ -1204,7 +677,7 @@ export const AppProvider = ({ children }) => {
       const adminler = (kullanicilar || []).filter(u => u.rol === 'admin');
       for (const admin of adminler) {
         try {
-          await supabase.from('bildirimler').insert({
+          await bildirimEkle(supabase, {
             kullanici_id: admin.id,
             tur: 'ihtilaf',
             baslik: '⚠️ Yeni ödeme ihtilafı',
@@ -1220,7 +693,7 @@ export const AppProvider = ({ children }) => {
     setIhtilaflar(prev => prev.map(i => i.id === ihtilafId ? { ...i, durum: "cozuldu", admin_notu: not || "" } : i));
     if (supabase) {
       try {
-        await supabase.from('ihtilaflar').update({ durum: "cozuldu", admin_notu: not || "" }).eq('id', ihtilafId);
+        await ihtilafGuncelle(supabase, ihtilafId, { durum: "cozuldu", admin_notu: not || "" });
         const ihtilaf = ihtilaflar.find(i => i.id === ihtilafId);
         const sefer = ihtilaf ? seferler.find(s => s.id === ihtilaf.sefer_id) : null;
 
@@ -1276,7 +749,7 @@ export const AppProvider = ({ children }) => {
   const ilanDurumuGuncelle = useCallback(async (ilanId, durum) => {
     setIlanlar(prev => prev.map(i => i.id === ilanId ? { ...i, durum } : i));
     if (supabase) {
-      const { error } = await supabase.from('ilanlar').update({ durum }).eq('id', ilanId);
+      const { error } = await ilanDurumuGuncelleApi(supabase, ilanId, durum);
       if (error) console.error('İlan durumu güncelleme hatası:', error.message);
     }
   }, [supabase]);
@@ -1284,14 +757,14 @@ export const AppProvider = ({ children }) => {
   const seferDurumuGuncelle = useCallback(async (seferId, durum) => {
     setSeferler(prev => prev.map(s => s.id === seferId ? { ...s, durum } : s));
     if (supabase) {
-      const { error } = await supabase.from('seferler').update({ durum }).eq('id', seferId);
+      const { error } = await seferGuncelle(supabase, seferId, { durum });
       if (error) console.error('Sefer durumu güncelleme hatası:', error.message);
     }
   }, [supabase]);
 
   const bildirimGonder = useCallback(async (kullaniciId, baslik, icerik) => {
     if (!supabase) return;
-    await supabase.from('bildirimler').insert({
+    await bildirimEkle(supabase, {
       kullanici_id: kullaniciId,
       tur: 'yönetim',
       baslik: baslik || 'Admin Mesajı',
@@ -1304,7 +777,7 @@ export const AppProvider = ({ children }) => {
     const hedefler = (kullanicilar || []).filter(k => k.id && k.id !== oturum?.id);
     for (const k of hedefler) {
       try {
-        await supabase.from('bildirimler').insert({
+        await bildirimEkle(supabase, {
           kullanici_id: k.id,
           tur: 'duyuru',
           baslik: baslik || 'Duyuru',
@@ -1403,7 +876,7 @@ export const AppProvider = ({ children }) => {
     setBildirimlerList(prev => prev.map(b => b.id === bildirimId ? { ...b, okundu: true } : b));
     if (supabase) {
       try {
-        await supabase.from('bildirimler').update({ okundu: true }).eq('id', bildirimId);
+        await bildirimOkundu(supabase, bildirimId);
       } catch (e) {
         console.error('Bildirim okundu güncelleme hatası:', e);
       }
@@ -1415,10 +888,7 @@ export const AppProvider = ({ children }) => {
     setBildirimlerList(prev => prev.map(b => ({ ...b, okundu: true })));
     if (supabase && oturum?.id) {
       try {
-        await supabase.from('bildirimler')
-          .update({ okundu: true })
-          .eq('kullanici_id', oturum.id)
-          .is('okundu', false);
+        await tumBildirimleriOkundu(supabase, oturum.id);
       } catch (e) {
         console.error('Tüm bildirimleri okundu işaretleme hatası:', e);
       }
@@ -1430,6 +900,22 @@ export const AppProvider = ({ children }) => {
   const başvuruGonder = useCallback(async (ilanId, bilgiler) => {
     // DEBUG: başvuruGonder çağrılıyor mu?
     console.log('🚀 başvuruGonder ÇAĞRILDI', { ilanId, supabaseVarMi: !!supabase, ilanSayisi: ilanlar?.length });
+
+    // Anti-spam: aynı kullanıcının son 1 dakikada en fazla 3 başvuru
+    if (supabase && oturum?.id) {
+      const engelle = await hizSiniriAsildiMi(supabase, {
+        tablo: 'seferler',
+        sutun: 'kamyoncu_user_id',
+        deger: oturum.id,
+        dakika: 1,
+        limit: 3
+      });
+      if (engelle) {
+        console.warn('🚫 Hız sınırı aşıldı - başvuru engellendi');
+        alert('Çok hızlı başvuru yapıyorsunuz. Lütfen biraz bekleyip tekrar deneyin.');
+        return;
+      }
+    }
 
     setKamyoncuBasvuru({ ilanId, ...bilgiler });
     setSeferOnayDurumu(prev => ({ ...prev, [ilanId]: "bekliyor_onay" }));
@@ -1858,18 +1344,14 @@ export const AppProvider = ({ children }) => {
       console.log('✅ Kamyoncu seferi iptal etti (bekliyor durumuna döndü):', seferId);
 
       // İptal kaydını ekle (abuse takibi)
-      const { error: iptalErr } = await supabase
-        .from('kamyoncu_iptaller')
-        .insert({ kullanici_id: kamyoncuUserId, sefer_id: seferId, sebep: sebep || '' });
+      const { error: iptalErr } = await kamyoncuIptalEkle(supabase, {
+        kullanici_id: kamyoncuUserId, sefer_id: seferId, sebep: sebep || ''
+      });
       if (iptalErr) console.error('İptal kaydı hatası:', iptalErr);
 
       // Son 24 saatteki iptal sayısını hesapla
       const son24Saat = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data: iptaller } = await supabase
-        .from('kamyoncu_iptaller')
-        .select('id')
-        .eq('kullanici_id', kamyoncuUserId)
-        .gte('zaman', son24Saat);
+      const { data: iptaller } = await son24SaatIptalleri(supabase, kamyoncuUserId, son24Saat);
       iptalSayisi = iptaller?.length || 0;
 
       // 24 saatte 3+ iptal → 24 saat cooldown
@@ -1950,7 +1432,7 @@ export const AppProvider = ({ children }) => {
 
   const seferleriYenile = useCallback(async () => {
     if (!supabase) return;
-    const { data } = await supabase.from('seferler').select('*').order('tarih', { ascending: false }).limit(50);
+    const { data } = await seferleriGetir(supabase);
     if (data) {
       console.log(`🚚 Seferler güncellendi: ${data.length}`);
       setSeferler(data);
@@ -1979,27 +1461,10 @@ export const AppProvider = ({ children }) => {
 
     // ilanlar değişiklikleri → state'i yeniden yükle
     const ilanlarChannel = subscribeTable('ilanlar', async () => {
-      const { data } = await supabase.from('ilanlar').select('*').order('tarih', { ascending: false }).limit(50);
+      const { data } = await ilanlariGetir(supabase);
       if (data) {
         console.log(`📋 İlanlar realtime güncellendi: ${data.length}`);
-        setIlanlar(data.map(ilan => ({
-          ...ilan,
-          aracTip: ilan.arac_tip,
-          odemeTuru: ilan.odeme_turu,
-          odemeGun: ilan.odeme_gun,
-          kdvOrani: ilan.kdv_orani,
-          kdvTutari: ilan.kdv_tutari,
-          toplamUcret: ilan.toplam_ucret,
-          aciklama: ilan.aciklama || "",
-          yuklemeKonum: ilan.yukleme_konum || "",
-          bosaltmaKonum: ilan.bosaltma_konum || "",
-          yuklemeSaatBas: ilan.yukleme_saat_bas || "",
-          yuklemeSaatBit: ilan.yukleme_saat_bit || "",
-          bosaltmaSaatBas: ilan.bosaltma_saat_bas || "",
-          bosaltmaSaatBit: ilan.bosaltma_saat_bit || "",
-          faturaBaslik: ilan.fatura_baslik || "",
-          faturaDosya: ilan.fatura_dosya || null,
-        })));
+        setIlanlar(ilanListesiNormalize(data));
       }
     });
 
@@ -2015,7 +1480,7 @@ export const AppProvider = ({ children }) => {
 
     // teklifler değişiklikleri
     const tekliflerChannel = subscribeTable('teklifler', async () => {
-      const { data } = await supabase.from('teklifler').select('*');
+      const { data } = await teklifleriGetir(supabase);
       if (data) {
         console.log(`💼 Teklifler realtime güncellendi: ${data.length}`);
         setTeklifler(data);
@@ -2024,7 +1489,7 @@ export const AppProvider = ({ children }) => {
 
     // users değişiklikleri
     const usersChannel = subscribeTable('users', async () => {
-      const { data } = await supabase.from('users').select('*');
+      const { data } = await kullanicilariGetir(supabase);
       if (data) {
         console.log(`👥 Users realtime güncellendi: ${data.length}`);
         setKullanicilar(data);
@@ -2053,19 +1518,14 @@ export const AppProvider = ({ children }) => {
 
       // Ayrıca tüm bildirim listesini de yenile (offscreen durumlar için)
       const refreshBildirimler = async () => {
-        const { data } = await supabase
-          .from('bildirimler')
-          .select('*')
-          .eq('kullanici_id', oturum.id)
-          .order('olusturma_zamani', { ascending: false })
-          .limit(100);
+        const { data } = await bildirimleriGetir(supabase, oturum.id);
         if (data) setBildirimlerList(data);
       };
       refreshBildirimler();
 
       // RLS sonrası anon seferleri/teklifleri göremez; oturum açılınca ilk veriyi çek
       const refreshTeklifler = async () => {
-        const { data } = await supabase.from('teklifler').select('*');
+        const { data } = await teklifleriGetir(supabase);
         if (data) setTeklifler(data);
       };
       refreshTeklifler();
@@ -2099,10 +1559,7 @@ export const AppProvider = ({ children }) => {
   const degerlendirmelerimYenile = useCallback(async () => {
     if (!supabase || !oturum?.id) return;
     try {
-      const { data } = await supabase
-        .from('degerlendirmeler')
-        .select('id, sefer_id, hedef_kullanici_id, puan')
-        .eq('degerlendiren_id', oturum.id);
+      const { data } = await benimDegerlendirmelerimGetir(supabase, oturum.id);
       setBenimDegerlendirmelerim(data || []);
     } catch (err) {
       console.error('Değerlendirmelerim yüklenemedi:', err);
@@ -2121,12 +1578,7 @@ export const AppProvider = ({ children }) => {
   const degerlendirmeleriGetir = useCallback(async (hedefId) => {
     if (!supabase || !hedefId) return [];
     try {
-      const { data, error } = await supabase
-        .from('degerlendirmeler')
-        .select('id, puan, yorum, olusturma_zamani, degerlendiren_id, hedef_kullanici_id')
-        .eq('hedef_kullanici_id', hedefId)
-        .order('olusturma_zamani', { ascending: false })
-        .limit(50);
+      const { data, error } = await degerlendirmeleriGetirApi(supabase, hedefId);
       if (error || !data?.length) {
         if (error) console.error('Değerlendirmeler alınamadı:', error);
         return [];
@@ -2146,18 +1598,13 @@ export const AppProvider = ({ children }) => {
 
   const degerlendirmeGonder = useCallback(async ({ hedefId, seferId, puan, yorum }) => {
     if (!supabase || !hedefId || !seferId) return { ok: false, error: 'Eksik bilgi' };
-    const { data, error } = await supabase.rpc('degerlendirme_ekle', {
-      p_hedef: hedefId,
-      p_sefer: seferId,
-      p_puan: puan,
-      p_yorum: yorum || null
-    });
+    const { data, error } = await degerlendirmeGonderApi(supabase, { hedefId, seferId, puan, yorum });
     if (error) {
       console.error('Değerlendirme gönderilemedi:', error);
       return { ok: false, error: error.message };
     }
     await degerlendirmelerimYenile();
-    const { data: usersData } = await supabase.from('users').select('*');
+    const { data: usersData } = await kullanicilariGetir(supabase);
     if (usersData) {
       setKullanicilar(usersData);
       setIlanlar(prev => prev.map(i => {
@@ -2170,7 +1617,7 @@ export const AppProvider = ({ children }) => {
 
   return (
     <Ctx.Provider value={{
-      oturum, loading, kullanicilar: adminKullanicilar, ilanlar, setIlanlar, seferler, teklifler, konusmalar,
+      oturum, loading, kullanicilar: adminKullanicilar, ilanlar, setIlanlar, seferler, teklifler,
       kayitOl, girisYap, cikisYap,
       ilanEkle, ilanSil, ilanAl, belgeEkle, odemeYap, odemeGunleriniKabulEt, islemiTeslimEt, ibanGuncelle, profilGuncelle, kullaniciBelgesiYukle,
       konusmaOluştur, ilkMesajiGonder,
