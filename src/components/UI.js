@@ -43,15 +43,16 @@ export const Header = ({ baslik, geri, sag, cikisYap: handleCikisYap }) => {
 
 export const BottomNav = ({ aktif, setAktif, rol }) => {
   try {
-    const { teklifler = [] } = useApp();
+    const { teklifler = [], bildirimler = [] } = useApp();
     const { konusmalar = [] } = useMesaj() || {};
     const bekleyenSayisi = (teklifler || []).filter(t => t.durum === "bekliyor").length;
     const okunmamisMesajSayisi = (konusmalar || []).reduce((top, k) => top + (k.okunmamis || 0), 0);
+    const okunmamisBildirimSayisi = (bildirimler || []).filter(b => b && !b.okundu).length;
 
     const kamyoncuMenu = [
       { key: "ilanlar",  icon: "ilan", label: "İlanlar" },
       { key: "seferler", icon: "list", label: "Seferlerim" },
-      { key: "bildirimler", icon: "bell", label: "Bildirimler", badge: okunmamisMesajSayisi },
+      { key: "bildirimler", icon: "bell", label: "Bildirimler", badge: okunmamisBildirimSayisi },
       { key: "mesajlar", icon: "mesaj", label: "Mesajlar", badge: okunmamisMesajSayisi },
       { key: "profil",   icon: "profil", label: "Profil" },
     ];

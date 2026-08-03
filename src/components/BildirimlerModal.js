@@ -1,8 +1,16 @@
+import { useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { formatTarih } from "./UI";
 
 export function BildirimlerModal() {
-  const { gosterenBildirim, setGosterenBildirim, bildirimler: bildirimlerList, setBildirimlerList } = useApp();
+  const { gosterenBildirim, setGosterenBildirim, bildirimiOkunduYap } = useApp();
+
+  // Modal açıldığında bildirimi okundu olarak işaretle (DB + yerel state)
+  useEffect(() => {
+    if (gosterenBildirim?.id) {
+      bildirimiOkunduYap(gosterenBildirim.id);
+    }
+  }, [gosterenBildirim?.id, bildirimiOkunduYap]);
 
   if (!gosterenBildirim) return null;
 
@@ -10,13 +18,7 @@ export function BildirimlerModal() {
     <div className="sheet-overlay" onClick={() => setGosterenBildirim(null)}>
       <div className="sheet" onClick={e => e.stopPropagation()}>
         <button
-          onClick={() => {
-            // Modalı kapat + bildirim listesinden de en baştaki bildirimi temizle
-            if (bildirimlerList && bildirimlerList.length > 0) {
-              setBildirimlerList(prev => prev.slice(1));
-            }
-            setGosterenBildirim(null);
-          }}
+          onClick={() => setGosterenBildirim(null)}
           style={{
             position: 'fixed',
             top: 20,

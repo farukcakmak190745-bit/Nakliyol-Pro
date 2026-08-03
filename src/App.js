@@ -140,7 +140,57 @@ function MobilApp({ cikisYap }) {
       {sayfa !== undefined && sayfa !== null ? sayfa : null}
       <BottomNav aktif={sekme} setAktif={setSekme} rol={oturum.role} />
       <BildirimlerModal />
+      <BildirimlerToast />
       {seciliProfilId && <HalkaAcikProfil onGeri={profiliKapat} onMesajGonder={profildenMesaj} />}
+    </div>
+  );
+}
+
+// Yeni bildirim gelince ekranın üstünde kısa süre görünen toast
+function BildirimlerToast() {
+  const { toastBildirim, setGosterenBildirim } = useApp();
+
+  if (!toastBildirim) return null;
+
+  return (
+    <div
+      onClick={() => {
+        // Toast'a tıklayınca tam içeriği modal olarak aç
+        setGosterenBildirim(toastBildirim);
+      }}
+      style={{
+        position: "fixed",
+        top: 70,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 999,
+        width: "calc(100% - 32px)",
+        maxWidth: 440,
+        cursor: "pointer",
+        background: "rgba(255,255,255,0.97)",
+        border: "1px solid rgba(251,191,36,0.4)",
+        boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+        borderRadius: "14px",
+        padding: "12px 14px",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        animation: "slideDown 0.25s ease"
+      }}
+    >
+      <div style={{
+        width: 40, height: 40, borderRadius: "50%",
+        background: "linear-gradient(135deg, var(--guldum-gradient), var(--purple-gradient))",
+        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#fff", flexShrink: 0
+      }}>
+        {toastBildirim.icon || '🔔'}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "#fbbf24" }}>{toastBildirim.baslik}</div>
+        <div style={{ fontSize: 12, color: "var(--text2)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {toastBildirim.icerik}
+        </div>
+      </div>
     </div>
   );
 }

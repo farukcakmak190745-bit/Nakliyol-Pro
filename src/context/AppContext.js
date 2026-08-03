@@ -1387,14 +1387,43 @@ export const AppProvider = ({ children }) => {
     setBildirimler(prev => ({ ...prev, [tur]: deger }));
   }, []);
 
+  // Yeni bildirim geldiğinde sadece kısa bir toast göster (tam ekran modal açma).
+  // Bildirim tamamen "okundu" durumu ise kullanıcı listeden tıklayınca işaretlenir.
   const bildirimGoster = useCallback((baslik, icerik, icon = "🔔", id = null) => {
-    setGosterenBildirim({ baslik, icerik, icon, id });
-    setToastBildirim({ baslik, icerik, icon });
+    setToastBildirim({ baslik, icerik, icon, id: id || Date.now() });
 
     setTimeout(() => {
       setToastBildirim(null);
     }, 5000);
   }, []);
+
+  // Tek bir bildirimi okundu yap (DB + yerel state)
+  const bildirimiOkunduYap = useCallback(async (bildirimId) => {
+    if (!bildirimId) return;
+    setBildirimlerList(prev => prev.map(b => b.id === bildirimId ? { ...b, okundu: true } : b));
+    if (supabase) {
+      try {
+        await supabase.from('bildirimler').update({ okundu: true }).eq('id', bildirimId);
+      } catch (e) {
+        console.error('Bildirim okundu güncelleme hatası:', e);
+      }
+    }
+  }, [supabase]);
+
+  // Kullanıcının tüm bildirimlerini okundu işaretle (DB + yerel state)
+  const tumBildirimleriOkunduYap = useCallback(async () => {
+    setBildirimlerList(prev => prev.map(b => ({ ...b, okundu: true })));
+    if (supabase && oturum?.id) {
+      try {
+        await supabase.from('bildirimler')
+          .update({ okundu: true })
+          .eq('kullanici_id', oturum.id)
+          .is('okundu', false);
+      } catch (e) {
+        console.error('Tüm bildirimleri okundu işaretleme hatası:', e);
+      }
+    }
+  }, [supabase, oturum?.id]);
 
 
 
@@ -2149,6 +2178,7 @@ export const AppProvider = ({ children }) => {
       benimDegerlendirmelerim, benimDegerlendirdiklerim, degerlendirmelerimYenile,
       degerlendirmeleriGetir, degerlendirmeGonder,
       bildirimler: bildirimlerList, bildirimGoster, bildirimGuncelle, setBildirimlerList, gosterenBildirim, setGosterenBildirim,
+      toastBildirim, bildirimiOkunduYap, tumBildirimleriOkunduYap,
       kamyoncuBasvuru, setKamyoncuBasvuru,
       seferOnayDurumu, ilaniOnayla, ilaniReddet, ilaniptalEt, kamyoncuIptalEt,
       bekleyenOnaylariGetir,
