@@ -1,0 +1,8 @@
+{
+  "appId": "com.nakliyol.pro",
+  "appName": "NakliYol",
+  "webDir": "build",
+  "android": {
+    "allowMixedContent": true
+  }
+}

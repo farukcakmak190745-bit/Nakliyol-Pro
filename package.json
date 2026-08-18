@@ -3,6 +3,9 @@
   "version": "3.0.0",
   "private": true,
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
     "@supabase/supabase-js": "^2.39.0",
     "lucide-react": "^1.17.0",
     "react": "^18.2.0",
@@ -15,7 +18,8 @@
     "start": "cross-env REACT_APP_SUPABASE_URL=https://wkxhgrqxknxchferqqha.supabase.co REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreGhncnF4a254Y2hmZXJxcWhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNjI4ODcsImV4cCI6MjA5MzczODg4N30.PObDf90tsIOZhsXtwIFOgODEsjXLVZ0DNgYZ8vrPTQQ REACT_APP_VAPID_PUBLIC_KEY=BPu9Pum8uEKR1MVP12A7ftRyWmqA4hktLfHXqf_v_67SY3CZNf_BFbi8WwzEFX06UQ-9MdB8FRb5AztCOLvRMdQ react-scripts start",
     "test": "react-scripts test",
     "build": "cross-env REACT_APP_SUPABASE_URL=https://wkxhgrqxknxchferqqha.supabase.co REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreGhncnF4a254Y2hmZXJxcWhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNjI4ODcsImV4cCI6MjA5MzczODg4N30.PObDf90tsIOZhsXtwIFOgODEsjXLVZ0DNgYZ8vrPTQQ REACT_APP_VAPID_PUBLIC_KEY=BPu9Pum8uEKR1MVP12A7ftRyWmqA4hktLfHXqf_v_67SY3CZNf_BFbi8WwzEFX06UQ-9MdB8FRb5AztCOLvRMdQ react-scripts build",
-    "build:prod": "cross-env REACT_APP_SUPABASE_URL=https://wkxhgrqxknxchferqqha.supabase.co REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreGhncnF4a254Y2hmZXJxcWhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNjI4ODcsImV4cCI6MjA5MzczODg4N30.PObDf90tsIOZhsXtwIFOgODEsjXLVZ0DNgYZ8vrPTQQ REACT_APP_VAPID_PUBLIC_KEY=BPu9Pum8uEKR1MVP12A7ftRyWmqA4hktLfHXqf_v_67SY3CZNf_BFbi8WwzEFX06UQ-9MdB8FRb5AztCOLvRMdQ react-scripts build"
+    "build:prod": "cross-env REACT_APP_SUPABASE_URL=https://wkxhgrqxknxchferqqha.supabase.co REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndreGhncnF4a254Y2hmZXJxcWhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNjI4ODcsImV4cCI6MjA5MzczODg4N30.PObDf90tsIOZhsXtwIFOgODEsjXLVZ0DNgYZ8vrPTQQ REACT_APP_VAPID_PUBLIC_KEY=BPu9Pum8uEKR1MVP12A7ftRyWmqA4hktLfHXqf_v_67SY3CZNf_BFbi8WwzEFX06UQ-9MdB8FRb5AztCOLvRMdQ react-scripts build",
+    "build:android": "npm run build && npx cap sync android"
   },
   "browserslist": {
     "production": [
@@ -27,6 +31,7 @@
     ]
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.0.0",

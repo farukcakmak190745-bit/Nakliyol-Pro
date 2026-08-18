@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
+import { supabase } from "../supabaseClient";
 import { IconMap } from "../components/Icons";
 import { harfFiltre, plakaFiltre, rakamFiltre } from "../utils/inputFilters";
 
 export default function AyarlarSayfasi() {
   const { oturum, bildirimler, bildirimGuncelle, profilGuncelle, cikisYap } = useApp();
   const [kayitMesaj, setKayitMesaj] = useState(null);
+  const [silmeDurumu, setSilmeDurumu] = useState("beklemede"); // beklemede | emin | siliniyor
 
   const isKamyoncu = oturum?.rol === "kamyoncu";
 
@@ -58,6 +60,31 @@ export default function AyarlarSayfasi() {
   // Dil değiştir
   const handleDilDegistir = () => {
     alert("Dil seçimi yakında!");
+  };
+
+  // Hesabı kalıcı olarak sil (Google Play zorunluluğu)
+  const handleHesapSil = async () => {
+    if (silmeDurumu !== "emin") {
+      setSilmeDurumu("emin");
+      return;
+    }
+    const sonOnay = confirm(
+      "Bu işlem geri alınamaz! Tüm ilanların, seferlerin ve mesajların kalıcı olarak silinecek. Devam edilsin mi?"
+    );
+    if (!sonOnay) {
+      setSilmeDurumu("beklemede");
+      return;
+    }
+    setSilmeDurumu("siliniyor");
+    try {
+      const { error } = await supabase.rpc("hesap_sil");
+      if (error) throw error;
+      await cikisYap();
+    } catch (err) {
+      console.error("Hesap silme hatası:", err);
+      alert("Hesap silinirken bir hata oluştu. Desteğe ulaşın veya tekrar deneyin.");
+      setSilmeDurumu("beklemede");
+    }
   };
 
   // Bildirim yerleri
@@ -400,6 +427,34 @@ export default function AyarlarSayfasi() {
         onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.05) 100%)"; }}
       >
         🚪 Çıkış Yap
+      </button>
+
+      {/* Hesap Silme (Google Play zorunluluğu) */}
+      <button
+        onClick={handleHesapSil}
+        disabled={silmeDurumu === "siliniyor"}
+        style={{
+          marginTop: 10,
+          width: "100%",
+          padding: "16px",
+          background: silmeDurumu === "emin"
+            ? "linear-gradient(135deg, rgba(239,68,68,0.35) 0%, rgba(239,68,68,0.2) 100%)"
+            : "transparent",
+          color: "#ef4444",
+          border: silmeDurumu === "emin" ? "1px solid #ef4444" : "1px dashed rgba(239,68,68,0.4)",
+          borderRadius: "14px",
+          fontSize: 14,
+          fontWeight: 700,
+          cursor: silmeDurumu === "siliniyor" ? "default" : "pointer",
+          opacity: silmeDurumu === "siliniyor" ? 0.6 : 1,
+          transition: "all 0.2s"
+        }}
+      >
+        {silmeDurumu === "emin"
+          ? "⚠️ Emin misin? Tekrar tıkla → Hesabı kalıcı olarak sil"
+          : silmeDurumu === "siliniyor"
+            ? "🔄 Siliniyor..."
+            : "🗑️ Hesabımı Sil"}
       </button>
 
       <div style={{ padding: "24px 16px 16px", textAlign: "center", fontSize: 12, color: "var(--text3)" }}>

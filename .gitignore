@@ -35,6 +35,12 @@ yarn-error.log*
 *.swo
 *~
 
+# Android keystore (ASLA COMMIT ETME - Play hesabının anahtarı)
+*.jks
+*.keystore
+keystore.properties
+android/upload-keystore-info.txt
+
 # OS
 Thumbs.db
 

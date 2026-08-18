@@ -14,8 +14,15 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
+// Native (Capacitor/Android WebView) ortamında web-push çalışmaz.
+// Bildirimler uygulama-içi (realtime) olarak devam eder.
+export function nativeOrtam() {
+  return typeof window !== "undefined" && !!window.Capacitor?.isNativePlatform?.();
+}
+
 // Service worker'ı kaydet
 export async function serviceWorkerKaydet() {
+  if (nativeOrtam()) return false;
   if (!("serviceWorker" in navigator)) return false;
   try {
     await navigator.serviceWorker.register("/sw.js");
@@ -28,6 +35,7 @@ export async function serviceWorkerKaydet() {
 
 // Tarayıcıda push desteği var mı?
 export function pushDestegiVar() {
+  if (nativeOrtam()) return false;
   return (
     "serviceWorker" in navigator &&
     "PushManager" in window &&
